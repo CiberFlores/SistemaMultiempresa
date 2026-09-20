@@ -1,0 +1,996 @@
+/* =========================================================
+   SPRINT 2
+   ROLES - TRABAJADORES - PRODUCTOS - INVENTARIO
+   SISTEMA MULTIEMPRESA
+========================================================= */
+
+/* =========================================================
+   BANNER INFORMATIVO
+========================================================= */
+
+.admin-info-banner {
+  position: relative;
+
+  overflow: hidden;
+
+  margin-bottom: 18px;
+
+  padding: 14px 16px;
+
+  border:
+    1px solid
+    rgba(65, 211, 255, 0.14);
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(65, 211, 255, 0.06),
+      rgba(105, 79, 237, 0.055)
+    );
+
+  color: #8fa4bb;
+
+  font-size: 10px;
+  line-height: 1.6;
+
+  box-shadow:
+    inset 0 0 30px
+    rgba(65, 211, 255, 0.015);
+
+  backdrop-filter:
+    blur(12px);
+}
+
+.admin-info-banner::before {
+  content: "";
+
+  position: absolute;
+
+  width: 160px;
+  height: 160px;
+
+  right: -80px;
+  top: -90px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(69, 211, 255, 0.09),
+      transparent 70%
+    );
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   PERMISOS
+========================================================= */
+
+.admin-permissions-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 9px;
+
+  margin-top: 3px;
+}
+
+.admin-permission-option {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  overflow: hidden;
+
+  padding:
+    12px
+    13px;
+
+  border:
+    1px solid
+    var(--admin-border);
+
+  border-radius:
+    11px;
+
+  background:
+    rgba(255, 255, 255, 0.02);
+
+  color:
+    #8f95a8;
+
+  cursor: pointer;
+
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.admin-permission-option::after {
+  content: "";
+
+  position: absolute;
+
+  width: 100px;
+  height: 100px;
+
+  right: -70px;
+  top: -70px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(105, 79, 237, 0.12),
+      transparent 70%
+    );
+
+  transition:
+    transform 0.3s ease;
+}
+
+.admin-permission-option:hover {
+  color: white;
+
+  border-color:
+    rgba(105, 79, 237, 0.3);
+
+  background:
+    rgba(105, 79, 237, 0.05);
+
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 10px 25px
+    rgba(45, 28, 120, 0.09);
+}
+
+.admin-permission-option:hover::after {
+  transform:
+    scale(1.4);
+}
+
+.admin-permission-option.selected {
+  color: white;
+
+  border-color:
+    rgba(105, 79, 237, 0.42);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(105, 79, 237, 0.13),
+      rgba(61, 211, 255, 0.045)
+    );
+
+  box-shadow:
+    inset 0 0 30px
+      rgba(105, 79, 237, 0.035),
+    0 10px 25px
+      rgba(45, 28, 120, 0.09);
+}
+
+.admin-permission-option input {
+  position: relative;
+
+  z-index: 2;
+
+  accent-color:
+    var(--admin-primary);
+}
+
+.admin-permission-option span {
+  position: relative;
+
+  z-index: 2;
+
+  font-size: 10px;
+}
+
+.admin-permission-count {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    5px
+    8px;
+
+  border:
+    1px solid
+    rgba(105, 79, 237, 0.12);
+
+  border-radius:
+    7px;
+
+  background:
+    rgba(105, 79, 237, 0.055);
+
+  color:
+    #9b8be8;
+
+  font-size:
+    9px;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   CHIPS / CÓDIGOS
+========================================================= */
+
+.admin-code-chip {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    5px
+    8px;
+
+  border:
+    1px solid
+    rgba(105, 79, 237, 0.12);
+
+  border-radius:
+    7px;
+
+  background:
+    rgba(105, 79, 237, 0.055);
+
+  color:
+    #9b8be8;
+
+  font-family:
+    monospace;
+
+  font-size:
+    9px;
+
+  letter-spacing:
+    0.2px;
+
+  white-space:
+    nowrap;
+}
+
+/* =========================================================
+   PRODUCTOS
+========================================================= */
+
+.admin-product-cell {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.admin-product-image {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--admin-border);
+
+  border-radius:
+    11px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(105, 79, 237, 0.09),
+      rgba(61, 211, 255, 0.025)
+    );
+
+  color:
+    #737a8f;
+
+  box-shadow:
+    inset 0 0 20px
+    rgba(105, 79, 237, 0.025);
+
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.admin-product-cell:hover
+.admin-product-image {
+  transform:
+    scale(1.05);
+
+  border-color:
+    rgba(105, 79, 237, 0.26);
+}
+
+.admin-product-image img {
+  width: 100%;
+  height: 100%;
+
+  object-fit:
+    cover;
+}
+
+.admin-product-cell >
+div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.admin-product-cell strong {
+  max-width: 230px;
+
+  overflow: hidden;
+
+  color:
+    #d1d4de;
+
+  font-size:
+    11px;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+.admin-product-cell small {
+  color:
+    #646b7e;
+
+  font-size:
+    8px;
+}
+
+/* =========================================================
+   MODAL GRANDE
+========================================================= */
+
+.admin-modal-wide {
+  width:
+    min(900px, 100%);
+}
+
+/* =========================================================
+   INVENTARIO - MÉTRICAS
+========================================================= */
+
+.admin-inventory-metrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 15px;
+
+  margin-bottom:
+    20px;
+
+  perspective:
+    1200px;
+}
+
+.admin-inventory-metrics article {
+  position: relative;
+
+  min-height: 91px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  overflow: hidden;
+
+  padding:
+    18px;
+
+  border:
+    1px solid
+    var(--admin-border);
+
+  border-radius:
+    15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17, 20, 36, 0.83),
+      rgba(10, 12, 23, 0.78)
+    );
+
+  color:
+    #9784ff;
+
+  box-shadow:
+    0 12px 35px
+    rgba(0, 0, 0, 0.11);
+
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.admin-inventory-metrics article::after {
+  content: "";
+
+  position: absolute;
+
+  width: 110px;
+  height: 110px;
+
+  right: -55px;
+  top: -55px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(105, 79, 237, 0.14),
+      transparent 70%
+    );
+
+  pointer-events: none;
+}
+
+.admin-inventory-metrics article:hover {
+  transform:
+    translateY(-4px)
+    rotateX(1deg);
+
+  border-color:
+    rgba(105, 79, 237, 0.28);
+
+  box-shadow:
+    0 18px 45px
+    rgba(45, 28, 120, 0.15);
+}
+
+.admin-inventory-metrics article.warning {
+  color:
+    #ffbd58;
+
+  border-color:
+    rgba(255, 189, 88, 0.16);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 189, 88, 0.055),
+      rgba(10, 12, 23, 0.78)
+    );
+}
+
+.admin-inventory-metrics
+article.warning::after {
+  background:
+    radial-gradient(
+      circle,
+      rgba(255, 189, 88, 0.11),
+      transparent 70%
+    );
+}
+
+.admin-inventory-metrics
+article > div {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.admin-inventory-metrics span {
+  color:
+    #777e92;
+
+  font-size:
+    9px;
+}
+
+.admin-inventory-metrics strong {
+  color:
+    #f7f8fc;
+
+  font-family:
+    var(--font-display);
+
+  font-size:
+    20px;
+}
+
+/* =========================================================
+   FILTROS INVENTARIO
+========================================================= */
+
+.admin-filter-select {
+  min-height:
+    40px;
+
+  min-width:
+    180px;
+
+  padding:
+    0
+    12px;
+
+  border:
+    1px solid
+    var(--admin-border);
+
+  border-radius:
+    10px;
+
+  outline:
+    none;
+
+  background:
+    rgba(255, 255, 255, 0.028);
+
+  color:
+    white;
+
+  font-family:
+    inherit;
+
+  font-size:
+    10px;
+
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.admin-filter-select:focus {
+  border-color:
+    rgba(105, 79, 237, 0.45);
+
+  background:
+    rgba(105, 79, 237, 0.04);
+
+  box-shadow:
+    0 0 0 4px
+    rgba(105, 79, 237, 0.055);
+}
+
+.admin-filter-select option {
+  background:
+    #111424;
+
+  color:
+    white;
+}
+
+.admin-toolbar-wrap {
+  flex-wrap:
+    wrap;
+}
+
+/* =========================================================
+   BOTÓN PEQUEÑO
+========================================================= */
+
+.admin-mini-button {
+  min-height:
+    32px;
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+  justify-content:
+    center;
+
+  gap:
+    5px;
+
+  padding:
+    7px
+    10px;
+
+  border:
+    1px solid
+    var(--admin-border);
+
+  border-radius:
+    8px;
+
+  background:
+    rgba(105, 79, 237, 0.06);
+
+  color:
+    #a293f0;
+
+  font-size:
+    9px;
+  font-weight:
+    700;
+
+  transition:
+    color 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.admin-mini-button:hover {
+  color:
+    white;
+
+  border-color:
+    rgba(105, 79, 237, 0.3);
+
+  background:
+    rgba(105, 79, 237, 0.11);
+
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 8px 20px
+    rgba(49, 31, 130, 0.13);
+}
+
+/* =========================================================
+   TABLAS - DETALLES
+========================================================= */
+
+.admin-table strong {
+  color:
+    #d0d3dd;
+}
+
+.admin-table td {
+  vertical-align:
+    middle;
+}
+
+.admin-table tbody tr {
+  position:
+    relative;
+}
+
+.admin-table tbody tr:hover {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(105, 79, 237, 0.04),
+      rgba(61, 211, 255, 0.012)
+    );
+}
+
+/* =========================================================
+   BADGE EXTRA
+========================================================= */
+
+.admin-badge.warning {
+  color:
+    #ffc766;
+
+  border:
+    1px solid
+    rgba(255, 190, 85, 0.14);
+
+  background:
+    rgba(255, 190, 85, 0.065);
+}
+
+/* =========================================================
+   SUBTÍTULOS
+========================================================= */
+
+.admin-section-title {
+  margin:
+    0
+    0
+    12px;
+
+  color:
+    #9197aa;
+
+  font-size:
+    10px;
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.5px;
+
+  text-transform:
+    uppercase;
+}
+
+/* =========================================================
+   PANEL GRID GENÉRICO
+========================================================= */
+
+.admin-module-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap:
+    18px;
+}
+
+.admin-module-card {
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  padding:
+    20px;
+
+  border:
+    1px solid
+    var(--admin-border);
+
+  border-radius:
+    17px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17, 20, 36, 0.82),
+      rgba(10, 12, 23, 0.77)
+    );
+
+  transition:
+    0.3s ease;
+}
+
+.admin-module-card::after {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  width:
+    130px;
+
+  height:
+    130px;
+
+  right:
+    -70px;
+
+  bottom:
+    -70px;
+
+  border-radius:
+    50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(105, 79, 237, 0.1),
+      transparent 70%
+    );
+}
+
+.admin-module-card:hover {
+  transform:
+    translateY(-4px);
+
+  border-color:
+    rgba(105, 79, 237, 0.25);
+
+  box-shadow:
+    0 16px 45px
+    rgba(35, 22, 96, 0.16);
+}
+
+/* =========================================================
+   ESTADO SIN DATOS
+========================================================= */
+
+.admin-empty-column {
+  min-height:
+    245px;
+
+  flex-direction:
+    column;
+
+  gap:
+    8px;
+
+  text-align:
+    center;
+}
+
+.admin-empty-column svg {
+  color:
+    #565d72;
+
+  filter:
+    drop-shadow(
+      0 0 16px
+      rgba(105, 79, 237, 0.14)
+    );
+
+  animation:
+    app-float
+    4s ease-in-out infinite;
+}
+
+.admin-empty-column strong {
+  color:
+    #a0a5b5;
+
+  font-size:
+    12px;
+}
+
+.admin-empty-column span {
+  max-width:
+    350px;
+
+  color:
+    #62697d;
+
+  font-size:
+    10px;
+
+  line-height:
+    1.5;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.admin-loading-box {
+  min-height:
+    300px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    10px;
+
+  color:
+    #737a8f;
+
+  font-size:
+    10px;
+}
+
+.admin-loading-box svg {
+  color:
+    #9582ff;
+
+  animation:
+    app-spin
+    0.85s linear infinite;
+}
+
+/* =========================================================
+   ANIMACIÓN EXTRA PARA CARDS
+========================================================= */
+
+@keyframes admin-card-glow-animation {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0
+      rgba(105, 79, 237, 0);
+  }
+
+  50% {
+    box-shadow:
+      0 0 35px
+      rgba(105, 79, 237, 0.08);
+  }
+}
+
+.admin-glow-card {
+  animation:
+    admin-card-glow-animation
+    4s ease-in-out infinite;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  .admin-inventory-metrics {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-module-grid {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+@media (max-width: 800px) {
+
+  .admin-permissions-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .admin-inventory-metrics {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+@media (max-width: 650px) {
+
+  .admin-filter-select {
+    width:
+      100%;
+  }
+
+  .admin-toolbar-wrap {
+    flex-direction:
+      column;
+
+    align-items:
+      stretch;
+  }
+
+  .admin-code-chip,
+  .admin-permission-count {
+    white-space:
+      normal;
+  }
+}

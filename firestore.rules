@@ -1,0 +1,526 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    function existePerfil() {
+      return estaAutenticado()
+        && exists(
+          /databases/$(database)/documents/usuarios/$(request.auth.uid)
+        );
+    }
+
+    function usuarioActual() {
+      return get(
+        /databases/$(database)/documents/usuarios/$(request.auth.uid)
+      );
+    }
+
+    function usuarioActivo() {
+      return existePerfil()
+        && usuarioActual().data.estado == true;
+    }
+
+    function esSuperAdmin() {
+      return usuarioActivo()
+        && usuarioActual().data.tipoUsuario == "SUPER_ADMIN";
+    }
+
+    function esAdmin() {
+      return usuarioActivo()
+        && usuarioActual().data.tipoUsuario == "ADMIN";
+    }
+
+    function esTrabajador() {
+      return usuarioActivo()
+        && usuarioActual().data.tipoUsuario == "TRABAJADOR";
+    }
+
+    function miEmpresaId() {
+      return usuarioActual().data.empresaId;
+    }
+
+    function perteneceEmpresa(empresaId) {
+      return usuarioActivo()
+        && miEmpresaId() == empresaId;
+    }
+
+    function tieneRolAsignado() {
+      return esTrabajador()
+        && usuarioActual().data.keys().hasAll(["rolId"])
+        && usuarioActual().data.rolId != null
+        && exists(
+          /databases/$(database)/documents/rolesEmpresa/$(usuarioActual().data.rolId)
+        );
+    }
+
+    function rolActual() {
+      return get(
+        /databases/$(database)/documents/rolesEmpresa/$(usuarioActual().data.rolId)
+      );
+    }
+
+    function tienePermiso(permiso) {
+      return esAdmin()
+        || (
+          tieneRolAsignado()
+          && rolActual().data.estado == "ACTIVO"
+          && rolActual().data.empresaId == miEmpresaId()
+          && permiso in rolActual().data.permisos
+        );
+    }
+
+    function puedeLeerEmpresa(empresaId) {
+      return esSuperAdmin()
+        || perteneceEmpresa(empresaId);
+    }
+
+    function puedeGestionarEmpresa(empresaId) {
+      return esSuperAdmin()
+        || (
+          esAdmin()
+          && perteneceEmpresa(empresaId)
+        );
+    }
+
+    // USUARIOS
+    match /usuarios/{usuarioId} {
+      allow read: if estaAutenticado()
+        && (
+          request.auth.uid == usuarioId
+          || esSuperAdmin()
+          || (
+            esAdmin()
+            && resource.data.empresaId == miEmpresaId()
+          )
+        );
+
+      allow create: if esSuperAdmin()
+        || (
+          esAdmin()
+          && request.resource.data.empresaId == miEmpresaId()
+          && request.resource.data.tipoUsuario == "TRABAJADOR"
+        );
+
+      allow update: if esSuperAdmin()
+        || (
+          esAdmin()
+          && resource.data.empresaId == miEmpresaId()
+          && resource.data.tipoUsuario == "TRABAJADOR"
+          && request.resource.data.empresaId == resource.data.empresaId
+          && request.resource.data.tipoUsuario == "TRABAJADOR"
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "nombreCompleto",
+              "correo",
+              "telefono",
+              "rolId",
+              "sucursales",
+              "estado",
+              "imagenPerfilUrl",
+              "fechaActualizacion"
+            ])
+        );
+
+      allow delete: if false;
+    }
+
+    // EMPRESAS
+    match /empresas/{empresaId} {
+      allow read: if puedeLeerEmpresa(empresaId);
+      allow create: if esSuperAdmin();
+
+      allow update: if esSuperAdmin()
+        || (
+          esAdmin()
+          && perteneceEmpresa(empresaId)
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "nombreComercial",
+              "razonSocial",
+              "rubro",
+              "nit",
+              "telefono",
+              "correo",
+              "direccion",
+              "ciudad",
+              "pais",
+              "fechaActualizacion"
+            ])
+        );
+
+      allow delete: if false;
+    }
+
+    match /configuracionesEmpresas/{empresaId} {
+      allow read: if puedeLeerEmpresa(empresaId);
+      allow create, update: if puedeGestionarEmpresa(empresaId);
+      allow delete: if false;
+    }
+
+    match /personalizacionesEmpresas/{empresaId} {
+      allow read: if puedeLeerEmpresa(empresaId);
+      allow create, update: if puedeGestionarEmpresa(empresaId);
+      allow delete: if false;
+    }
+
+    // SUPER ADMIN
+    match /modulos/{moduloId} {
+      allow read: if usuarioActivo();
+      allow create, update: if esSuperAdmin();
+      allow delete: if false;
+    }
+
+    match /planes/{planId} {
+      allow read: if usuarioActivo();
+      allow create, update: if esSuperAdmin();
+      allow delete: if false;
+    }
+
+    match /licencias/{licenciaId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create, update: if esSuperAdmin();
+      allow delete: if false;
+    }
+
+    // SUCURSALES
+    match /sucursales/{sucursalId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if esSuperAdmin()
+        || (
+          esAdmin()
+          && request.resource.data.empresaId == miEmpresaId()
+        );
+
+      allow update: if esSuperAdmin()
+        || (
+          esAdmin()
+          && resource.data.empresaId == miEmpresaId()
+          && request.resource.data.empresaId == resource.data.empresaId
+        );
+
+      allow delete: if false;
+    }
+
+    // ROLES EMPRESA
+    match /rolesEmpresa/{rolId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if esAdmin()
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if esAdmin()
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    // CATEGORIAS
+    match /categorias/{categoriaId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if tienePermiso("categorias.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if tienePermiso("categorias.gestionar")
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    // MARCAS
+    match /marcas/{marcaId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if tienePermiso("marcas.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if tienePermiso("marcas.gestionar")
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    // PRODUCTOS
+    match /productos/{productoId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if tienePermiso("productos.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if tienePermiso("productos.gestionar")
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    // INVENTARIO
+    match /inventarios/{inventarioId} {
+      allow get: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && (
+            !exists(/databases/$(database)/documents/inventarios/$(inventarioId))
+            || resource.data.empresaId == miEmpresaId()
+          )
+          && (
+            esAdmin()
+            || tienePermiso("inventario.ver")
+            || tienePermiso("inventario.ajustar")
+            || tienePermiso("compras.gestionar")
+            || tienePermiso("ventas.registrar")
+          )
+        );
+
+      allow list: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("inventario.ver")
+            || tienePermiso("inventario.ajustar")
+            || tienePermiso("compras.gestionar")
+            || tienePermiso("ventas.registrar")
+          )
+        );
+
+      allow create, update: if usuarioActivo()
+        && request.resource.data.empresaId == miEmpresaId()
+        && (
+          esAdmin()
+          || tienePermiso("inventario.ajustar")
+          || tienePermiso("compras.gestionar")
+          || tienePermiso("ventas.registrar")
+        );
+
+      allow delete: if false;
+    }
+
+    match /movimientosStock/{movimientoId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("inventario.ver")
+            || tienePermiso("inventario.ajustar")
+            || tienePermiso("compras.gestionar")
+            || tienePermiso("ventas.registrar")
+          )
+        );
+
+      allow create: if usuarioActivo()
+        && request.resource.data.empresaId == miEmpresaId()
+        && (
+          esAdmin()
+          || tienePermiso("inventario.ajustar")
+          || tienePermiso("compras.gestionar")
+          || tienePermiso("ventas.registrar")
+        );
+
+      allow update, delete: if false;
+    }
+
+    // CLIENTES
+    match /clientes/{clienteId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if tienePermiso("clientes.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if tienePermiso("clientes.gestionar")
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    // PROVEEDORES
+    match /proveedores/{proveedorId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+        );
+
+      allow create: if tienePermiso("proveedores.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if tienePermiso("proveedores.gestionar")
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    // COMPRAS
+    match /compras/{compraId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("compras.gestionar")
+          )
+        );
+
+      allow create: if tienePermiso("compras.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update, delete: if false;
+    }
+
+    match /detalleCompras/{detalleId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("compras.gestionar")
+          )
+        );
+
+      allow create: if tienePermiso("compras.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update, delete: if false;
+    }
+
+    // CAJAS
+    match /cajas/{cajaId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("caja.gestionar")
+            || tienePermiso("ventas.registrar")
+            || tienePermiso("compras.gestionar")
+          )
+        );
+
+      allow create: if tienePermiso("caja.gestionar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update: if tienePermiso("caja.gestionar")
+        && resource.data.empresaId == miEmpresaId()
+        && request.resource.data.empresaId == resource.data.empresaId;
+
+      allow delete: if false;
+    }
+
+    match /movimientosCaja/{movimientoId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("caja.gestionar")
+            || tienePermiso("ventas.ver")
+            || tienePermiso("compras.gestionar")
+          )
+        );
+
+      allow create: if usuarioActivo()
+        && request.resource.data.empresaId == miEmpresaId()
+        && (
+          esAdmin()
+          || tienePermiso("caja.gestionar")
+          || tienePermiso("ventas.registrar")
+          || tienePermiso("compras.gestionar")
+        );
+
+      allow update, delete: if false;
+    }
+
+    // VENTAS
+    match /ventas/{ventaId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("ventas.ver")
+            || tienePermiso("ventas.registrar")
+          )
+        );
+
+      allow create: if tienePermiso("ventas.registrar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update, delete: if false;
+    }
+
+    match /detalleVentas/{detalleId} {
+      allow read: if esSuperAdmin()
+        || (
+          usuarioActivo()
+          && resource.data.empresaId == miEmpresaId()
+          && (
+            esAdmin()
+            || tienePermiso("ventas.ver")
+            || tienePermiso("ventas.registrar")
+          )
+        );
+
+      allow create: if tienePermiso("ventas.registrar")
+        && request.resource.data.empresaId == miEmpresaId();
+
+      allow update, delete: if false;
+    }
+
+    // BLOQUEO GENERAL
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
