@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -9,6 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "./firebase/firebaseConfig";
+import { BASE_MODULES } from "../data/baseModules";
 
 const modulosRef = collection(db, "modulos");
 
@@ -92,4 +94,21 @@ export async function cambiarEstadoModulo(moduloId, activo) {
     activo,
     fechaActualizacion: serverTimestamp()
   });
+}
+
+export async function inicializarModulosBase() {
+  const snapshot = await getDocs(modulosRef);
+  const existentes = new Set(snapshot.docs.map((d) => String(d.data().codigo || "").toUpperCase()));
+  const pendientes = BASE_MODULES.filter((item) => !existentes.has(item.codigo));
+  for (const item of pendientes) {
+    await addDoc(modulosRef, { ...item, activo: true, fechaRegistro: serverTimestamp(), fechaActualizacion: serverTimestamp() });
+  }
+  return pendientes.length;
+}
+
+export async function eliminarModulo(moduloId) {
+  const planesSnapshot = await getDocs(collection(db, "planes"));
+  const usado = planesSnapshot.docs.some((d) => Array.isArray(d.data().modulos) && d.data().modulos.includes(moduloId));
+  if (usado) throw new Error("No se puede eliminar: el módulo está asignado a un plan. Desactívalo o quítalo de los planes primero.");
+  await deleteDoc(doc(db, "modulos", moduloId));
 }

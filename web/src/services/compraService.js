@@ -10,6 +10,7 @@ import {
 
 import { db } from "./firebase/firebaseConfig";
 import { obtenerCajasAbiertas } from "./cajaService";
+import { registrarAuditoria } from "./auditService";
 
 export async function obtenerCatalogosCompra(empresaId) {
   const [
@@ -129,6 +130,9 @@ export async function registrarCompra({
   }
 
   const compraRef = doc(collection(db, "compras"));
+  const cuentaPagarRef = metodoPago === "CREDITO"
+    ? doc(collection(db, "cuentasPagar"))
+    : null;
 
   const detalleRefs = lineas.map(() =>
     doc(collection(db, "detalleCompras"))
@@ -248,6 +252,21 @@ export async function registrarCompra({
       });
     });
 
+    if (cuentaPagarRef) {
+      transaccion.set(cuentaPagarRef, {
+        empresaId,
+        proveedorId,
+        compraId: compraRef.id,
+        referencia: numeroDocumento?.trim() || compraRef.id,
+        total,
+        saldo: total,
+        estadoCuenta: "PENDIENTE",
+        estado: "ACTIVO",
+        fechaRegistro: serverTimestamp(),
+        fechaActualizacion: serverTimestamp()
+      });
+    }
+
     if (movimientoCajaRef) {
       transaccion.set(movimientoCajaRef, {
         empresaId,
@@ -265,5 +284,6 @@ export async function registrarCompra({
     }
   });
 
+  await registrarAuditoria({ empresaId, usuarioId, accion: "REGISTRAR_COMPRA", modulo: "compras", entidad: "compra", entidadId: compraRef.id, detalle: `Compra ${numeroDocumento || compraRef.id} por ${total.toFixed(2)}` });
   return compraRef.id;
 }

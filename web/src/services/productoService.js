@@ -147,6 +147,9 @@ export async function crearProducto(
 
       sku,
 
+      codigoBarras:
+        datos.codigoBarras?.trim() || "",
+
       nombre:
         datos.nombre.trim(),
 
@@ -228,6 +231,9 @@ export async function actualizarProducto(
     ),
     {
       sku,
+
+      codigoBarras:
+        datos.codigoBarras?.trim() || "",
 
       nombre:
         datos.nombre.trim(),

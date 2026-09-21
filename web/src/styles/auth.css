@@ -866,26 +866,138 @@
   opacity: 1;
 }
 
+.password-group {
+  margin-bottom: 20px;
+}
+
 .password-label {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  min-height: 19px;
 }
 
 .password-label label {
   margin: 0;
 }
 
+.forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
 .forgot-password {
-  padding: 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 
-  border: none;
+  padding: 5px 9px;
 
-  background: none;
+  border: 1px solid transparent;
+  border-radius: 9px;
 
-  color: #7867e9;
+  background: transparent;
+
+  color: #8e7cff;
 
   font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.15px;
+  line-height: 1;
+  text-decoration: none;
+
+  transition:
+    color 0.24s ease,
+    background 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s ease;
+}
+
+.forgot-password::before {
+  content: "";
+
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 2px;
+
+  height: 1px;
+
+  transform: scaleX(0);
+  transform-origin: right center;
+
+  background:
+    linear-gradient(
+      90deg,
+      #826bff,
+      #46d7ff
+    );
+
+  transition: transform 0.28s ease;
+}
+
+.forgot-password:hover {
+  color: #c7beff;
+
+  border-color:
+    rgba(132, 104, 255, 0.16);
+
+  background:
+    rgba(119, 91, 255, 0.07);
+
+  box-shadow:
+    0 8px 22px
+    rgba(84, 58, 198, 0.09);
+
+  transform: translateX(2px);
+}
+
+.forgot-password:hover::before {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+.forgot-password:focus-visible {
+  outline: none;
+
+  border-color:
+    rgba(132, 104, 255, 0.44);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(113, 87, 255, 0.1);
+}
+
+.forgot-password-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 16px;
+  height: 16px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(123, 96, 255, 0.1);
+
+  color: #ab9cff;
+
+  font-size: 12px;
+
+  transition:
+    transform 0.24s ease,
+    background 0.24s ease;
+}
+
+.forgot-password:hover
+.forgot-password-arrow {
+  transform: translateX(2px);
+
+  background:
+    rgba(123, 96, 255, 0.18);
 }
 
 .password-toggle {
@@ -1190,4 +1302,22 @@
 
   transform:
     translateX(-3px);
+}
+
+/* =====================================================
+   AJUSTE RESPONSIVE - RECUPERACIÓN DE CONTRASEÑA
+===================================================== */
+
+@media (max-width: 420px) {
+  .forgot-password-row {
+    justify-content: flex-start;
+  }
+
+  .forgot-password {
+    padding-left: 0;
+  }
+
+  .forgot-password:hover {
+    padding-left: 8px;
+  }
 }

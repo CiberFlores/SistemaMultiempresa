@@ -4,7 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import SuperAdminSidebar from "../components/layout/SuperAdminSidebar";
 import SuperAdminHeader from "../components/layout/SuperAdminHeader";
 
+import AppShellTools from "../components/ui/AppShellTools.jsx";
+
 import "../styles/superadmin.css";
+import "../styles/innovation.css";
 
 function SuperAdminLayout() {
   const location = useLocation();
@@ -38,6 +41,7 @@ function SuperAdminLayout() {
             }}
           >
             <Outlet />
+            <AppShellTools />
           </motion.main>
         </AnimatePresence>
       </div>

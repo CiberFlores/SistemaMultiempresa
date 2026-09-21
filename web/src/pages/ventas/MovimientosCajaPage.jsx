@@ -1,0 +1,2 @@
+import ReportPage from "../../components/common/ReportPage";
+export default function MovimientosCajaPage(){return <ReportPage title="Movimientos de caja" description="Ingresos y egresos registrados por caja, sucursal y operación." collectionName="movimientosCaja" searchFields={["tipo","categoria","descripcion","cajaId","sucursalId","usuarioId"]} amountField="monto" columns={[{key:"tipo",label:"TIPO"},{key:"categoria",label:"CATEGORÍA"},{key:"descripcion",label:"DESCRIPCIÓN"},{key:"monto",label:"MONTO",render:r=>Number(r.monto||0).toFixed(2)},{key:"cajaId",label:"CAJA"}]}/>}

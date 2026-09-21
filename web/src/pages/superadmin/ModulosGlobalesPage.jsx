@@ -7,6 +7,8 @@ import {
   Plus,
   Power,
   Search,
+  Trash2,
+  WandSparkles,
   X
 } from "lucide-react";
 
@@ -16,6 +18,8 @@ import {
   actualizarModulo,
   cambiarEstadoModulo,
   crearModulo,
+  eliminarModulo,
+  inicializarModulosBase,
   suscribirModulos
 } from "../../services/moduloService";
 
@@ -155,6 +159,18 @@ function ModulosGlobalesPage() {
     }
   };
 
+  const cargarBase = async () => {
+    try {
+      const cantidad = await inicializarModulosBase();
+      alert(cantidad ? `Se crearon ${cantidad} módulos base.` : "Los módulos base ya estaban creados.");
+    } catch (error) { alert(error.message || "No se pudieron inicializar los módulos."); }
+  };
+
+  const eliminar = async (modulo) => {
+    if (!window.confirm(`¿Eliminar definitivamente el módulo "${modulo.nombre}"?`)) return;
+    try { await eliminarModulo(modulo.id); } catch (error) { alert(error.message || "No se pudo eliminar."); }
+  };
+
   const modulosFiltrados = modulos.filter((modulo) => {
     const texto = busqueda.toLowerCase();
 
@@ -176,13 +192,14 @@ function ModulosGlobalesPage() {
           </p>
         </div>
 
-        <button
-          className="sa-primary-button"
-          onClick={abrirNuevo}
-        >
-          <Plus size={17} />
-          Nuevo módulo
-        </button>
+        <div style={{display:"flex",gap:8}}>
+          <button className="sa-secondary-button" onClick={cargarBase}>
+            <WandSparkles size={17} /> Módulos base
+          </button>
+          <button className="sa-primary-button" onClick={abrirNuevo}>
+            <Plus size={17} /> Nuevo módulo
+          </button>
+        </div>
       </div>
 
       <section className="sa-panel">
@@ -293,6 +310,9 @@ function ModulosGlobalesPage() {
                           ) : (
                             <CircleCheck size={16} />
                           )}
+                        </button>
+                        <button title="Eliminar" onClick={() => eliminar(modulo)}>
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

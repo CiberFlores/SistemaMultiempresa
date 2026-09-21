@@ -234,6 +234,11 @@ function LoginPage() {
         // ERRORES FIREBASE
         // ==============================================
 
+        if (error.code === "auth/email-not-verified") {
+          setError(error.message);
+          return;
+        }
+
         if (
           error.code ===
             "auth/invalid-credential" ||
@@ -855,7 +860,7 @@ function LoginPage() {
 
               {/* CONTRASEÑA */}
 
-              <div className="tech-form-group">
+              <div className="tech-form-group password-group">
 
                 <div className="password-label">
                   <label
@@ -863,13 +868,6 @@ function LoginPage() {
                   >
                     Contraseña
                   </label>
-
-                  <Link
-                    to="/recuperar-contrasena"
-                    className="forgot-password"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
                 </div>
 
                 <div className="tech-input">
@@ -941,6 +939,25 @@ function LoginPage() {
                   </button>
 
                   <span className="input-glow" />
+                </div>
+
+                <div className="forgot-password-row">
+                  <Link
+                    to="/recuperar-contrasena"
+                    className="forgot-password"
+                    aria-label="Recuperar contraseña"
+                  >
+                    <span>
+                      ¿Olvidaste tu contraseña?
+                    </span>
+
+                    <span
+                      className="forgot-password-arrow"
+                      aria-hidden="true"
+                    >
+                      →
+                    </span>
+                  </Link>
                 </div>
               </div>
 

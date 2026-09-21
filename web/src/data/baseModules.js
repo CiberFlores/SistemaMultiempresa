@@ -1,0 +1,20 @@
+export const BASE_MODULES = [
+  {codigo:"DASHBOARD",nombre:"Dashboard",descripcion:"Indicadores generales del negocio."},
+  {codigo:"USUARIOS",nombre:"Usuarios",descripcion:"Gestión de usuarios y trabajadores."},
+  {codigo:"ROLES",nombre:"Roles y permisos",descripcion:"Permisos dinámicos por empresa."},
+  {codigo:"CONFIGURACION",nombre:"Configuración",descripcion:"Datos del negocio, métodos de pago y reglas generales."},
+  {codigo:"SUCURSALES",nombre:"Sucursales",descripcion:"Administración de sucursales y ubicaciones."},
+  {codigo:"CATALOGO",nombre:"Categorías y marcas",descripcion:"Organización del catálogo."},
+  {codigo:"PRODUCTOS",nombre:"Productos",descripcion:"CRUD de productos, precios, imágenes y códigos."},
+  {codigo:"INVENTARIO",nombre:"Inventario",descripcion:"Stock, movimientos, ajustes y alertas."},
+  {codigo:"COMPRAS",nombre:"Compras y proveedores",descripcion:"Proveedores, compras y detalle de compras."},
+  {codigo:"CLIENTES",nombre:"Clientes",descripcion:"Gestión comercial de clientes."},
+  {codigo:"VENTAS",nombre:"Ventas y POS",descripcion:"Punto de venta, ventas, comprobantes y anulaciones."},
+  {codigo:"PROMOCIONES",nombre:"Promociones",descripcion:"Descuentos y promociones."},
+  {codigo:"CAJA",nombre:"Caja y gastos",descripcion:"Apertura, cierre, movimientos y gastos."},
+  {codigo:"FINANZAS",nombre:"Finanzas",descripcion:"Cuentas por cobrar, pagar y pagos."},
+  {codigo:"REPORTES",nombre:"Reportes",descripcion:"Ventas, compras, inventario y finanzas."},
+  {codigo:"NOTIFICACIONES",nombre:"Notificaciones",descripcion:"Alertas y notificaciones operativas."},
+  {codigo:"AUDITORIA",nombre:"Auditoría",descripcion:"Trazabilidad de operaciones relevantes."},
+  {codigo:"RESPALDOS",nombre:"Respaldos",descripcion:"Exportación y mecanismos de respaldo."}
+];

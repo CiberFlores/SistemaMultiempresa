@@ -143,7 +143,8 @@ function PosPage() {
 
     return productos.filter((p) =>
       p.nombre?.toLowerCase().includes(texto) ||
-      p.sku?.toLowerCase().includes(texto)
+      p.sku?.toLowerCase().includes(texto) ||
+      p.codigoBarras?.toLowerCase().includes(texto)
     );
   }, [productos, busqueda]);
 
@@ -213,7 +214,7 @@ function PosPage() {
             <div className="admin-search pos-search">
               <Search size={18}/>
               <input
-                placeholder="Buscar producto o SKU..."
+                placeholder="Buscar producto, SKU o código de barras..."
                 value={busqueda}
                 onChange={(e)=>setBusqueda(e.target.value)}
               />
@@ -298,6 +299,8 @@ function PosPage() {
                 <option value="EFECTIVO">Efectivo</option>
                 <option value="QR">QR</option>
                 <option value="TARJETA">Tarjeta</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+                <option value="CREDITO">Crédito</option>
               </select>
             </div>
 
