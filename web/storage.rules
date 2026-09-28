@@ -27,6 +27,11 @@ service firebase.storage {
       allow read: if true;
       allow create, update, delete: if superAdmin() && (request.resource == null || imageUpload());
     }
+    match /respaldos/{fileName} {
+      allow read: if superAdmin();
+      allow create: if superAdmin() && request.resource.size < 50 * 1024 * 1024 && request.resource.contentType == 'application/json';
+      allow update, delete: if false;
+    }
     match /{allPaths=**} { allow read, write: if false; }
   }
 }
