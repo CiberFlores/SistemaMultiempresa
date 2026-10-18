@@ -994,3 +994,532 @@ article > div {
       normal;
   }
 }
+/* =========================================================
+   SELECTOR MULTIPLE DE PERMISOS
+========================================================= */
+
+.role-permission-select {
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.role-permission-select > summary {
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 11px 16px;
+
+  border:
+    1px solid
+    rgba(121, 92, 255, 0.28);
+
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(107, 76, 255, 0.09),
+      rgba(60, 203, 255, 0.035)
+    );
+
+  cursor: pointer;
+
+  list-style: none;
+
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.role-permission-select >
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.role-permission-select >
+summary:hover,
+.role-permission-select[open] >
+summary {
+  border-color:
+    rgba(129, 93, 255, 0.62);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(107, 76, 255, 0.13),
+      rgba(60, 203, 255, 0.05)
+    );
+
+  box-shadow:
+    0 0 0 3px
+      rgba(105, 79, 237, 0.08),
+    0 14px 35px
+      rgba(30, 18, 80, 0.15);
+}
+
+.role-permission-summary {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-width: 0;
+}
+
+.role-permission-summary-icon {
+  width: 39px;
+  height: 39px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(117, 77, 255, 0.28),
+      rgba(65, 190, 255, 0.15)
+    );
+
+  color: #ad98ff;
+
+  box-shadow:
+    inset 0 0 18px
+    rgba(132, 93, 255, 0.08);
+}
+
+.role-permission-summary >
+div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.role-permission-summary strong {
+  color: #f3f2ff;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.role-permission-summary span {
+  color: #81879b;
+
+  font-size: 9px;
+}
+
+.role-permission-arrow {
+  flex-shrink: 0;
+
+  color: #9f8aff;
+
+  font-size: 23px;
+
+  transition:
+    transform 0.22s ease;
+}
+
+.role-permission-select[open]
+.role-permission-arrow {
+  transform:
+    rotate(180deg);
+}
+
+/* DESPLEGABLE */
+
+.role-permission-dropdown {
+  margin-top: 8px;
+
+  padding: 12px;
+
+  border:
+    1px solid
+    rgba(121, 92, 255, 0.22);
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #121423,
+      #0e101c
+    );
+
+  box-shadow:
+    0 24px 60px
+    rgba(0, 0, 0, 0.32);
+}
+
+.role-permission-dropdown-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding:
+    3px
+    4px
+    12px;
+
+  border-bottom:
+    1px solid
+    rgba(255, 255, 255, 0.06);
+}
+
+.role-permission-dropdown-head >
+div:first-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.role-permission-dropdown-head strong {
+  color: #f2f1ff;
+
+  font-size: 11px;
+}
+
+.role-permission-dropdown-head span {
+  color: #74798c;
+
+  font-size: 9px;
+}
+
+/* TODOS / LIMPIAR */
+
+.role-permission-actions {
+  display: flex;
+
+  gap: 6px;
+}
+
+.role-permission-actions button {
+  padding: 7px 11px;
+
+  border:
+    1px solid
+    rgba(126, 96, 255, 0.23);
+
+  border-radius: 8px;
+
+  outline: none;
+
+  background:
+    rgba(109, 78, 255, 0.07);
+
+  color: #aaa0db;
+
+  font-size: 9px;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.role-permission-actions button:hover {
+  color: white;
+
+  border-color:
+    rgba(126, 96, 255, 0.55);
+
+  background:
+    rgba(109, 78, 255, 0.16);
+
+  transform:
+    translateY(-1px);
+}
+
+/* LISTA */
+
+.role-permission-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 7px;
+
+  max-height: 290px;
+
+  overflow-y: auto;
+
+  margin-top: 10px;
+
+  padding-right: 4px;
+}
+
+/* SCROLL */
+
+.role-permission-options::-webkit-scrollbar {
+  width: 5px;
+}
+
+.role-permission-options::-webkit-scrollbar-track {
+  background:
+    rgba(255, 255, 255, 0.02);
+
+  border-radius: 99px;
+}
+
+.role-permission-options::-webkit-scrollbar-thumb {
+  background:
+    rgba(119, 87, 245, 0.45);
+
+  border-radius: 99px;
+}
+
+/* CADA PERMISO */
+
+.role-permission-option {
+  min-height: 50px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 9px 11px;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.055);
+
+  border-radius: 11px;
+
+  outline: none;
+
+  background:
+    rgba(255, 255, 255, 0.018);
+
+  color: #858a9d;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.role-permission-option:hover {
+  transform:
+    translateY(-1px);
+
+  color: #eeeeff;
+
+  border-color:
+    rgba(122, 92, 255, 0.28);
+
+  background:
+    rgba(103, 75, 240, 0.07);
+}
+
+.role-permission-option.selected {
+  color: white;
+
+  border-color:
+    rgba(125, 92, 255, 0.52);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(105, 75, 245, 0.19),
+      rgba(54, 192, 255, 0.055)
+    );
+
+  box-shadow:
+    inset 0 0 25px
+      rgba(107, 74, 255, 0.045),
+    0 9px 25px
+      rgba(39, 25, 105, 0.1);
+}
+
+.role-permission-check {
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(130, 105, 255, 0.18);
+
+  border-radius: 8px;
+
+  background:
+    rgba(105, 79, 237, 0.05);
+
+  color: #967cff;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.role-permission-option.selected
+.role-permission-check {
+  border-color: transparent;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7146f5,
+      #635fff
+    );
+
+  color: white;
+
+  box-shadow:
+    0 7px 18px
+    rgba(92, 65, 220, 0.25);
+}
+
+.role-permission-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #555a70;
+}
+
+.role-permission-name {
+  color: inherit;
+
+  font-size: 9px;
+  font-weight: 600;
+
+  line-height: 1.35;
+}
+
+/* CHIPS DE SELECCIONADOS */
+
+.role-permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  margin-top: 10px;
+}
+
+.role-permission-chip {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding:
+    6px
+    7px
+    6px
+    9px;
+
+  border:
+    1px solid
+    rgba(121, 91, 255, 0.22);
+
+  border-radius: 999px;
+
+  background:
+    rgba(105, 76, 237, 0.08);
+
+  color: #b8afe5;
+
+  font-size: 8px;
+
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.role-permission-chip:hover {
+  border-color:
+    rgba(121, 91, 255, 0.42);
+
+  background:
+    rgba(105, 76, 237, 0.13);
+}
+
+.role-permission-chip svg {
+  color: #8e75ff;
+
+  flex-shrink: 0;
+}
+
+.role-permission-chip button {
+  display: grid;
+  place-items: center;
+
+  border: 0;
+
+  outline: none;
+
+  background: transparent;
+
+  padding: 0 2px;
+
+  color: #746c99;
+
+  font-size: 14px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.role-permission-chip button:hover {
+  color: white;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 760px) {
+
+  .role-permission-options {
+    grid-template-columns:
+      1fr;
+  }
+
+  .role-permission-dropdown-head {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+  .role-permission-actions {
+    width: 100%;
+  }
+
+  .role-permission-actions button {
+    flex: 1;
+  }
+
+}

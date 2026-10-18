@@ -40,6 +40,10 @@ function PosPage() {
 
     const catalogos = await obtenerCatalogosVenta(usuario.empresaId);
 
+    console.log("SUCURSALES:", catalogos.sucursales);
+    console.log("PRODUCTOS:", catalogos.productos);
+    console.log("INVENTARIOS:", catalogos.inventarios);
+
     setClientes(catalogos.clientes);
     setProductos(catalogos.productos);
     setSucursales(catalogos.sucursales);

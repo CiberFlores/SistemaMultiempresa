@@ -103,12 +103,18 @@ function RolesEmpresaPage() {
       );
 
     return () => cancelar();
+
   }, [usuario?.empresaId]);
 
   const abrirNuevo = () => {
     setRolEditando(null);
-    setFormulario(formularioInicial);
+
+    setFormulario(
+      formularioInicial
+    );
+
     setError("");
+
     setMostrarModal(true);
   };
 
@@ -127,6 +133,7 @@ function RolesEmpresaPage() {
     });
 
     setError("");
+
     setMostrarModal(true);
   };
 
@@ -134,8 +141,13 @@ function RolesEmpresaPage() {
     if (guardando) return;
 
     setMostrarModal(false);
+
     setRolEditando(null);
-    setFormulario(formularioInicial);
+
+    setFormulario(
+      formularioInicial
+    );
+
     setError("");
   };
 
@@ -144,6 +156,7 @@ function RolesEmpresaPage() {
   ) => {
     setFormulario(
       (anterior) => {
+
         const seleccionado =
           anterior.permisos.includes(
             permisoId
@@ -156,8 +169,7 @@ function RolesEmpresaPage() {
             seleccionado
               ? anterior.permisos.filter(
                   (id) =>
-                    id !==
-                    permisoId
+                    id !== permisoId
                 )
               : [
                   ...anterior.permisos,
@@ -208,37 +220,52 @@ function RolesEmpresaPage() {
 
     try {
       setGuardando(true);
+
       setError("");
 
       if (rolEditando) {
+
         await actualizarRolEmpresa(
           rolEditando.id,
           formulario
         );
+
       } else {
+
         await crearRolEmpresa(
           usuario.empresaId,
           formulario
         );
+
       }
 
       setMostrarModal(false);
+
       setRolEditando(null);
-      setFormulario(formularioInicial);
+
+      setFormulario(
+        formularioInicial
+      );
+
     } catch (error) {
+
       console.error(error);
 
       setError(
         error.message ||
         "No se pudo guardar el rol."
       );
+
     } finally {
+
       setGuardando(false);
+
     }
   };
 
   const cambiarEstado =
     async (rol) => {
+
       const estado =
         rol.estado === "ACTIVO"
           ? "INACTIVO"
@@ -253,21 +280,26 @@ function RolesEmpresaPage() {
       }
 
       try {
+
         await cambiarEstadoRolEmpresa(
           rol.id,
           estado
         );
+
       } catch (error) {
+
         console.error(error);
 
         alert(
           "No se pudo cambiar el estado."
         );
+
       }
     };
 
   const filtrados =
     roles.filter((rol) => {
+
       const texto =
         busqueda.toLowerCase();
 
@@ -275,6 +307,7 @@ function RolesEmpresaPage() {
         rol.nombre
           ?.toLowerCase()
           .includes(texto) ||
+
         rol.descripcion
           ?.toLowerCase()
           .includes(texto)
@@ -282,9 +315,13 @@ function RolesEmpresaPage() {
     });
 
   return (
+
     <div>
+
       <div className="admin-page-header">
+
         <div>
+
           <h1>
             Roles y permisos
           </h1>
@@ -293,6 +330,7 @@ function RolesEmpresaPage() {
             Define las funciones que
             podrá realizar cada trabajador.
           </p>
+
         </div>
 
         <motion.button
@@ -308,11 +346,15 @@ function RolesEmpresaPage() {
           <Plus size={18} />
           Nuevo rol
         </motion.button>
+
       </div>
 
       <section className="admin-card">
+
         <div className="admin-toolbar">
+
           <div className="admin-search">
+
             <Search size={18} />
 
             <input
@@ -324,15 +366,19 @@ function RolesEmpresaPage() {
                 )
               }
             />
+
           </div>
 
           <span>
             {roles.length} rol(es)
           </span>
+
         </div>
 
         {cargando ? (
+
           <div className="admin-loading-box">
+
             <ShieldCheck
               size={28}
             />
@@ -340,9 +386,13 @@ function RolesEmpresaPage() {
             <span>
               Cargando roles...
             </span>
+
           </div>
+
         ) : filtrados.length === 0 ? (
+
           <div className="admin-empty admin-empty-column">
+
             <ShieldCheck
               size={42}
             />
@@ -354,11 +404,17 @@ function RolesEmpresaPage() {
             <span>
               Crea el primer rol operativo.
             </span>
+
           </div>
+
         ) : (
+
           <div className="admin-table-container">
+
             <table className="admin-table">
+
               <thead>
+
                 <tr>
                   <th>ROL</th>
                   <th>DESCRIPCIÓN</th>
@@ -366,16 +422,22 @@ function RolesEmpresaPage() {
                   <th>ESTADO</th>
                   <th>ACCIONES</th>
                 </tr>
+
               </thead>
 
               <tbody>
+
                 {filtrados.map(
                   (rol) => (
+
                     <tr key={rol.id}>
+
                       <td>
+
                         <strong>
                           {rol.nombre}
                         </strong>
+
                       </td>
 
                       <td>
@@ -384,15 +446,22 @@ function RolesEmpresaPage() {
                       </td>
 
                       <td>
+
                         <span className="admin-permission-count">
-                          {(rol.permisos ||
-                            []).length}
+
+                          {(rol.permisos || [])
+                            .length}
+
                           {" "}
+
                           permiso(s)
+
                         </span>
+
                       </td>
 
                       <td>
+
                         <span
                           className={
                             rol.estado ===
@@ -403,16 +472,20 @@ function RolesEmpresaPage() {
                         >
                           {rol.estado}
                         </span>
+
                       </td>
 
                       <td>
+
                         <div className="admin-actions">
+
                           <button
                             onClick={() =>
                               abrirEditar(
                                 rol
                               )
                             }
+                            title="Editar rol"
                           >
                             <Pencil
                               size={16}
@@ -425,31 +498,54 @@ function RolesEmpresaPage() {
                                 rol
                               )
                             }
+                            title={
+                              rol.estado ===
+                              "ACTIVO"
+                                ? "Desactivar"
+                                : "Activar"
+                            }
                           >
+
                             {rol.estado ===
                             "ACTIVO" ? (
+
                               <Power
                                 size={16}
                               />
+
                             ) : (
+
                               <CircleCheck
                                 size={16}
                               />
+
                             )}
+
                           </button>
+
                         </div>
+
                       </td>
+
                     </tr>
+
                   )
                 )}
+
               </tbody>
+
             </table>
+
           </div>
+
         )}
+
       </section>
 
       <AnimatePresence>
+
         {mostrarModal && (
+
           <motion.div
             className="admin-modal-overlay"
             initial={{
@@ -462,6 +558,7 @@ function RolesEmpresaPage() {
               opacity: 0
             }}
           >
+
             <motion.div
               className="admin-modal admin-modal-wide"
               initial={{
@@ -475,8 +572,11 @@ function RolesEmpresaPage() {
                 scale: 1
               }}
             >
+
               <div className="admin-modal-header">
+
                 <div>
+
                   <h2>
                     {rolEditando
                       ? "Editar rol"
@@ -487,6 +587,7 @@ function RolesEmpresaPage() {
                     Configura permisos para
                     los trabajadores.
                   </p>
+
                 </div>
 
                 <button
@@ -494,13 +595,17 @@ function RolesEmpresaPage() {
                 >
                   <X size={20} />
                 </button>
+
               </div>
 
               <form
                 onSubmit={guardarRol}
               >
+
                 <div className="admin-form-grid">
+
                   <div className="admin-form-group full">
+
                     <label>
                       Nombre *
                     </label>
@@ -522,9 +627,11 @@ function RolesEmpresaPage() {
                       }
                       required
                     />
+
                   </div>
 
                   <div className="admin-form-group full">
+
                     <label>
                       Descripción
                     </label>
@@ -545,88 +652,233 @@ function RolesEmpresaPage() {
                         )
                       }
                     />
+
                   </div>
 
                   <div className="admin-form-group full">
-                    <div className="admin-permission-toolbar">
-                      <label>
-                        Permisos
-                      </label>
 
-                      <div>
-                        <button
-                          type="button"
-                          className="admin-mini-button"
-                          onClick={
-                            seleccionarTodos
-                          }
-                        >
-                          Seleccionar todos
-                        </button>
+                    <label>
+                      Permisos
+                    </label>
 
-                        <button
-                          type="button"
-                          className="admin-mini-button"
-                          onClick={
-                            limpiarPermisos
-                          }
-                        >
-                          Limpiar
-                        </button>
-                      </div>
-                    </div>
+                    <details className="role-permission-select">
 
-                    <div className="admin-permissions-grid">
-                      {PERMISOS_DISPONIBLES.map(
-                        (permiso) => {
-                          const seleccionado =
-                            formulario.permisos.includes(
-                              permiso.id
-                            );
+                      <summary>
 
-                          return (
-                            <label
-                              key={
-                                permiso.id
+                        <div className="role-permission-summary">
+
+                          <div className="role-permission-summary-icon">
+
+                            <ShieldCheck
+                              size={19}
+                            />
+
+                          </div>
+
+                          <div>
+
+                            <strong>
+                              Seleccionar permisos
+                            </strong>
+
+                            <span>
+
+                              {
+                                formulario
+                                  .permisos
+                                  .length === 0
+                                  ? "Ningún permiso seleccionado"
+                                  : `${formulario.permisos.length} permiso(s) seleccionado(s)`
                               }
-                              className={
-                                seleccionado
-                                  ? "admin-permission-option selected"
-                                  : "admin-permission-option"
+
+                            </span>
+
+                          </div>
+
+                        </div>
+
+                        <span className="role-permission-arrow">
+                          ⌄
+                        </span>
+
+                      </summary>
+
+                      <div className="role-permission-dropdown">
+
+                        <div className="role-permission-dropdown-head">
+
+                          <div>
+
+                            <strong>
+                              Permisos del rol
+                            </strong>
+
+                            <span>
+                              Selecciona una o varias funciones
+                            </span>
+
+                          </div>
+
+                          <div className="role-permission-actions">
+
+                            <button
+                              type="button"
+                              onClick={
+                                seleccionarTodos
                               }
                             >
-                              <input
-                                type="checkbox"
-                                checked={
-                                  seleccionado
-                                }
-                                onChange={() =>
-                                  alternarPermiso(
-                                    permiso.id
-                                  )
-                                }
-                              />
+                              Todos
+                            </button>
 
-                              <span>
-                                {
-                                  permiso.nombre
-                                }
-                              </span>
-                            </label>
-                          );
-                        }
-                      )}
-                    </div>
+                            <button
+                              type="button"
+                              onClick={
+                                limpiarPermisos
+                              }
+                            >
+                              Limpiar
+                            </button>
+
+                          </div>
+
+                        </div>
+
+                        <div className="role-permission-options">
+
+                          {
+                            PERMISOS_DISPONIBLES.map(
+                              (permiso) => {
+
+                                const seleccionado =
+                                  formulario.permisos
+                                    .includes(
+                                      permiso.id
+                                    );
+
+                                return (
+
+                                  <button
+                                    key={
+                                      permiso.id
+                                    }
+                                    type="button"
+                                    className={
+                                      seleccionado
+                                        ? "role-permission-option selected"
+                                        : "role-permission-option"
+                                    }
+                                    onClick={() =>
+                                      alternarPermiso(
+                                        permiso.id
+                                      )
+                                    }
+                                  >
+
+                                    <span className="role-permission-check">
+
+                                      {
+                                        seleccionado
+                                          ? (
+                                            <CircleCheck
+                                              size={18}
+                                            />
+                                          )
+                                          : (
+                                            <span className="role-permission-dot" />
+                                          )
+                                      }
+
+                                    </span>
+
+                                    <span className="role-permission-name">
+                                      {permiso.nombre}
+                                    </span>
+
+                                  </button>
+
+                                );
+                              }
+                            )
+                          }
+
+                        </div>
+
+                      </div>
+
+                    </details>
+
+                    {
+                      formulario
+                        .permisos
+                        .length > 0 && (
+
+                        <div className="role-permission-chips">
+
+                          {
+                            PERMISOS_DISPONIBLES
+                              .filter(
+                                (permiso) =>
+                                  formulario
+                                    .permisos
+                                    .includes(
+                                      permiso.id
+                                    )
+                              )
+                              .map(
+                                (permiso) => (
+
+                                  <span
+                                    key={
+                                      permiso.id
+                                    }
+                                    className="role-permission-chip"
+                                  >
+
+                                    <ShieldCheck
+                                      size={12}
+                                    />
+
+                                    {
+                                      permiso.nombre
+                                    }
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        alternarPermiso(
+                                          permiso.id
+                                        )
+                                      }
+                                      title="Quitar permiso"
+                                    >
+                                      ×
+                                    </button>
+
+                                  </span>
+
+                                )
+                              )
+                          }
+
+                        </div>
+
+                      )
+                    }
+
                   </div>
+
                 </div>
 
                 {error && (
+
                   <div className="admin-message error">
                     {error}
                   </div>
+
                 )}
 
                 <div className="admin-modal-footer">
+
                   <button
                     type="button"
                     className="admin-secondary-button"
@@ -639,19 +891,29 @@ function RolesEmpresaPage() {
                     className="admin-primary-button"
                     disabled={guardando}
                   >
+
                     {guardando
                       ? "Guardando..."
                       : rolEditando
                         ? "Guardar cambios"
                         : "Crear rol"}
+
                   </button>
+
                 </div>
+
               </form>
+
             </motion.div>
+
           </motion.div>
+
         )}
+
       </AnimatePresence>
+
     </div>
+
   );
 }
 

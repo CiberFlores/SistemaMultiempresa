@@ -116,7 +116,11 @@ export async function crearTrabajador(
         datos.rolId || null,
 
       sucursales:
-        datos.sucursales || [],
+        Array.isArray(
+          datos.sucursales
+        )
+          ? datos.sucursales
+          : [],
 
       estado:
         true,
@@ -163,6 +167,13 @@ export async function actualizarTrabajador(
 
       rolId:
         datos.rolId || null,
+
+      sucursales:
+        Array.isArray(
+          datos.sucursales
+        )
+          ? datos.sucursales
+          : [],
 
       fechaActualizacion:
         serverTimestamp()

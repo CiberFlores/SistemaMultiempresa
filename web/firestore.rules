@@ -24,11 +24,78 @@
       function sameOnUpdate() { return sameExistingCompany() && request.resource.data.empresaId == resource.data.empresaId; }
 
       match /usuarios/{uid} {
-        allow read: if superAdmin() || (active() && request.auth.uid == uid) || (admin() && resource.data.empresaId == myCompany());
-        allow create: if superAdmin() || (admin() && request.resource.data.empresaId == myCompany() && request.resource.data.tipoUsuario == 'TRABAJADOR');
-        allow update: if superAdmin() || (active() && request.auth.uid == uid && request.resource.data.tipoUsuario == resource.data.tipoUsuario && request.resource.data.empresaId == resource.data.empresaId) || (admin() && resource.data.empresaId == myCompany() && resource.data.tipoUsuario == 'TRABAJADOR' && request.resource.data.tipoUsuario == 'TRABAJADOR' && request.resource.data.empresaId == resource.data.empresaId);
-        allow delete: if false;
-      }
+
+  allow read: if
+    superAdmin() ||
+    (active() && request.auth.uid == uid) ||
+    (admin() && resource.data.empresaId == myCompany());
+
+  allow create: if
+    superAdmin() ||
+    (
+      admin() &&
+      request.resource.data.empresaId == myCompany() &&
+      request.resource.data.tipoUsuario == 'TRABAJADOR'
+    );
+
+  allow update: if
+
+    // SUPER ADMIN PUEDE ADMINISTRAR USUARIOS
+    superAdmin()
+
+    ||
+
+    // EL PROPIO USUARIO PUEDE ACTUALIZAR SU PERFIL,
+    // PERO UN TRABAJADOR NO PUEDE CAMBIARSE
+    // ROL, EMPRESA, ESTADO NI SUCURSALES
+    (
+      active() &&
+      request.auth.uid == uid &&
+
+      request.resource.data.tipoUsuario ==
+        resource.data.tipoUsuario &&
+
+      request.resource.data.empresaId ==
+        resource.data.empresaId &&
+
+      (
+        !worker() ||
+
+        (
+          request.resource.data.rolId ==
+            resource.data.rolId &&
+
+          request.resource.data.estado ==
+            resource.data.estado &&
+
+          request.resource.data.sucursales ==
+            resource.data.sucursales
+        )
+      )
+    )
+
+    ||
+
+    // ADMIN PUEDE MODIFICAR SUS TRABAJADORES
+    // PERO NUNCA MOVERLOS A OTRA EMPRESA
+    (
+      admin() &&
+
+      resource.data.empresaId ==
+        myCompany() &&
+
+      resource.data.tipoUsuario ==
+        'TRABAJADOR' &&
+
+      request.resource.data.tipoUsuario ==
+        'TRABAJADOR' &&
+
+      request.resource.data.empresaId ==
+        resource.data.empresaId
+    );
+
+  allow delete: if false;
+}
 
       match /empresas/{empresaId} {
         allow read: if superAdmin() || (active() && myCompany() == empresaId);
@@ -75,11 +142,45 @@
         allow delete: if hasPermission('productos.gestionar') && sameExistingCompany();
       }
       match /inventarios/{id} {
-        allow read: if superAdmin() || ((hasPermission('inventario.ver') || hasPermission('ventas.registrar') || hasPermission('compras.gestionar')) && sameExistingCompany());
-        allow create: if (hasPermission('inventario.ajustar') || hasPermission('compras.gestionar') || hasPermission('ventas.registrar')) && sameNewCompany();
-        allow update: if (hasPermission('inventario.ajustar') || hasPermission('compras.gestionar') || hasPermission('ventas.registrar') || hasPermission('ventas.ver')) && sameOnUpdate();
-        allow delete: if false;
-      }
+
+  allow get: if superAdmin() || (
+    (
+      hasPermission('inventario.ver') ||
+      hasPermission('inventario.ajustar') ||
+      hasPermission('compras.gestionar') ||
+      hasPermission('ventas.registrar')
+    ) &&
+    (
+      resource == null ||
+      sameExistingCompany()
+    )
+  );
+
+  allow list: if superAdmin() || (
+    (
+      hasPermission('inventario.ver') ||
+      hasPermission('inventario.ajustar') ||
+      hasPermission('compras.gestionar') ||
+      hasPermission('ventas.registrar')
+    ) &&
+    sameExistingCompany()
+  );
+
+  allow create: if (
+    hasPermission('inventario.ajustar') ||
+    hasPermission('compras.gestionar') ||
+    hasPermission('ventas.registrar')
+  ) && sameNewCompany();
+
+  allow update: if (
+    hasPermission('inventario.ajustar') ||
+    hasPermission('compras.gestionar') ||
+    hasPermission('ventas.registrar') ||
+    hasPermission('ventas.ver')
+  ) && sameOnUpdate();
+
+  allow delete: if false;
+}
       match /movimientosStock/{id} {
         allow read: if superAdmin() || (hasPermission('inventario.ver') && sameExistingCompany());
         allow create: if (hasPermission('inventario.ajustar') || hasPermission('compras.gestionar') || hasPermission('ventas.registrar') || hasPermission('ventas.ver')) && sameNewCompany();
