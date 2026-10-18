@@ -4,9 +4,12 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
 
+import AppShellTools from "../components/ui/AppShellTools.jsx";
+
 import "../styles/dashboard.css";
 import "../styles/sprint2.css";
 import "../styles/commerce.css";
+import "../styles/innovation.css";
 
 function DashboardLayout() {
   const location = useLocation();
@@ -28,6 +31,7 @@ function DashboardLayout() {
             transition={{ duration: 0.24, ease: "easeOut" }}
           >
             <Outlet />
+            <AppShellTools />
           </motion.main>
         </AnimatePresence>
       </div>

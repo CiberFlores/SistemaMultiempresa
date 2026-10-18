@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CircleCheck,
   KeyRound,
+  Eye,
   Pencil,
   Plus,
   Power,
@@ -28,6 +29,9 @@ import {
   obtenerCatalogosLicencia,
   suscribirLicencias
 } from "../../services/licenciaService";
+
+import useAuth from "../../hooks/useAuth";
+import { registrarAuditoria } from "../../services/auditService";
 
 const fechaActual = () =>
   new Date()
@@ -89,6 +93,7 @@ function formatearFecha(
 }
 
 function LicenciasPage() {
+  const { usuario } = useAuth();
   const [
     licencias,
     setLicencias
@@ -140,6 +145,8 @@ function LicenciasPage() {
     error,
     setError
   ] = useState("");
+
+  const [detalle, setDetalle] = useState(null);
 
   useEffect(() => {
     const cancelar =
@@ -406,10 +413,30 @@ function LicenciasPage() {
               licenciaEditando.estado
           }
         );
+        await registrarAuditoria({
+          empresaId: null,
+          usuarioId: usuario?.uid,
+          usuarioNombre: usuario?.nombreCompleto || usuario?.correo || "",
+          accion: "ACTUALIZAR",
+          modulo: "licencias",
+          entidad: "licencia",
+          entidadId: licenciaEditando.id,
+          detalle: `Actualizó licencia de ${nombreEmpresa(formulario.empresaId)}`
+        });
       } else {
-        await crearLicencia(
+        const creada = await crearLicencia(
           formulario
         );
+        await registrarAuditoria({
+          empresaId: null,
+          usuarioId: usuario?.uid,
+          usuarioNombre: usuario?.nombreCompleto || usuario?.correo || "",
+          accion: "CREAR",
+          modulo: "licencias",
+          entidad: "licencia",
+          entidadId: creada?.id || "",
+          detalle: `Creó licencia para ${nombreEmpresa(formulario.empresaId)}`
+        });
       }
 
       setMostrarModal(false);
@@ -451,6 +478,16 @@ function LicenciasPage() {
           licencia.empresaId,
           nuevoEstado
         );
+        await registrarAuditoria({
+          empresaId: null,
+          usuarioId: usuario?.uid,
+          usuarioNombre: usuario?.nombreCompleto || usuario?.correo || "",
+          accion: "CAMBIAR_ESTADO",
+          modulo: "licencias",
+          entidad: "licencia",
+          entidadId: licencia.id,
+          detalle: `${nombreEmpresa(licencia.empresaId)}: ${licencia.estado} → ${nuevoEstado}`
+        });
       } catch (error) {
         console.error(error);
 
@@ -702,6 +739,13 @@ function LicenciasPage() {
                         <td>
                           <div className="sa-actions">
                             <button
+                              title="Ver detalle"
+                              onClick={() => setDetalle(licencia)}
+                            >
+                              <Eye size={16} />
+                            </button>
+
+                            <button
                               title="Editar"
                               onClick={() =>
                                 abrirEditar(
@@ -773,6 +817,45 @@ function LicenciasPage() {
           </div>
         )}
       </section>
+
+      <AnimatePresence>
+        {detalle && (
+          <motion.div
+            className="sa-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={() => setDetalle(null)}
+          >
+            <motion.div
+              className="sa-modal"
+              initial={{ opacity: 0, scale: 0.96, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="sa-modal-header">
+                <div>
+                  <h2>Licencia de {nombreEmpresa(detalle.empresaId)}</h2>
+                  <p>Detalle comercial y estado de vigencia.</p>
+                </div>
+                <button onClick={() => setDetalle(null)}><X size={20} /></button>
+              </div>
+              <div className="detail-grid-v4">
+                <div><span>Empresa</span><strong>{nombreEmpresa(detalle.empresaId)}</strong></div>
+                <div><span>Plan</span><strong>{nombrePlan(detalle.planId)}</strong></div>
+                <div><span>Inicio</span><strong>{formatearFecha(detalle.fechaInicio)}</strong></div>
+                <div><span>Vencimiento</span><strong>{formatearFecha(detalle.fechaFin)}</strong></div>
+                <div><span>Renovación automática</span><strong>{detalle.renovacionAutomatica ? "Sí" : "No"}</strong></div>
+                <div><span>Estado</span><strong>{estadoVisual(detalle)}</strong></div>
+                <div className="detail-span-2"><span>Observaciones</span><strong>{detalle.observaciones || "-"}</strong></div>
+              </div>
+              <div className="sa-modal-footer">
+                <button className="sa-secondary-button" onClick={() => setDetalle(null)}>Cerrar</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {mostrarModal && (

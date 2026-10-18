@@ -1,0 +1,302 @@
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      function signedIn() { return request.auth != null; }
+      function me() { return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
+      function hasProfile() { return signedIn() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
+      function active() { return hasProfile() && me().data.estado == true; }
+      function typeIs(t) { return active() && me().data.tipoUsuario == t; }
+      function superAdmin() { return typeIs('SUPER_ADMIN'); }
+      function admin() { return typeIs('ADMIN'); }
+      function worker() { return typeIs('TRABAJADOR'); }
+      function myCompany() { return hasProfile() ? me().data.empresaId : null; }
+      function sameCompany(companyId) { return active() && companyId != null && myCompany() == companyId; }
+      function roleDoc() { return get(/databases/$(database)/documents/rolesEmpresa/$(me().data.rolId)); }
+      function hasPermission(permission) {
+        return admin() || (
+          worker() && me().data.rolId != null && exists(/databases/$(database)/documents/rolesEmpresa/$(me().data.rolId)) &&
+          roleDoc().data.empresaId == myCompany() && roleDoc().data.estado == 'ACTIVO' &&
+          permission in roleDoc().data.permisos
+        );
+      }
+      function sameExistingCompany() { return resource.data.empresaId != null && sameCompany(resource.data.empresaId); }
+      function sameNewCompany() { return request.resource.data.empresaId != null && sameCompany(request.resource.data.empresaId); }
+      function sameOnUpdate() { return sameExistingCompany() && request.resource.data.empresaId == resource.data.empresaId; }
+
+      match /usuarios/{uid} {
+
+  allow read: if
+    superAdmin() ||
+    (active() && request.auth.uid == uid) ||
+    (admin() && resource.data.empresaId == myCompany());
+
+  allow create: if
+    superAdmin() ||
+    (
+      admin() &&
+      request.resource.data.empresaId == myCompany() &&
+      request.resource.data.tipoUsuario == 'TRABAJADOR'
+    );
+
+  allow update: if
+
+    // SUPER ADMIN PUEDE ADMINISTRAR USUARIOS
+    superAdmin()
+
+    ||
+
+    // EL PROPIO USUARIO PUEDE ACTUALIZAR SU PERFIL,
+    // PERO UN TRABAJADOR NO PUEDE CAMBIARSE
+    // ROL, EMPRESA, ESTADO NI SUCURSALES
+    (
+      active() &&
+      request.auth.uid == uid &&
+
+      request.resource.data.tipoUsuario ==
+        resource.data.tipoUsuario &&
+
+      request.resource.data.empresaId ==
+        resource.data.empresaId &&
+
+      (
+        !worker() ||
+
+        (
+          request.resource.data.rolId ==
+            resource.data.rolId &&
+
+          request.resource.data.estado ==
+            resource.data.estado &&
+
+          request.resource.data.sucursales ==
+            resource.data.sucursales
+        )
+      )
+    )
+
+    ||
+
+    // ADMIN PUEDE MODIFICAR SUS TRABAJADORES
+    // PERO NUNCA MOVERLOS A OTRA EMPRESA
+    (
+      admin() &&
+
+      resource.data.empresaId ==
+        myCompany() &&
+
+      resource.data.tipoUsuario ==
+        'TRABAJADOR' &&
+
+      request.resource.data.tipoUsuario ==
+        'TRABAJADOR' &&
+
+      request.resource.data.empresaId ==
+        resource.data.empresaId
+    );
+
+  allow delete: if false;
+}
+
+      match /empresas/{empresaId} {
+        allow read: if superAdmin() || (active() && myCompany() == empresaId);
+        allow create, update, delete: if superAdmin();
+      }
+
+      match /modulos/{id} { allow read: if active(); allow write: if superAdmin(); }
+      match /planes/{id} { allow read: if active(); allow write: if superAdmin(); }
+      match /licencias/{id} { allow read: if superAdmin() || (active() && resource.data.empresaId == myCompany()); allow write: if superAdmin(); }
+      match /modulosEmpresa/{empresaId} { allow read: if superAdmin() || (active() && myCompany() == empresaId); allow write: if superAdmin(); }
+      match /personalizacionesEmpresas/{empresaId} { allow read: if superAdmin() || (active() && myCompany() == empresaId); allow write: if superAdmin(); }
+      match /configuracionesEmpresas/{empresaId} { allow read: if superAdmin() || (active() && myCompany() == empresaId); allow write: if superAdmin() || (admin() && myCompany() == empresaId); }
+
+      match /rolesEmpresa/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if admin() && sameNewCompany();
+        allow update: if admin() && sameOnUpdate();
+        allow delete: if admin() && sameExistingCompany();
+      }
+
+      match /sucursales/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if admin() && sameNewCompany();
+        allow update: if admin() && sameOnUpdate();
+        allow delete: if admin() && sameExistingCompany();
+      }
+
+      match /categorias/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('categorias.gestionar') && sameNewCompany();
+        allow update: if hasPermission('categorias.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('categorias.gestionar') && sameExistingCompany();
+      }
+      match /marcas/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('marcas.gestionar') && sameNewCompany();
+        allow update: if hasPermission('marcas.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('marcas.gestionar') && sameExistingCompany();
+      }
+      match /productos/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('productos.gestionar') && sameNewCompany();
+        allow update: if hasPermission('productos.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('productos.gestionar') && sameExistingCompany();
+      }
+      match /inventarios/{id} {
+
+  allow get: if superAdmin() || (
+    (
+      hasPermission('inventario.ver') ||
+      hasPermission('inventario.ajustar') ||
+      hasPermission('compras.gestionar') ||
+      hasPermission('ventas.registrar')
+    ) &&
+    (
+      resource == null ||
+      sameExistingCompany()
+    )
+  );
+
+  allow list: if superAdmin() || (
+    (
+      hasPermission('inventario.ver') ||
+      hasPermission('inventario.ajustar') ||
+      hasPermission('compras.gestionar') ||
+      hasPermission('ventas.registrar')
+    ) &&
+    sameExistingCompany()
+  );
+
+  allow create: if (
+    hasPermission('inventario.ajustar') ||
+    hasPermission('compras.gestionar') ||
+    hasPermission('ventas.registrar')
+  ) && sameNewCompany();
+
+  allow update: if (
+    hasPermission('inventario.ajustar') ||
+    hasPermission('compras.gestionar') ||
+    hasPermission('ventas.registrar') ||
+    hasPermission('ventas.ver')
+  ) && sameOnUpdate();
+
+  allow delete: if false;
+}
+      match /movimientosStock/{id} {
+        allow read: if superAdmin() || (hasPermission('inventario.ver') && sameExistingCompany());
+        allow create: if (hasPermission('inventario.ajustar') || hasPermission('compras.gestionar') || hasPermission('ventas.registrar') || hasPermission('ventas.ver')) && sameNewCompany();
+        allow update, delete: if false;
+      }
+
+      match /clientes/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('clientes.gestionar') && sameNewCompany();
+        allow update: if hasPermission('clientes.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('clientes.gestionar') && sameExistingCompany();
+      }
+      match /proveedores/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('proveedores.gestionar') && sameNewCompany();
+        allow update: if hasPermission('proveedores.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('proveedores.gestionar') && sameExistingCompany();
+      }
+
+      match /compras/{id} {
+        allow read: if superAdmin() || (hasPermission('compras.gestionar') && sameExistingCompany());
+        allow create: if hasPermission('compras.gestionar') && sameNewCompany();
+        allow update: if hasPermission('compras.gestionar') && sameOnUpdate();
+        allow delete: if false;
+      }
+      match /detalleCompras/{id} {
+        allow read: if superAdmin() || (hasPermission('compras.gestionar') && sameExistingCompany());
+        allow create: if hasPermission('compras.gestionar') && sameNewCompany();
+        allow update, delete: if false;
+      }
+
+      match /ventas/{id} {
+        allow read: if superAdmin() || (hasPermission('ventas.ver') && sameExistingCompany());
+        allow create: if hasPermission('ventas.registrar') && sameNewCompany();
+        allow update: if (hasPermission('ventas.ver') || hasPermission('ventas.registrar')) && sameOnUpdate();
+        allow delete: if false;
+      }
+      match /detalleVentas/{id} {
+        allow read: if superAdmin() || (hasPermission('ventas.ver') && sameExistingCompany());
+        allow create: if hasPermission('ventas.registrar') && sameNewCompany();
+        allow update, delete: if false;
+      }
+      match /devoluciones/{id} {
+        allow read: if superAdmin() || (hasPermission('ventas.ver') && sameExistingCompany());
+        allow create: if hasPermission('ventas.ver') && sameNewCompany();
+        allow update: if hasPermission('ventas.ver') && sameOnUpdate();
+        allow delete: if hasPermission('ventas.ver') && sameExistingCompany();
+      }
+      match /promociones/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('promociones.gestionar') && sameNewCompany();
+        allow update: if hasPermission('promociones.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('promociones.gestionar') && sameExistingCompany();
+      }
+      match /metodosPago/{id} {
+        allow read: if superAdmin() || sameExistingCompany();
+        allow create: if hasPermission('configuracion.gestionar') && sameNewCompany();
+        allow update: if hasPermission('configuracion.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('configuracion.gestionar') && sameExistingCompany();
+      }
+
+      match /cajas/{id} {
+        allow read: if superAdmin() || ((hasPermission('caja.gestionar') || hasPermission('ventas.registrar') || hasPermission('compras.gestionar')) && sameExistingCompany());
+        allow create: if hasPermission('caja.gestionar') && sameNewCompany();
+        allow update: if hasPermission('caja.gestionar') && sameOnUpdate();
+        allow delete: if false;
+      }
+      match /movimientosCaja/{id} {
+        allow read: if superAdmin() || (hasPermission('caja.gestionar') && sameExistingCompany());
+        allow create: if (hasPermission('caja.gestionar') || hasPermission('ventas.registrar') || hasPermission('compras.gestionar')) && sameNewCompany();
+        allow update, delete: if false;
+      }
+      match /gastos/{id} {
+        allow read: if superAdmin() || (hasPermission('caja.gestionar') && sameExistingCompany());
+        allow create: if hasPermission('caja.gestionar') && sameNewCompany();
+        allow update: if hasPermission('caja.gestionar') && sameOnUpdate();
+        allow delete: if hasPermission('caja.gestionar') && sameExistingCompany();
+      }
+
+      match /cuentasCobrar/{id} {
+        allow read: if superAdmin() || (hasPermission('finanzas.gestionar') && sameExistingCompany());
+        allow create: if (hasPermission('ventas.registrar') || hasPermission('finanzas.gestionar')) && sameNewCompany();
+        allow update: if (hasPermission('finanzas.gestionar') || hasPermission('ventas.ver')) && sameOnUpdate();
+        allow delete: if false;
+      }
+      match /pagosCredito/{id} {
+        allow read: if superAdmin() || (hasPermission('finanzas.gestionar') && sameExistingCompany());
+        allow create: if hasPermission('finanzas.gestionar') && sameNewCompany();
+        allow update, delete: if false;
+      }
+      match /cuentasPagar/{id} {
+        allow read: if superAdmin() || (hasPermission('finanzas.gestionar') && sameExistingCompany());
+        allow create: if (hasPermission('compras.gestionar') || hasPermission('finanzas.gestionar')) && sameNewCompany();
+        allow update: if (hasPermission('finanzas.gestionar') || hasPermission('compras.gestionar')) && sameOnUpdate();
+        allow delete: if false;
+      }
+      match /pagosProveedor/{id} {
+        allow read: if superAdmin() || (hasPermission('finanzas.gestionar') && sameExistingCompany());
+        allow create: if hasPermission('finanzas.gestionar') && sameNewCompany();
+        allow update, delete: if false;
+      }
+
+      match /notificaciones/{id} {
+        allow read: if superAdmin() || (hasPermission('notificaciones.ver') && sameExistingCompany());
+        allow create: if admin() && sameNewCompany();
+        allow update: if admin() && sameOnUpdate();
+        allow delete: if admin() && sameExistingCompany();
+      }
+      match /notificacionesGlobales/{id} { allow read, write: if superAdmin(); }
+      match /respaldos/{id} { allow read, create: if superAdmin(); allow update, delete: if false; }
+      match /auditorias/{id} {
+        allow read: if superAdmin() || (hasPermission('auditoria.ver') && sameExistingCompany());
+        allow create: if superAdmin() || (active() && sameNewCompany());
+        allow update, delete: if false;
+      }
+
+      match /{document=**} { allow read, write: if false; }
+    }
+  }

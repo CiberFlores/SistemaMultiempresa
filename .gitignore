@@ -10,6 +10,8 @@ mobile/node_modules/
 
 web/.env
 web/.env.*
+!web/.env.example
+
 mobile/.env
 mobile/.env.*
 
@@ -37,3 +39,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Comprimidos
+*.zip

@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function me() { return firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)); }
+    function active() { return signedIn() && me().data.estado == true; }
+    function superAdmin() { return active() && me().data.tipoUsuario == 'SUPER_ADMIN'; }
+    function adminOf(companyId) { return active() && me().data.tipoUsuario == 'ADMIN' && me().data.empresaId == companyId; }
+    function worker() { return active() && me().data.tipoUsuario == 'TRABAJADOR'; }
+    function sameCompany(companyId) { return active() && me().data.empresaId == companyId; }
+    function role() { return firestore.get(/databases/(default)/documents/rolesEmpresa/$(me().data.rolId)); }
+    function canManageProducts(companyId) {
+      return adminOf(companyId) || (
+        worker() && sameCompany(companyId) && me().data.rolId != null &&
+        role().data.estado == 'ACTIVO' && role().data.empresaId == companyId &&
+        'productos.gestionar' in role().data.permisos
+      );
+    }
+    function imageUpload() { return request.resource != null && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*'); }
+
+    match /empresas/{empresaId}/productos/{fileName} {
+      allow read: if signedIn();
+      allow create, update: if canManageProducts(empresaId) && imageUpload();
+      allow delete: if canManageProducts(empresaId) || superAdmin();
+    }
+    match /empresas/{empresaId}/branding/{fileName} {
+      allow read: if true;
+      allow create, update, delete: if superAdmin() && (request.resource == null || imageUpload());
+    }
+    match /respaldos/{fileName} {
+      allow read: if superAdmin();
+      allow create: if superAdmin() && request.resource.size < 50 * 1024 * 1024 && request.resource.contentType == 'application/json';
+      allow update, delete: if false;
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

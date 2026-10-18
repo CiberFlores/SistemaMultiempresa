@@ -1,15 +1,10 @@
 import { createContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-
 import { auth, db } from "../services/firebase/firebaseConfig";
 import { cerrarSesion as firebaseCerrarSesion } from "../services/firebase/authService";
 
 export const AuthContext = createContext(null);
-
-
-// Joel: Contexto de autenticación para la aplicación. 
-// Brinda la información sobre el usuario autenticado y funciones para iniciar y cerrar sesión.
 
 function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
@@ -18,56 +13,25 @@ function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        if (!firebaseUser) {
-          setUsuario(null);
-          setCargando(false);
-          return;
-        }
-
-        const referencia = doc(db, "usuarios", firebaseUser.uid);
-        const documento = await getDoc(referencia);
-
-        if (!documento.exists()) {
-          setUsuario(null);
-          setCargando(false);
-          return;
-        }
-
+        if (!firebaseUser) { setUsuario(null); return; }
+        await firebaseUser.reload();
+        if (!firebaseUser.emailVerified) { setUsuario(null); return; }
+        const documento = await getDoc(doc(db, "usuarios", firebaseUser.uid));
+        if (!documento.exists()) { setUsuario(null); await signOut(auth); return; }
         const datos = documento.data();
-
-        setUsuario({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          ...datos
-        });
+        if (datos.estado !== true) { setUsuario(null); await signOut(auth); return; }
+        setUsuario({ uid: firebaseUser.uid, email: firebaseUser.email, emailVerified: firebaseUser.emailVerified, ...datos });
       } catch (error) {
         console.error("Error cargando usuario:", error);
         setUsuario(null);
-      } finally {
-        setCargando(false);
-      }
+      } finally { setCargando(false); }
     });
-
     return () => unsubscribe();
   }, []);
 
-  const cerrarSesion = async () => {
-    await firebaseCerrarSesion();
-    setUsuario(null);
-  };
+  const cerrarSesion = async () => { await firebaseCerrarSesion(); setUsuario(null); };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        usuario,
-        setUsuario,
-        cargando,
-        cerrarSesion
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ usuario, setUsuario, cargando, cerrarSesion }}>{children}</AuthContext.Provider>;
 }
 
 export default AuthProvider;

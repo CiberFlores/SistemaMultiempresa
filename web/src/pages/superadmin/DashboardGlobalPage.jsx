@@ -47,11 +47,14 @@ function DashboardGlobalPage() {
   const [empresasRecientes, setEmpresasRecientes] = useState([]);
 
   const [cargando, setCargando] = useState(true);
+  const [actualizando, setActualizando] = useState(false);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [error, setError] = useState("");
 
-  const cargarDashboard = async () => {
+  const cargarDashboard = async (esActualizacion = false) => {
     try {
-      setCargando(true);
+      if (esActualizacion) setActualizando(true);
+      else setCargando(true);
       setError("");
 
       const [
@@ -64,6 +67,7 @@ function DashboardGlobalPage() {
 
       setDatos(resumen);
       setEmpresasRecientes(recientes);
+      setUltimaActualizacion(new Date());
     } catch (error) {
       console.error(error);
 
@@ -72,11 +76,12 @@ function DashboardGlobalPage() {
       );
     } finally {
       setCargando(false);
+      setActualizando(false);
     }
   };
 
   useEffect(() => {
-    cargarDashboard();
+    cargarDashboard(false);
   }, []);
 
   if (cargando) {
@@ -105,7 +110,7 @@ function DashboardGlobalPage() {
 
         <button
           className="sa-primary-button"
-          onClick={cargarDashboard}
+          onClick={() => cargarDashboard(false)}
         >
           Intentar nuevamente
         </button>
@@ -196,18 +201,27 @@ function DashboardGlobalPage() {
           </p>
         </div>
 
-        <div className="sa-dashboard-actions">
-          <div className="sa-status">
-            <span></span>
-            Plataforma operativa
+        <div className="sa-dashboard-actions sa-dashboard-actions-v4">
+          <div className="sa-dashboard-status-stack-v4">
+            <div className="sa-status">
+              <span></span>
+              Plataforma operativa
+            </div>
+            <small>
+              {ultimaActualizacion
+                ? `Actualizado ${ultimaActualizacion.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })}`
+                : "Datos en tiempo real"}
+            </small>
           </div>
 
           <button
-            className="sa-refresh-button"
-            onClick={cargarDashboard}
-            title="Actualizar información"
+            className="sa-dashboard-refresh-v4"
+            onClick={() => cargarDashboard(true)}
+            title="Actualizar todas las métricas"
+            disabled={actualizando}
           >
-            <RefreshCw size={18} />
+            <RefreshCw className={actualizando ? "sa-spin" : ""} size={18} />
+            <span>{actualizando ? "Actualizando…" : "Actualizar datos"}</span>
           </button>
         </div>
       </div>

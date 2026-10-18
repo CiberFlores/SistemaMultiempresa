@@ -10,6 +10,7 @@ import {
 
 import { db } from "./firebase/firebaseConfig";
 import { obtenerCajasAbiertas } from "./cajaService";
+import { registrarAuditoria } from "./auditService";
 
 export async function obtenerCatalogosVenta(empresaId) {
   const [
@@ -151,7 +152,14 @@ export async function registrarVenta({
     );
   }
 
+  if (metodoPago === "CREDITO" && !clienteId) {
+    throw new Error("Selecciona un cliente para una venta a crédito.");
+  }
+
   const ventaRef = doc(collection(db, "ventas"));
+  const cuentaCobrarRef = metodoPago === "CREDITO"
+    ? doc(collection(db, "cuentasCobrar"))
+    : null;
 
   const detalleRefs = lineas.map(() =>
     doc(collection(db, "detalleVentas"))
@@ -284,6 +292,21 @@ export async function registrarVenta({
       });
     });
 
+    if (cuentaCobrarRef) {
+      transaccion.set(cuentaCobrarRef, {
+        empresaId,
+        clienteId,
+        ventaId: ventaRef.id,
+        referencia: ventaRef.id,
+        total,
+        saldo: total,
+        estadoCuenta: "PENDIENTE",
+        estado: "ACTIVO",
+        fechaRegistro: serverTimestamp(),
+        fechaActualizacion: serverTimestamp()
+      });
+    }
+
     if (movimientoCajaRef) {
       transaccion.set(movimientoCajaRef, {
         empresaId,
@@ -301,5 +324,51 @@ export async function registrarVenta({
     }
   });
 
+  await registrarAuditoria({ empresaId, usuarioId, accion: "REGISTRAR_VENTA", modulo: "ventas", entidad: "venta", entidadId: ventaRef.id, detalle: `Venta ${ventaRef.id} por ${total.toFixed(2)}` });
   return ventaRef.id;
+}
+
+export async function anularVenta({ ventaId, empresaId, usuarioId }) {
+  const ventaRef = doc(db, "ventas", ventaId);
+  const ventaSnap = await (await import("firebase/firestore")).getDoc(ventaRef);
+  if (!ventaSnap.exists()) throw new Error("La venta no existe.");
+  const venta = ventaSnap.data();
+  if (venta.empresaId !== empresaId) throw new Error("La venta no pertenece a la empresa.");
+  if (venta.estado === "ANULADA") throw new Error("La venta ya está anulada.");
+
+  const detalleSnap = await getDocs(query(collection(db, "detalleVentas"), where("empresaId", "==", empresaId)));
+  const detalles = detalleSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((d) => d.ventaId === ventaId);
+  if (!detalles.length) throw new Error("No se encontraron detalles de la venta.");
+
+  const cuentaSnap = venta.metodoPago === "CREDITO"
+    ? await getDocs(query(collection(db, "cuentasCobrar"), where("empresaId", "==", empresaId)))
+    : null;
+
+  await runTransaction(db, async (tx) => {
+    const stockData = [];
+    for (const item of detalles) {
+      const refStock = doc(db, "inventarios", `${venta.sucursalId}_${item.productoId}`);
+      const snap = await tx.get(refStock);
+      stockData.push({ item, refStock, stock: snap.exists() ? Number(snap.data().stock || 0) : 0 });
+    }
+
+    tx.update(ventaRef, { estado: "ANULADA", usuarioAnulacion: usuarioId, fechaAnulacion: serverTimestamp() });
+
+    for (const row of stockData) {
+      const stockNuevo = row.stock + Number(row.item.cantidad || 0);
+      tx.set(row.refStock, { empresaId, sucursalId: venta.sucursalId, productoId: row.item.productoId, stock: stockNuevo, fechaActualizacion: serverTimestamp() }, { merge: true });
+      const movRef = doc(collection(db, "movimientosStock"));
+      tx.set(movRef, { empresaId, sucursalId: venta.sucursalId, productoId: row.item.productoId, tipo: "ANULACION_VENTA", cantidad: Number(row.item.cantidad || 0), stockAnterior: row.stock, stockNuevo, motivo: `Anulación venta ${ventaId}`, referenciaTipo: "VENTA", referenciaId: ventaId, usuarioId, fechaRegistro: serverTimestamp() });
+    }
+
+    if (venta.metodoPago === "EFECTIVO" && venta.cajaId) {
+      const movCaja = doc(collection(db, "movimientosCaja"));
+      tx.set(movCaja, { empresaId, cajaId: venta.cajaId, sucursalId: venta.sucursalId, tipo: "EGRESO", categoria: "ANULACION_VENTA", monto: Number(venta.total || 0), descripcion: `Reversión venta ${ventaId}`, referenciaTipo: "VENTA", referenciaId: ventaId, usuarioId, fechaRegistro: serverTimestamp() });
+    }
+
+    if (cuentaSnap) {
+      cuentaSnap.docs.filter((d) => d.data().ventaId === ventaId).forEach((d) => tx.update(d.ref, { saldo: 0, estadoCuenta: "ANULADA", fechaActualizacion: serverTimestamp() }));
+    }
+  });
+  await registrarAuditoria({ empresaId, usuarioId, accion: "ANULAR_VENTA", modulo: "ventas", entidad: "venta", entidadId: ventaId, detalle: `Anulación de venta ${ventaId}` });
 }

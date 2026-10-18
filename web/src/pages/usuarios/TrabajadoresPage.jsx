@@ -1,345 +1,369 @@
-import {
-  useEffect,
-  useState
-} from "react";
-
-import {
-  CircleCheck,
-  Pencil,
-  Plus,
-  Power,
-  Search,
-  UserRound,
-  X
-} from "lucide-react";
-
-import {
-  AnimatePresence,
-  motion
-} from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { CircleCheck, Pencil, Plus, Power, UserRound, X } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
 
 import {
+  suscribirTrabajadores,
   actualizarTrabajador,
-  cambiarEstadoTrabajador,
-  crearTrabajador,
-  suscribirTrabajadores
+  cambiarEstadoTrabajador
 } from "../../services/trabajadorService";
 
-import {
-  suscribirRolesEmpresa
-} from "../../services/rolEmpresaService";
+import { suscribirRolesEmpresa } from "../../services/rolEmpresaService";
+import { suscribirSucursales } from "../../services/sucursalService";
+import { provisionarUsuario } from "../../services/userProvisionService";
 
-const formularioInicial = {
-  uid: "",
+import AdvancedFilterBar from "../../components/filters/AdvancedFilterBar";
+import PasswordStrength from "../../components/common/PasswordStrength";
+
+const initial = {
   nombreCompleto: "",
   correo: "",
   telefono: "",
-  rolId: ""
+  rolId: "",
+  sucursales: [],
+  password: ""
 };
 
-function TrabajadoresPage() {
-  const {
-    usuario
-  } = useAuth();
+export default function TrabajadoresPage() {
+  const { usuario } = useAuth();
 
-  const [
-    trabajadores,
-    setTrabajadores
-  ] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
 
-  const [
-    roles,
-    setRoles
-  ] = useState([]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("TODOS");
+  const [roleFilter, setRoleFilter] = useState("TODOS");
 
-  const [
-    busqueda,
-    setBusqueda
-  ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(initial);
 
-  const [
-    mostrarModal,
-    setMostrarModal
-  ] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [
-    trabajadorEditando,
-    setTrabajadorEditando
-  ] = useState(null);
+  const [workersLoading, setWorkersLoading] = useState(true);
 
-  const [
-    formulario,
-    setFormulario
-  ] = useState(
-    formularioInicial
-  );
-
-  const [
-    guardando,
-    setGuardando
-  ] = useState(false);
-
-  const [
-    cargando,
-    setCargando
-  ] = useState(true);
-
-  const [
-    error,
-    setError
-  ] = useState("");
+  const loading = usuario?.empresaId
+    ? workersLoading
+    : false;
 
   useEffect(() => {
-    if (!usuario?.empresaId) {
-      setCargando(false);
-      return;
-    }
+    if (!usuario?.empresaId) return;
 
-    const cancelarTrabajadores =
-      suscribirTrabajadores(
-        usuario.empresaId,
+    const u1 = suscribirTrabajadores(
+      usuario.empresaId,
+      (datos) => {
+        setRows(datos);
+        setWorkersLoading(false);
+      },
+      console.error
+    );
 
-        (datos) => {
-          setTrabajadores(datos);
-          setCargando(false);
-        },
+    const u2 = suscribirRolesEmpresa(
+      usuario.empresaId,
+      setRoles,
+      console.error
+    );
 
-        console.error
-      );
-
-    const cancelarRoles =
-      suscribirRolesEmpresa(
-        usuario.empresaId,
-        setRoles,
-        console.error
-      );
+    const u3 = suscribirSucursales(
+      usuario.empresaId,
+      setSucursales,
+      console.error
+    );
 
     return () => {
-      cancelarTrabajadores();
-      cancelarRoles();
+      u1?.();
+      u2?.();
+      u3?.();
     };
   }, [usuario?.empresaId]);
 
-  const abrirNuevo = () => {
-    setTrabajadorEditando(null);
-    setFormulario(formularioInicial);
-    setError("");
-    setMostrarModal(true);
+  const roleName = (id) =>
+    roles.find((r) => r.id === id)?.nombre ||
+    "Sin rol";
+
+  const sucursalName = (id) =>
+    sucursales.find((s) => s.id === id)?.nombre ||
+    "Sucursal";
+
+  const sucursalesTexto = (ids = []) => {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return "Sin sucursal";
+    }
+
+    return ids
+      .map(sucursalName)
+      .join(", ");
   };
 
-  const abrirEditar = (
-    trabajador
-  ) => {
-    setTrabajadorEditando(
-      trabajador
-    );
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      const q = search.toLowerCase();
 
-    setFormulario({
-      uid:
-        trabajador.id,
+      const nombreRol =
+        roles.find((rol) => rol.id === r.rolId)?.nombre ||
+        "Sin rol";
 
+      const nombresSucursales =
+        Array.isArray(r.sucursales)
+          ? r.sucursales
+              .map(
+                (id) =>
+                  sucursales.find(
+                    (sucursal) =>
+                      sucursal.id === id
+                  )?.nombre || "Sucursal"
+              )
+              .join(", ")
+          : "";
+
+      const match =
+        !q ||
+        [
+          r.nombreCompleto,
+          r.correo,
+          r.telefono,
+          nombreRol,
+          nombresSucursales
+        ].some((v) =>
+          String(v || "")
+            .toLowerCase()
+            .includes(q)
+        );
+
+      const st =
+        status === "TODOS" ||
+        (
+          status === "ACTIVO"
+            ? r.estado === true
+            : r.estado !== true
+        );
+
+      const ro =
+        roleFilter === "TODOS" ||
+        r.rolId === roleFilter;
+
+      return match && st && ro;
+    });
+  }, [
+    rows,
+    search,
+    status,
+    roleFilter,
+    roles,
+    sucursales
+  ]);
+
+  const newRow = () => {
+    setEditing(null);
+    setForm(initial);
+    setError("");
+    setOpen(true);
+  };
+
+  const edit = (r) => {
+    setEditing(r);
+
+    setForm({
       nombreCompleto:
-        trabajador.nombreCompleto ||
-        "",
+        r.nombreCompleto || "",
 
       correo:
-        trabajador.correo ||
-        "",
+        r.correo || "",
 
       telefono:
-        trabajador.telefono ||
-        "",
+        r.telefono || "",
 
       rolId:
-        trabajador.rolId ||
-        ""
+        r.rolId || "",
+
+      sucursales:
+        Array.isArray(r.sucursales)
+          ? r.sucursales
+          : [],
+
+      password: ""
     });
 
     setError("");
-    setMostrarModal(true);
+    setOpen(true);
   };
 
-  const cerrarModal = () => {
-    if (guardando) return;
+  const cambiarSucursal = (sucursalId) => {
+    setForm((actual) => {
+      const seleccionadas =
+        Array.isArray(actual.sucursales)
+          ? actual.sucursales
+          : [];
 
-    setMostrarModal(false);
-    setTrabajadorEditando(null);
-    setFormulario(formularioInicial);
-    setError("");
+      const existe =
+        seleccionadas.includes(sucursalId);
+
+      return {
+        ...actual,
+
+        sucursales:
+          existe
+            ? seleccionadas.filter(
+                (id) => id !== sucursalId
+              )
+            : [
+                ...seleccionadas,
+                sucursalId
+              ]
+      };
+    });
   };
 
-  const guardarTrabajador =
-    async (evento) => {
-      evento.preventDefault();
+  const save = async (e) => {
+    e.preventDefault();
+
+    try {
+      setSaving(true);
+      setError("");
 
       if (
-        !formulario.nombreCompleto.trim()
+        !form.nombreCompleto.trim() ||
+        !form.correo.trim()
       ) {
-        setError(
-          "El nombre es obligatorio."
+        throw new Error(
+          "Nombre y correo son obligatorios."
         );
-
-        return;
       }
 
-      if (
-        !formulario.correo.trim()
-      ) {
-        setError(
-          "El correo es obligatorio."
+      if (editing) {
+        await actualizarTrabajador(
+          editing.id,
+          form
         );
-
-        return;
-      }
-
-      try {
-        setGuardando(true);
-        setError("");
-
-        if (
-          trabajadorEditando
-        ) {
-          await actualizarTrabajador(
-            trabajadorEditando.id,
-            formulario
-          );
-        } else {
-          await crearTrabajador(
-            formulario.uid,
+      } else {
+        await provisionarUsuario({
+          ...form,
+          empresaId:
             usuario.empresaId,
-            formulario
-          );
-        }
-
-        setMostrarModal(false);
-        setTrabajadorEditando(null);
-        setFormulario(formularioInicial);
-      } catch (error) {
-        console.error(error);
-
-        setError(
-          error.message ||
-          "No se pudo guardar el trabajador."
-        );
-      } finally {
-        setGuardando(false);
+          tipoUsuario:
+            "TRABAJADOR"
+        });
       }
-    };
 
-  const cambiarEstado =
-    async (trabajador) => {
-      const nuevoEstado =
-        !trabajador.estado;
+      setOpen(false);
+      setForm(initial);
 
-      const confirmar =
-        window.confirm(
-          `¿Deseas ${
-            nuevoEstado
-              ? "activar"
-              : "desactivar"
-          } a "${trabajador.nombreCompleto}"?`
-        );
+    } catch (err) {
+      setError(
+        err.message ||
+        "No se pudo guardar."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      if (!confirmar) return;
+  const toggle = async (r) => {
+    const accion =
+      r.estado === true
+        ? "Desactivar"
+        : "Activar";
 
-      try {
-        await cambiarEstadoTrabajador(
-          trabajador.id,
-          nuevoEstado
-        );
-      } catch (error) {
-        console.error(error);
-
-        alert(
-          "No se pudo modificar el trabajador."
-        );
-      }
-    };
-
-  const nombreRol = (
-    rolId
-  ) =>
-    roles.find(
-      (rol) =>
-        rol.id === rolId
-    )?.nombre ||
-    "Sin rol";
-
-  const filtrados =
-    trabajadores.filter(
-      (trabajador) => {
-        const texto =
-          busqueda.toLowerCase();
-
-        return (
-          trabajador.nombreCompleto
-            ?.toLowerCase()
-            .includes(texto) ||
-          trabajador.correo
-            ?.toLowerCase()
-            .includes(texto) ||
-          nombreRol(
-            trabajador.rolId
-          )
-            .toLowerCase()
-            .includes(texto)
-        );
-      }
-    );
-
-  const activos =
-    trabajadores.filter(
-      (trabajador) =>
-        trabajador.estado === true
-    ).length;
+    if (
+      window.confirm(
+        `¿${accion} a ${r.nombreCompleto}?`
+      )
+    ) {
+      await cambiarEstadoTrabajador(
+        r.id,
+        r.estado !== true
+      );
+    }
+  };
 
   return (
-    <div>
-      <div className="admin-page-header">
+    <div className="module-page">
+
+      <div className="module-page-header">
+
         <div>
+          <span className="eyebrow">
+            PERSONAL
+          </span>
+
           <h1>
             Trabajadores
           </h1>
 
           <p>
-            Gestiona el personal,
-            roles y acceso al sistema.
+            Cuentas TRABAJADOR con rol dinamico,
+            sucursales asignadas, verificacion de
+            correo y permisos por empresa.
           </p>
         </div>
 
-        <motion.button
-          className="admin-primary-button"
-          onClick={abrirNuevo}
-          whileHover={{
-            scale: 1.03
-          }}
-          whileTap={{
-            scale: 0.97
-          }}
+        <button
+          className="primary-action"
+          onClick={newRow}
         >
-          <Plus size={18} />
+          <Plus size={17} />
           Nuevo trabajador
-        </motion.button>
+        </button>
+
       </div>
 
-      <div className="admin-info-banner">
-        Para que un trabajador pueda iniciar
-        sesión, primero crea su usuario en
-        Firebase Authentication y copia aquí
-        su UID. Más adelante automatizaremos
-        este proceso con Firebase Admin SDK.
-      </div>
+      <AdvancedFilterBar
+        search={search}
+        onSearch={setSearch}
+
+        status={status}
+        onStatus={setStatus}
+
+        statusOptions={[
+          {
+            value: "TODOS",
+            label: "Todos"
+          },
+          {
+            value: "ACTIVO",
+            label: "Activos"
+          },
+          {
+            value: "INACTIVO",
+            label: "Inactivos"
+          }
+        ]}
+
+        filters={[
+          {
+            key: "rol",
+            label: "Todos los roles",
+            value: roleFilter,
+            onChange: setRoleFilter,
+
+            options:
+              roles.map((r) => ({
+                value: r.id,
+                label: r.nombre
+              }))
+          }
+        ]}
+
+        onClear={() => {
+          setSearch("");
+          setStatus("TODOS");
+          setRoleFilter("TODOS");
+        }}
+      />
 
       <section className="admin-inventory-metrics">
+
         <article>
           <UserRound size={21} />
 
           <div>
             <span>Total</span>
             <strong>
-              {trabajadores.length}
+              {rows.length}
             </strong>
           </div>
         </article>
@@ -349,425 +373,589 @@ function TrabajadoresPage() {
 
           <div>
             <span>Activos</span>
-            <strong>{activos}</strong>
+
+            <strong>
+              {
+                rows.filter(
+                  (r) =>
+                    r.estado === true
+                ).length
+              }
+            </strong>
           </div>
         </article>
 
-        <article
-          className={
-            trabajadores.length -
-                activos >
-              0
-              ? "warning"
-              : ""
-          }
-        >
-          <Power size={21} />
+        <article>
+          <CircleCheck size={21} />
 
           <div>
-            <span>Inactivos</span>
+            <span>
+              Correos verificados
+            </span>
 
             <strong>
-              {trabajadores.length -
-                activos}
+              {
+                rows.filter(
+                  (r) =>
+                    r.correoVerificado === true
+                ).length
+              }
             </strong>
           </div>
         </article>
+
       </section>
 
-      <section className="admin-card">
-        <div className="admin-toolbar">
-          <div className="admin-search">
-            <Search size={18} />
+      <section className="data-card glass-3d">
 
-            <input
-              placeholder="Buscar trabajador..."
-              value={busqueda}
-              onChange={(evento) =>
-                setBusqueda(
-                  evento.target.value
-                )
-              }
-            />
-          </div>
+        {
+          loading
+            ? (
+              <div className="empty-state">
+                Cargando trabajadores…
+              </div>
+            )
+            : (
+              <div className="table-scroll">
 
-          <span>
-            {filtrados.length} resultado(s)
-          </span>
-        </div>
+                <table className="modern-table">
 
-        {cargando ? (
-          <div className="admin-loading-box">
-            <UserRound size={28} />
+                  <thead>
+                    <tr>
+                      <th>TRABAJADOR</th>
+                      <th>CORREO</th>
+                      <th>ROL</th>
+                      <th>SUCURSALES</th>
+                      <th>VERIFICACION</th>
+                      <th>ESTADO</th>
+                      <th>ACCIONES</th>
+                    </tr>
+                  </thead>
 
-            <span>
-              Cargando trabajadores...
-            </span>
-          </div>
-        ) : filtrados.length === 0 ? (
-          <div className="admin-empty admin-empty-column">
-            <UserRound size={42} />
+                  <tbody>
 
-            <strong>
-              No existen trabajadores
-            </strong>
+                    {
+                      filtered.map((r) => (
 
-            <span>
-              Registra el primer trabajador
-              de la empresa.
-            </span>
-          </div>
-        ) : (
-          <div className="admin-table-container">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>TRABAJADOR</th>
-                  <th>CORREO</th>
-                  <th>TELÉFONO</th>
-                  <th>ROL</th>
-                  <th>ESTADO</th>
-                  <th>ACCIONES</th>
-                </tr>
-              </thead>
+                        <tr key={r.id}>
 
-              <tbody>
-                {filtrados.map(
-                  (trabajador) => (
-                    <tr
-                      key={
-                        trabajador.id
-                      }
-                    >
-                      <td>
-                        <div className="admin-product-cell">
-                          <div className="admin-product-image">
-                            <UserRound
-                              size={18}
-                            />
-                          </div>
+                          <td>
 
-                          <div>
                             <strong>
-                              {
-                                trabajador.nombreCompleto
-                              }
+                              {r.nombreCompleto}
                             </strong>
 
-                            <small>
-                              {trabajador.id}
+                            <small className="table-sub">
+                              {
+                                r.telefono ||
+                                "Sin telefono"
+                              }
                             </small>
-                          </div>
-                        </div>
-                      </td>
 
-                      <td>
-                        {trabajador.correo}
-                      </td>
+                          </td>
 
-                      <td>
-                        {trabajador.telefono ||
-                          "-"}
-                      </td>
+                          <td>
+                            {r.correo}
+                          </td>
 
-                      <td>
-                        <span className="admin-permission-count">
-                          {nombreRol(
-                            trabajador.rolId
-                          )}
-                        </span>
-                      </td>
+                          <td>
+                            {roleName(r.rolId)}
+                          </td>
 
-                      <td>
-                        <span
-                          className={
-                            trabajador.estado
-                              ? "admin-badge active"
-                              : "admin-badge inactive"
-                          }
-                        >
-                          {trabajador.estado
-                            ? "ACTIVO"
-                            : "INACTIVO"}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div className="admin-actions">
-                          <button
-                            onClick={() =>
-                              abrirEditar(
-                                trabajador
+                          <td>
+                            {
+                              sucursalesTexto(
+                                r.sucursales
                               )
                             }
-                          >
-                            <Pencil
-                              size={16}
-                            />
-                          </button>
+                          </td>
 
-                          <button
-                            onClick={() =>
-                              cambiarEstado(
-                                trabajador
-                              )
-                            }
-                          >
-                            {trabajador.estado ? (
-                              <Power
-                                size={16}
-                              />
-                            ) : (
-                              <CircleCheck
-                                size={16}
-                              />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          <td>
+
+                            <span
+                              className={
+                                `status-pill ${
+                                  r.correoVerificado
+                                    ? "active"
+                                    : "warning"
+                                }`
+                              }
+                            >
+                              {
+                                r.correoVerificado
+                                  ? "VERIFICADO"
+                                  : "PENDIENTE"
+                              }
+                            </span>
+
+                          </td>
+
+                          <td>
+
+                            <span
+                              className={
+                                `status-pill ${
+                                  r.estado === true
+                                    ? "active"
+                                    : "inactive"
+                                }`
+                              }
+                            >
+                              {
+                                r.estado === true
+                                  ? "ACTIVO"
+                                  : "INACTIVO"
+                              }
+                            </span>
+
+                          </td>
+
+                          <td>
+
+                            <div className="row-actions">
+
+                              <button
+                                onClick={() =>
+                                  edit(r)
+                                }
+                              >
+                                <Pencil size={16} />
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  toggle(r)
+                                }
+                              >
+                                <Power size={16} />
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      ))
+                    }
+
+                  </tbody>
+
+                </table>
+
+                {
+                  !filtered.length &&
+                  (
+                    <div className="empty-state">
+                      Sin trabajadores con esos filtros.
+                    </div>
                   )
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                }
+
+              </div>
+            )
+        }
+
       </section>
 
       <AnimatePresence>
-        {mostrarModal && (
-          <motion.div
-            className="admin-modal-overlay"
-            initial={{
-              opacity: 0
-            }}
-            animate={{
-              opacity: 1
-            }}
-            exit={{
-              opacity: 0
-            }}
-          >
+
+        {
+          open &&
+          (
             <motion.div
-              className="admin-modal"
+              className="modal-backdrop"
+
               initial={{
-                opacity: 0,
-                y: 25,
-                scale: 0.95
+                opacity: 0
               }}
+
               animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1
+                opacity: 1
               }}
+
+              exit={{
+                opacity: 0
+              }}
+
+              onMouseDown={() =>
+                setOpen(false)
+              }
             >
-              <div className="admin-modal-header">
-                <div>
-                  <h2>
-                    {trabajadorEditando
-                      ? "Editar trabajador"
-                      : "Nuevo trabajador"}
-                  </h2>
 
-                  <p>
-                    Configura sus datos y rol.
-                  </p>
-                </div>
+              <motion.div
+                className="modal-card glass-3d"
 
-                <button
-                  onClick={cerrarModal}
-                >
-                  <X size={20} />
-                </button>
-              </div>
+                initial={{
+                  opacity: 0,
+                  scale: 0.94,
+                  y: 20
+                }}
 
-              <form
-                onSubmit={
-                  guardarTrabajador
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0
+                }}
+
+                onMouseDown={(e) =>
+                  e.stopPropagation()
                 }
               >
-                <div className="admin-form-grid">
-                  {!trabajadorEditando && (
-                    <div className="admin-form-group full">
-                      <label>
-                        UID Firebase Authentication *
-                      </label>
 
-                      <input
-                        value={
-                          formulario.uid
-                        }
-                        onChange={(evento) =>
-                          setFormulario(
-                            (anterior) => ({
-                              ...anterior,
+                <div className="modal-head">
 
-                              uid:
-                                evento.target
-                                  .value
-                            })
-                          )
-                        }
-                        placeholder="UID completo"
-                        required
-                      />
-                    </div>
-                  )}
+                  <div>
 
-                  <div className="admin-form-group">
-                    <label>
+                    <span className="eyebrow">
+                      {
+                        editing
+                          ? "EDITAR"
+                          : "CREAR"
+                      }
+                    </span>
+
+                    <h2>
+                      {
+                        editing
+                          ? "Editar trabajador"
+                          : "Nuevo trabajador"
+                      }
+                    </h2>
+
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      setOpen(false)
+                    }
+                  >
+                    <X size={18} />
+                  </button>
+
+                </div>
+
+                <form
+                  className="smart-form"
+                  onSubmit={save}
+                >
+
+                  <label className="field-block">
+
+                    <span>
                       Nombre completo *
-                    </label>
+                    </span>
 
                     <input
                       value={
-                        formulario.nombreCompleto
+                        form.nombreCompleto
                       }
-                      onChange={(evento) =>
-                        setFormulario(
-                          (anterior) => ({
-                            ...anterior,
 
-                            nombreCompleto:
-                              evento.target
-                                .value
-                          })
-                        )
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          nombreCompleto:
+                            e.target.value
+                        })
                       }
-                      required
                     />
-                  </div>
 
-                  <div className="admin-form-group">
-                    <label>
+                  </label>
+
+                  <label className="field-block">
+
+                    <span>
                       Correo *
-                    </label>
+                    </span>
 
                     <input
                       type="email"
+
                       value={
-                        formulario.correo
+                        form.correo
                       }
-                      onChange={(evento) =>
-                        setFormulario(
-                          (anterior) => ({
-                            ...anterior,
 
-                            correo:
-                              evento.target
-                                .value
-                          })
-                        )
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          correo:
+                            e.target.value
+                        })
                       }
-                      required
                     />
-                  </div>
 
-                  <div className="admin-form-group">
-                    <label>
-                      Teléfono
-                    </label>
+                  </label>
+
+                  <label className="field-block">
+
+                    <span>
+                      Telefono
+                    </span>
 
                     <input
                       value={
-                        formulario.telefono
+                        form.telefono
                       }
-                      onChange={(evento) =>
-                        setFormulario(
-                          (anterior) => ({
-                            ...anterior,
 
-                            telefono:
-                              evento.target
-                                .value
-                          })
-                        )
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          telefono:
+                            e.target.value
+                        })
                       }
                     />
-                  </div>
 
-                  <div className="admin-form-group">
-                    <label>
+                  </label>
+
+                  <label className="field-block">
+
+                    <span>
                       Rol
-                    </label>
+                    </span>
 
                     <select
                       value={
-                        formulario.rolId
+                        form.rolId
                       }
-                      onChange={(evento) =>
-                        setFormulario(
-                          (anterior) => ({
-                            ...anterior,
 
-                            rolId:
-                              evento.target
-                                .value
-                          })
-                        )
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          rolId:
+                            e.target.value
+                        })
                       }
                     >
+
                       <option value="">
                         Sin rol
                       </option>
 
-                      {roles
-                        .filter(
-                          (rol) =>
-                            rol.estado ===
-                            "ACTIVO"
-                        )
-                        .map(
-                          (rol) => (
-                            <option
-                              key={
-                                rol.id
-                              }
-                              value={
-                                rol.id
-                              }
-                            >
-                              {rol.nombre}
-                            </option>
+                      {
+                        roles
+                          .filter(
+                            (r) =>
+                              r.estado ===
+                              "ACTIVO"
                           )
-                        )}
-                    </select>
-                  </div>
-                </div>
+                          .map(
+                            (r) => (
+                              <option
+                                key={r.id}
+                                value={r.id}
+                              >
+                                {r.nombre}
+                              </option>
+                            )
+                          )
+                      }
 
-                {error && (
-                  <div className="admin-message error">
-                    {error}
-                  </div>
+                    </select>
+
+                  </label>
+
+                  <div className="field-block field-span-2">
+
+  <span>
+    Sucursales asignadas
+  </span>
+
+  <details className="sucursales-select">
+
+    <summary>
+      <span>
+        {form.sucursales?.length > 0
+          ? `${form.sucursales.length} sucursal(es) seleccionada(s)`
+          : "Seleccionar sucursales"}
+      </span>
+
+      <span className="select-arrow">⌄</span>
+    </summary>
+
+    <div className="sucursales-options">
+
+      {sucursales.length === 0 ? (
+
+        <div className="sucursal-empty">
+          No hay sucursales registradas
+        </div>
+
+      ) : (
+
+        sucursales.map((sucursal) => {
+
+          const seleccionada =
+            form.sucursales?.includes(sucursal.id);
+
+          return (
+
+            <button
+              key={sucursal.id}
+              type="button"
+              className={`sucursal-option ${
+                seleccionada ? "selected" : ""
+              }`}
+              onClick={() =>
+                cambiarSucursal(sucursal.id)
+              }
+            >
+
+              <div className="sucursal-option-info">
+
+                <strong>
+                  {sucursal.nombre}
+                </strong>
+
+                {sucursal.direccion && (
+                  <small>
+                    {sucursal.direccion}
+                  </small>
                 )}
 
-                <div className="admin-modal-footer">
-                  <button
-                    type="button"
-                    className="admin-secondary-button"
-                    onClick={cerrarModal}
-                  >
-                    Cancelar
-                  </button>
+              </div>
 
-                  <button
-                    className="admin-primary-button"
-                    disabled={guardando}
-                  >
-                    {guardando
-                      ? "Guardando..."
-                      : trabajadorEditando
-                        ? "Guardar cambios"
-                        : "Crear trabajador"}
-                  </button>
-                </div>
-              </form>
+              <span className="sucursal-check">
+                {seleccionada ? "✓" : ""}
+              </span>
+
+            </button>
+
+          );
+
+        })
+
+      )}
+
+    </div>
+
+  </details>
+
+  {form.sucursales?.length > 0 && (
+
+    <div className="sucursales-selected">
+
+      {sucursales
+        .filter((sucursal) =>
+          form.sucursales.includes(sucursal.id)
+        )
+        .map((sucursal) => (
+
+          <span
+            key={sucursal.id}
+            className="sucursal-chip"
+          >
+
+            {sucursal.nombre}
+
+            <button
+              type="button"
+              onClick={() =>
+                cambiarSucursal(sucursal.id)
+              }
+            >
+              ×
+            </button>
+
+          </span>
+
+        ))}
+
+    </div>
+
+  )}
+
+</div>
+
+                  {
+                    !editing &&
+                    (
+                      <>
+
+                        <label className="field-block field-span-2">
+
+                          <span>
+                            Contraseña temporal segura *
+                          </span>
+
+                          <input
+                            type="password"
+
+                            value={
+                              form.password
+                            }
+
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                password:
+                                  e.target.value
+                              })
+                            }
+                          />
+
+                        </label>
+
+                        <div className="field-span-2">
+
+                          <PasswordStrength
+                            value={
+                              form.password
+                            }
+                          />
+
+                        </div>
+
+                      </>
+                    )
+                  }
+
+                  {
+                    error &&
+                    (
+                      <div className="form-error field-span-2">
+                        {error}
+                      </div>
+                    )
+                  }
+
+                  <div className="modal-actions field-span-2">
+
+                    <button
+                      type="button"
+
+                      className="secondary-action"
+
+                      onClick={() =>
+                        setOpen(false)
+                      }
+                    >
+                      Cancelar
+                    </button>
+
+                    <button
+                      className="primary-action"
+                      disabled={saving}
+                    >
+                      {
+                        saving
+                          ? "Guardando…"
+                          : "Guardar trabajador"
+                      }
+                    </button>
+
+                  </div>
+
+                </form>
+
+              </motion.div>
+
             </motion.div>
-          </motion.div>
-        )}
+          )
+        }
+
       </AnimatePresence>
+
     </div>
   );
 }
-
-export default TrabajadoresPage;

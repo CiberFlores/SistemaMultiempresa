@@ -226,3 +226,143 @@ input:-webkit-autofill:focus {
     background-position: 0% 50%;
   }
 }
+/* SELECTOR DE SUCURSALES */
+
+.sucursales-select {
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.sucursales-select summary {
+  list-style: none;
+  min-height: 54px;
+  padding: 0 18px;
+  border: 1px solid rgba(135, 120, 255, 0.25);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #f3f2ff;
+  transition: 0.2s ease;
+}
+
+.sucursales-select summary::-webkit-details-marker {
+  display: none;
+}
+
+.sucursales-select summary:hover,
+.sucursales-select[open] summary {
+  border-color: #8057ff;
+  box-shadow: 0 0 0 3px rgba(128, 87, 255, 0.1);
+}
+
+.select-arrow {
+  color: #9a83ff;
+  font-size: 22px;
+  transition: transform 0.2s ease;
+}
+
+.sucursales-select[open] .select-arrow {
+  transform: rotate(180deg);
+}
+
+.sucursales-options {
+  position: absolute;
+  z-index: 100;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid rgba(135, 120, 255, 0.2);
+  border-radius: 15px;
+  background: #151625;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.sucursal-option {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #eeeefa;
+  padding: 12px 13px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.sucursal-option:hover {
+  background: rgba(126, 87, 255, 0.1);
+}
+
+.sucursal-option.selected {
+  background: rgba(126, 87, 255, 0.16);
+}
+
+.sucursal-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sucursal-option-info small {
+  color: #85869b;
+  font-size: 12px;
+}
+
+.sucursal-check {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(143, 116, 255, 0.35);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sucursal-option.selected .sucursal-check {
+  background: linear-gradient(135deg, #7647ff, #559dff);
+  border-color: transparent;
+  color: white;
+}
+
+.sucursales-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.sucursal-chip {
+  padding: 6px 9px 6px 11px;
+  border-radius: 20px;
+  background: rgba(126, 87, 255, 0.13);
+  border: 1px solid rgba(126, 87, 255, 0.25);
+  color: #d9d1ff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sucursal-chip button {
+  border: 0;
+  background: transparent;
+  color: #aaa0d8;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.sucursal-empty {
+  padding: 15px;
+  text-align: center;
+  color: #85869b;
+}

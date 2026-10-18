@@ -1,0 +1,2 @@
+import ReportPage from "../../components/common/ReportPage";
+export default function ReportesInventarioPage(){return <ReportPage title="Reporte de inventario" description="Stock actual, valorización base y existencias por sucursal." collectionName="inventarios" searchFields={["productoId","sucursalId"]} amountField="stock" columns={[{key:"productoId",label:"PRODUCTO ID"},{key:"sucursalId",label:"SUCURSAL"},{key:"stock",label:"STOCK"},{key:"fechaActualizacion",label:"ACTUALIZADO",value:r=>r.fechaActualizacion?.toDate?.().toLocaleString?.()||"-"}]}/>}

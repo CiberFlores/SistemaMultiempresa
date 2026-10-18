@@ -1,0 +1,20 @@
+export const BASE_MODULES = [
+  {codigo:"DASHBOARD",nombre:"Dashboard",descripcion:"Indicadores generales del negocio.",icono:"LayoutDashboard"},
+  {codigo:"USUARIOS",nombre:"Usuarios",descripcion:"Gestión de usuarios y trabajadores.",icono:"Users"},
+  {codigo:"ROLES",nombre:"Roles y permisos",descripcion:"Permisos dinámicos por empresa.",icono:"ShieldCheck"},
+  {codigo:"CONFIGURACION",nombre:"Configuración",descripcion:"Datos del negocio, métodos de pago y reglas generales.",icono:"Settings"},
+  {codigo:"SUCURSALES",nombre:"Sucursales",descripcion:"Administración de sucursales y ubicaciones.",icono:"Store"},
+  {codigo:"CATALOGO",nombre:"Categorías y marcas",descripcion:"Organización del catálogo.",icono:"Tags"},
+  {codigo:"PRODUCTOS",nombre:"Productos",descripcion:"CRUD de productos, precios, imágenes y códigos.",icono:"Package"},
+  {codigo:"INVENTARIO",nombre:"Inventario",descripcion:"Stock, movimientos, ajustes y alertas.",icono:"Boxes"},
+  {codigo:"COMPRAS",nombre:"Compras y proveedores",descripcion:"Proveedores, compras y detalle de compras.",icono:"Truck"},
+  {codigo:"CLIENTES",nombre:"Clientes",descripcion:"Gestión comercial de clientes.",icono:"ContactRound"},
+  {codigo:"VENTAS",nombre:"Ventas y POS",descripcion:"Punto de venta, ventas, comprobantes y anulaciones.",icono:"ShoppingCart"},
+  {codigo:"PROMOCIONES",nombre:"Promociones",descripcion:"Descuentos y promociones.",icono:"Percent"},
+  {codigo:"CAJA",nombre:"Caja y gastos",descripcion:"Apertura, cierre, movimientos y gastos.",icono:"WalletCards"},
+  {codigo:"FINANZAS",nombre:"Finanzas",descripcion:"Cuentas por cobrar, pagar y pagos.",icono:"Landmark"},
+  {codigo:"REPORTES",nombre:"Reportes",descripcion:"Ventas, compras, inventario y finanzas.",icono:"BarChart3"},
+  {codigo:"NOTIFICACIONES",nombre:"Notificaciones",descripcion:"Alertas y notificaciones operativas.",icono:"Bell"},
+  {codigo:"AUDITORIA",nombre:"Auditoría",descripcion:"Trazabilidad de operaciones relevantes.",icono:"ScrollText"},
+  {codigo:"RESPALDOS",nombre:"Respaldos",descripcion:"Exportación y mecanismos de respaldo.",icono:"DatabaseBackup"}
+];

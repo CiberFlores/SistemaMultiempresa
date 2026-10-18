@@ -16,18 +16,23 @@ const rolesRef = collection(db, "rolesEmpresa");
 export const PERMISOS_DISPONIBLES = [
   { id: "dashboard.ver", nombre: "Ver dashboard" },
   { id: "sucursales.ver", nombre: "Ver sucursales" },
+  { id: "configuracion.gestionar", nombre: "Gestionar configuración y métodos de pago" },
   { id: "categorias.gestionar", nombre: "Gestionar categorías" },
   { id: "marcas.gestionar", nombre: "Gestionar marcas" },
   { id: "productos.gestionar", nombre: "Gestionar productos" },
-  { id: "inventario.ver", nombre: "Ver inventario" },
+  { id: "inventario.ver", nombre: "Ver inventario, movimientos y alertas" },
   { id: "inventario.ajustar", nombre: "Ajustar inventario" },
   { id: "clientes.gestionar", nombre: "Gestionar clientes" },
   { id: "proveedores.gestionar", nombre: "Gestionar proveedores" },
   { id: "compras.gestionar", nombre: "Gestionar compras" },
-  { id: "caja.gestionar", nombre: "Gestionar cajas" },
+  { id: "caja.gestionar", nombre: "Gestionar cajas, movimientos y gastos" },
   { id: "ventas.registrar", nombre: "Registrar ventas / POS" },
-  { id: "ventas.ver", nombre: "Ver historial de ventas" },
-  { id: "reportes.ver", nombre: "Ver reportes" }
+  { id: "ventas.ver", nombre: "Ver ventas y devoluciones" },
+  { id: "promociones.gestionar", nombre: "Gestionar promociones" },
+  { id: "finanzas.gestionar", nombre: "Gestionar cuentas por cobrar/pagar" },
+  { id: "reportes.ver", nombre: "Ver reportes" },
+  { id: "notificaciones.ver", nombre: "Ver notificaciones" },
+  { id: "auditoria.ver", nombre: "Ver auditoría" }
 ];
 
 export function suscribirRolesEmpresa(empresaId, callback, errorCallback) {
