@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="theme-color" content="#080d1d">
+
+  <title>Sin conexión | Arca Nova GO</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-family: Arial, sans-serif;
+
+      color: white;
+
+      background:
+        radial-gradient(
+          circle at top,
+          #30205d,
+          transparent 55%
+        ),
+        #080d1d;
+    }
+
+    .card {
+      width: calc(100% - 40px);
+      max-width: 390px;
+
+      padding: 35px;
+
+      border-radius: 25px;
+
+      background: #1a2039;
+
+      border: 1px solid #ffffff22;
+
+      text-align: center;
+
+      box-shadow: 0 20px 60px #00000055;
+    }
+
+    .icon {
+      font-size: 55px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 15px;
+      font-size: 26px;
+    }
+
+    p {
+      color: #b6bdd5;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+
+      margin-top: 20px;
+
+      background: linear-gradient(
+        135deg,
+        #8655f5,
+        #487ded
+      );
+
+      color: white;
+
+      border: none;
+
+      border-radius: 14px;
+
+      font-size: 14px;
+      font-weight: bold;
+
+      cursor: pointer;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="card">
+
+    <div class="icon">
+      📡
+    </div>
+
+    <h1>
+      Sin conexión
+    </h1>
+
+    <p>
+      Arca Nova GO necesita Internet para
+      consultar las ventas y el inventario
+      actualizado de tu empresa.
+    </p>
+
+    <button onclick="location.reload()">
+      Intentar nuevamente
+    </button>
+
+  </div>
+
+</body>
+
+</html>

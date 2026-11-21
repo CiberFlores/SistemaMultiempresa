@@ -1,3 +1,11 @@
+import {
+  collection,
+  onSnapshot,
+  query,
+  where
+} from "firebase/firestore";
+
+import { db } from "../../services/firebase/firebaseConfig";
 import { useEffect, useMemo, useState } from "react";
 import {
   CircleDollarSign,
@@ -26,6 +34,7 @@ function CajasPage() {
   const { usuario } = useAuth();
 
   const [cajas, setCajas] = useState([]);
+  const [movimientosCaja, setMovimientosCaja] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [mostrar, setMostrar] = useState(false);
   const [formulario, setFormulario] = useState(inicial);
@@ -47,14 +56,63 @@ function CajasPage() {
       console.error
     );
 
+    const cancelarMovimientos = onSnapshot(
+  query(
+    collection(db, "movimientosCaja"),
+    where("empresaId", "==", usuario.empresaId)
+  ),
+  (snapshot) => {
+    const movimientos = snapshot.docs.map((documento) => ({
+      id: documento.id,
+      ...documento.data()
+    }));
+
+    setMovimientosCaja(movimientos);
+  },
+  console.error
+);
+
     return () => {
-      cancelarCajas();
-      cancelarSucursales();
+       cancelarCajas();
+  cancelarSucursales();
+  cancelarMovimientos()
     };
   }, [usuario]);
 
   const nombreSucursal = (id) =>
     sucursales.find((s) => s.id === id)?.nombre || "Sucursal";
+
+  // CALCULAR LOS MOVIMIENTOS DE CADA CAJA
+
+const resumenCaja = useMemo(() => {
+  const resumen = {};
+
+  movimientosCaja.forEach((movimiento) => {
+    const cajaId = movimiento.cajaId;
+
+    if (!cajaId) return;
+
+    if (!resumen[cajaId]) {
+      resumen[cajaId] = {
+        ingresos: 0,
+        egresos: 0
+      };
+    }
+
+    const monto = Number(movimiento.monto) || 0;
+
+    if (movimiento.tipo === "INGRESO") {
+      resumen[cajaId].ingresos += monto;
+    }
+
+    if (movimiento.tipo === "EGRESO") {
+      resumen[cajaId].egresos += monto;
+    }
+  });
+
+  return resumen;
+}, [movimientosCaja]);
+
 
   const stats = useMemo(() => ({
     total: cajas.length,
@@ -153,8 +211,13 @@ function CajasPage() {
                   <td><strong>{caja.nombre}</strong></td>
                   <td>{nombreSucursal(caja.sucursalId)}</td>
                   <td>Bs {Number(caja.saldoInicial || 0).toFixed(2)}</td>
-                  <td>Bs {Number(caja.totalIngresos || 0).toFixed(2)}</td>
-                  <td>Bs {Number(caja.totalEgresos || 0).toFixed(2)}</td>
+                  <td>
+  Bs {Number(resumenCaja[caja.id]?.ingresos || 0).toFixed(2)}
+</td>
+
+<td>
+  Bs {Number(resumenCaja[caja.id]?.egresos || 0).toFixed(2)}
+</td>
                   <td>{caja.saldoFinal == null ? "-" : `Bs ${Number(caja.saldoFinal).toFixed(2)}`}</td>
                   <td>
                     <span className={caja.estado==="ABIERTA"?"admin-badge active":"admin-badge inactive"}>

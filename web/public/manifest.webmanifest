@@ -1,0 +1,28 @@
+{
+  "id": "/admin-movil",
+  "name": "Arca Nova GO",
+  "short_name": "Arca Nova GO",
+  "description": "Consulta las ventas, productos, inventario y alertas de tu empresa desde cualquier lugar.",
+  "start_url": "/admin-movil",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080d1d",
+  "theme_color": "#080d1d",
+  "lang": "es",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/arca-nova-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/arca-nova-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -433,19 +433,13 @@ function LoginPage() {
         }}
       >
         <div className="login-brand">
-          <div className="login-brand-symbol">
-            M
-          </div>
-
-          <div>
-            <strong>
-              MultiEmpresa
-            </strong>
-
-            <span>
-              Business Platform
-            </span>
-          </div>
+          <img
+            className="arca-nova-logo"
+            src="/brand/arca-nova-logo.png"
+            alt="Arca Nova"
+            width={120}
+            height={80}
+          />
         </div>
 
         <div className="login-secure">

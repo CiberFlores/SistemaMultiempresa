@@ -1,13 +1,120 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<html lang="es">
+
+<head>
+
+  <!-- ===================================== -->
+  <!-- CONFIGURACION GENERAL -->
+  <!-- ===================================== -->
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Arca Nova | Sistema de Ventas e Inventario
+  </title>
+
+
+  <!-- ===================================== -->
+  <!-- ICONO DE LA PAGINA WEB -->
+  <!-- ===================================== -->
+
+  <link
+    rel="icon"
+    type="image/png"
+    sizes="64x64"
+    href="/brand/arca-nova-mark.png"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- ARCA NOVA GO PWA -->
+  <!-- ===================================== -->
+
+  <!--
+    ESTE ARCHIVO PERMITE QUE EL NAVEGADOR
+    RECONOZCA NUESTRA APLICACION INSTALABLE.
+
+    LOS PERMISOS Y EL BOTON PERSONALIZADO
+    SE CONTROLAN DESDE REACT Y FIREBASE.
+  -->
+
+  <link
+    rel="manifest"
+    href="/manifest.webmanifest"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- COLOR PRINCIPAL -->
+  <!-- ===================================== -->
+
+  <meta
+    name="theme-color"
+    content="#080d1d"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- COMPATIBILIDAD CON ANDROID -->
+  <!-- ===================================== -->
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- COMPATIBILIDAD CON IPHONE Y IPAD -->
+  <!-- ===================================== -->
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  />
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- ICONO DE ARCA NOVA GO -->
+  <!-- ===================================== -->
+
+  <link
+    rel="apple-touch-icon"
+    href="/icons/arca-nova-192.png"
+  />
+
+</head>
+
+
+<body>
+
+  <!-- ===================================== -->
+  <!-- CONTENEDOR PRINCIPAL DE REACT -->
+  <!-- ===================================== -->
+
+  <div id="root"></div>
+
+
+  <!-- ===================================== -->
+  <!-- INICIAR APLICACION -->
+  <!-- ===================================== -->
+
+  <script
+    type="module"
+    src="/src/main.jsx"
+  ></script>
+
+</body>
+
 </html>

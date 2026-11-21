@@ -442,3 +442,238 @@
     grid-template-columns: 1fr auto;
   }
 }
+/* ==========================================
+   SPRINT 3 - SELECTOR PREMIUM DE CLIENTES
+========================================== */
+
+.pos-cliente-field {
+  position: relative;
+  z-index: 20;
+}
+
+.pos-cliente-toggle {
+  width: 100%;
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 16px;
+
+  border: 1px solid rgba(139, 112, 255, 0.22);
+  border-radius: 14px;
+
+  background: linear-gradient(
+    135deg,
+    rgba(27, 29, 49, 0.95),
+    rgba(15, 17, 32, 0.98)
+  );
+
+  color: #f5f3ff;
+  cursor: pointer;
+
+  transition: all 0.25s ease;
+}
+
+.pos-cliente-toggle:hover {
+  border-color: #8b5cf6;
+
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.09),
+    0 10px 30px rgba(95, 53, 220, 0.12);
+}
+
+.pos-cliente-selected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-width: 0;
+}
+
+.pos-cliente-selected svg {
+  color: #a78bfa;
+  flex-shrink: 0;
+}
+
+.pos-cliente-selected span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* CONTENEDOR DESPLEGABLE */
+
+.pos-cliente-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+
+  width: 100%;
+  z-index: 100;
+
+  padding: 10px;
+
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+
+  background: #141625;
+
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.5),
+    0 0 35px rgba(107, 73, 255, 0.12);
+
+  animation: posClienteEntrada 0.2s ease-out;
+}
+
+/* BUSCADOR */
+
+.pos-cliente-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 0 12px;
+  margin-bottom: 10px;
+
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 12px;
+
+  background: rgba(9, 11, 23, 0.8);
+}
+
+.pos-cliente-search svg {
+  color: #a78bfa;
+  flex-shrink: 0;
+}
+
+.pos-cliente-search input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+  color: white;
+
+  font-size: 13px;
+}
+
+.pos-cliente-search input::placeholder {
+  color: #777c97;
+}
+
+/* RESULTADOS */
+
+.pos-cliente-results {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.pos-cliente-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  width: 100%;
+  padding: 11px;
+
+  border: 1px solid transparent;
+  border-radius: 11px;
+
+  background: transparent;
+  color: white;
+
+  text-align: left;
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.pos-cliente-option:hover {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.pos-cliente-option > svg {
+  margin-left: auto;
+  color: #54d5ff;
+  flex-shrink: 0;
+}
+
+.pos-cliente-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 39px;
+  height: 39px;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.25),
+    rgba(59, 130, 246, 0.15)
+  );
+
+  color: #b6a3ff;
+}
+
+.pos-cliente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.pos-cliente-info strong {
+  color: #f5f3ff;
+  font-size: 12px;
+}
+
+.pos-cliente-info small {
+  color: #9399af;
+  font-size: 10px;
+}
+
+.pos-cliente-empty {
+  padding: 18px 10px;
+
+  color: #9399af;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* SUBTOTAL DE PRODUCTOS */
+
+.pos-cart-info .pos-line-subtotal {
+  margin-top: 5px;
+
+  color: #60e2c6;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ANIMACIÓN */
+
+@keyframes posClienteEntrada {
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

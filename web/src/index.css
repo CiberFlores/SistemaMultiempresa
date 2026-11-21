@@ -366,3 +366,11 @@ input:-webkit-autofill:focus {
   text-align: center;
   color: #85869b;
 }
+
+.arca-nova-logo,
+.arca-nova-mark {
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 12px;
+}
