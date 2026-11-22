@@ -346,9 +346,9 @@ service cloud.firestore {
           admin() &&
           myCompany() == empresaId &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly([qrCobroUrl, qrCobroActivo, fechaActualizacion]) &&
-          logoValido(request.resource.data.get(qrCobroUrl, )) &&
-          request.resource.data.get(qrCobroActivo, true) is bool
+            .hasOnly(['qrCobroUrl', 'qrCobroActivo', 'fechaActualizacion']) &&
+          logoValido(request.resource.data.get('qrCobroUrl', '')) &&
+          request.resource.data.get('qrCobroActivo', true) is bool
         );
     }
 
