@@ -3,6 +3,7 @@ import { BellRing, Boxes, Check, Copy, Download, MessageCircle, Package, Receipt
 
 import useMarcaEmpresa from "../../hooks/useMarcaEmpresa";
 import useInstalarApp from "../../hooks/useInstalarApp";
+import { detectarNavegador } from "../../utils/instalacionApp";
 
 import "../../styles/roles-empresa.css";
 import "../../styles/inventario-empresa.css";
@@ -16,16 +17,53 @@ const BENEFICIOS = [
   { icono: BellRing, titulo: "Alertas en el celular", texto: "Te avisa cuando algo necesita tu atención." }
 ];
 
-const PASOS = [
-  "Abre esta misma página desde el celular, con tu cuenta de dueño.",
-  "Toca «Instalar en mi celular». En iPhone: Compartir y «Añadir a pantalla de inicio».",
-  "Listo. Ábrela desde el icono con el logo de tu empresa."
-];
+// Los pasos cambian según el navegador del celular
+function pasosDeInstalacion(n) {
+  if (n.dentroDeApp) {
+    return [
+      "Este enlace está abierto dentro de otra aplicación (WhatsApp, Facebook…) y ahí no se puede instalar.",
+      "Toca los tres puntos ⋮ de arriba y elige «Abrir en Chrome» o «Abrir en el navegador».",
+      "Ya en el navegador, entra con tu cuenta de dueño y vuelve a esta página."
+    ];
+  }
+
+  if (n.ios) {
+    return [
+      "Abre esta página en Safari (en iPhone solo Safari puede instalarla).",
+      "Toca el botón Compartir (el cuadrado con la flecha hacia arriba).",
+      "Elige «Añadir a pantalla de inicio» y toca «Añadir»."
+    ];
+  }
+
+  if (n.firefox) {
+    return [
+      "Firefox no instala bien esta aplicación. Abre el enlace en Chrome.",
+      "En Chrome toca el menú ⋮ de arriba a la derecha.",
+      "Elige «Instalar aplicación» o «Agregar a la pantalla principal»."
+    ];
+  }
+
+  if (n.samsung) {
+    return [
+      "Toca el menú ☰ de abajo a la derecha.",
+      "Elige «Agregar página a» y luego «Pantalla de inicio».",
+      "Toca «Agregar». Si no aparece, abre el enlace en Chrome."
+    ];
+  }
+
+  return [
+    "Abre esta página desde el celular, con tu cuenta de dueño.",
+    "Toca el menú ⋮ de Chrome (arriba a la derecha) y elige «Instalar aplicación» o «Agregar a la pantalla principal».",
+    "Confirma con «Instalar». El icono con el logo de tu empresa aparece en tu pantalla de inicio."
+  ];
+}
 
 export default function AppMovilPage() {
   const marca = useMarcaEmpresa();
   const { disponible, instalada, resultado, instalar } = useInstalarApp();
   const [copiado, setCopiado] = useState(false);
+  const navegador = detectarNavegador();
+  const pasos = pasosDeInstalacion(navegador);
 
   const enlace = `${window.location.origin}/admin-movil`;
 
@@ -84,9 +122,15 @@ export default function AppMovilPage() {
           </div>
 
           {resultado === "manual" && !instalada && (
-            <p className="am-nota" role="status">
-              Tu navegador no deja instalarla desde aquí. Abre este enlace en el celular: en Chrome toca el menú ⋮ y «Instalar aplicación»; en iPhone, usa Safari, Compartir y «Añadir a pantalla de inicio».
-            </p>
+            <div className="am-nota am-guia" role="status">
+              <strong>{navegador.movil ? "Instálala con estos pasos" : "Instálala desde tu celular"}</strong>
+              {!navegador.movil && <p>Desde la computadora no se instala. Envíate el enlace por WhatsApp o cópialo y ábrelo en tu celular.</p>}
+              <ol>
+                {pasos.map((texto) => (
+                  <li key={texto}>{texto}</li>
+                ))}
+              </ol>
+            </div>
           )}
           {resultado === "instalada" && (
             <p className="am-nota" role="status">
@@ -169,7 +213,7 @@ export default function AppMovilPage() {
         </header>
 
         <ol className="am-pasos">
-          {PASOS.map((texto, i) => (
+          {pasos.map((texto, i) => (
             <li key={texto}>
               <b>{i + 1}</b>
               <span>{texto}</span>

@@ -322,3 +322,27 @@
     transform: none;
   }
 }
+
+/* ---------- Guía de instalación ---------- */
+
+.am-guia strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.am-guia p {
+  margin: 0 0 8px;
+}
+
+.am-guia ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.am-guia li {
+  line-height: 1.5;
+  padding-left: 4px;
+}
