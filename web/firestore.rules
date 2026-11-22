@@ -82,17 +82,28 @@ service cloud.firestore {
       );
     }
 
-    function hasPermission(permission) {
-      return admin() || (
-        worker() &&
-        me().data.rolId != null &&
-        exists(
-          /databases/$(database)/documents/rolesEmpresa/$(me().data.rolId)
-        ) &&
-        roleDoc().data.empresaId == myCompany() &&
-        roleDoc().data.estado == 'ACTIVO' &&
-        permission in roleDoc().data.permisos
+    // Tiene al menos uno de los permisos de la lista.
+    // Se revisa la cuenta y el cargo una sola vez: repetir esa revisión por cada
+    // permiso hacía que Firestore rechazara las reglas con muchas opciones.
+    function hasAnyPermission(lista) {
+      let yo = me().data;
+
+      return active() && (
+        yo.tipoUsuario == 'ADMIN' || (
+          yo.tipoUsuario == 'TRABAJADOR' &&
+          yo.rolId != null &&
+          exists(
+            /databases/$(database)/documents/rolesEmpresa/$(yo.rolId)
+          ) &&
+          roleDoc().data.empresaId == yo.empresaId &&
+          roleDoc().data.estado == 'ACTIVO' &&
+          roleDoc().data.permisos.hasAny(lista)
+        )
       );
+    }
+
+    function hasPermission(permission) {
+      return hasAnyPermission([permission]);
     }
 
     // ==========================================
