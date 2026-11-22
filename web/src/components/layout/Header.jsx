@@ -5,7 +5,8 @@ import {
 
 import {
   Building2,
-  LogOut
+  LogOut,
+  Menu
 } from "lucide-react";
 
 import {
@@ -21,7 +22,7 @@ import { db } from "../../services/firebase/firebaseConfig";
 import CampanaAvisosEmpresa from "./CampanaAvisosEmpresa";
 import "../../styles/campana-empresa.css";
 
-function Header() {
+function Header({ onMenu = () => {}, menuAbierto = false }) {
   const {
     usuario,
     cerrarSesion
@@ -105,7 +106,18 @@ function Header() {
   return (
     <header className="admin-header">
 
-      <div>
+      <div className="admin-header-izquierda">
+        <button
+          type="button"
+          className="admin-menu-boton"
+          onClick={onMenu}
+          aria-label="Abrir menú"
+          aria-expanded={menuAbierto}
+          aria-controls="menu-lateral"
+        >
+          <Menu size={22} />
+        </button>
+
         <span className="admin-header-label">
           PANEL EMPRESARIAL
         </span>

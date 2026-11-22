@@ -1,0 +1,126 @@
+/* Menú del panel en celular y tablet: botón en la barra de arriba y panel lateral que se desliza */
+
+.admin-menu-boton,
+.admin-sidebar-cerrar {
+  display: none;
+}
+
+.admin-header-izquierda {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-fondo-menu {
+  display: none;
+}
+
+@media (max-width: 850px) {
+  .admin-menu-boton,
+  .admin-sidebar-cerrar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: 14px;
+    background: rgb(255 255 255 / 0.07);
+    color: var(--admin-text, #fff);
+    cursor: pointer;
+
+    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease;
+  }
+
+  .admin-menu-boton:active,
+  .admin-sidebar-cerrar:active {
+    transform: scale(0.95);
+  }
+
+  .admin-menu-boton:focus-visible,
+  .admin-sidebar-cerrar:focus-visible {
+    outline: 2px solid var(--admin-primary);
+    outline-offset: 2px;
+  }
+
+  .admin-sidebar-cerrar {
+    position: absolute;
+    top: 31px;
+    right: 29px;
+    width: 42px;
+    height: 42px;
+    z-index: 2;
+  }
+
+  /* El panel lateral aparece por encima, deslizándose desde la izquierda */
+  .admin-layout .admin-sidebar {
+    display: flex;
+    z-index: 200;
+    width: min(310px, 86vw);
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    visibility: hidden;
+    transform: translateX(-104%);
+    transition:
+      transform 300ms cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s linear 300ms;
+  }
+
+  .admin-layout .admin-sidebar[data-abierto="true"] {
+    visibility: visible;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  .admin-layout .admin-sidebar .admin-brand {
+    align-items: center;
+    padding-right: 62px;
+  }
+
+  .admin-layout .admin-nav-item {
+    min-height: 48px;
+  }
+
+  .admin-fondo-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 190;
+    display: block;
+
+    background: rgb(0 0 0 / 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+  }
+
+  .admin-fondo-menu[data-abierto="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-header {
+    height: 68px;
+    padding: 0 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-header-label {
+    display: none;
+  }
+
+  .admin-header-right {
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-layout .admin-sidebar,
+  .admin-fondo-menu {
+    transition-duration: 1ms;
+  }
+}

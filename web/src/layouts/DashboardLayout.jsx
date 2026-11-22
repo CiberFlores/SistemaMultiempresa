@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Outlet, useLocation } from "react-router-dom";
 
@@ -15,21 +16,45 @@ import "../styles/commerce.css";
 import "../styles/innovation.css";
 import "../styles/empresa-tema.css";
 import "../styles/empresa-panel.css";
+import "../styles/menu-movil.css";
 
 function DashboardLayout() {
   const location = useLocation();
+  // El menú queda abierto solo en la página donde se abrió: al navegar se cierra solo
+  const [abiertoEn, setAbiertoEn] = useState(null);
+  const menuAbierto = abiertoEn === location.pathname;
+  const cerrarMenu = () => setAbiertoEn(null);
   const { identidad, variables, personalizada } = usePersonalizacionEmpresa();
 
   // Le dice al dueño que esta persona está conectada
   usePresencia();
 
+  // Escape cierra el menú y la página de atrás no se mueve mientras está abierto
+  useEffect(() => {
+    if (!menuAbierto) return undefined;
+
+    const alTeclear = (e) => {
+      if (e.key === "Escape") setAbiertoEn(null);
+    };
+
+    document.addEventListener("keydown", alTeclear);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", alTeclear);
+      document.body.style.overflow = "";
+    };
+  }, [menuAbierto]);
+
   return (
     <ConfirmProvider>
     <div className="admin-layout" style={variables} data-personalizada={personalizada}>
-      <Sidebar marca={identidad} />
+      <Sidebar marca={identidad} abierto={menuAbierto} onCerrar={cerrarMenu} />
+
+      <div className="admin-fondo-menu" data-abierto={menuAbierto} onClick={cerrarMenu} aria-hidden="true" />
 
       <div className="admin-main">
-        <Header />
+        <Header onMenu={() => setAbiertoEn(menuAbierto ? null : location.pathname)} menuAbierto={menuAbierto} />
 
         <AnimatePresence mode="wait">
           <motion.main
