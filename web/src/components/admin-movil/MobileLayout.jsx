@@ -1,1744 +1,1127 @@
-import { useEffect, useMemo, useState } from "react";
-
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
-  collection,
-  onSnapshot,
-  query,
-  where
-} from "firebase/firestore";
-
-import {
-  Navigate,
-  useNavigate
-} from "react-router-dom";
-
-import {
-  AlertTriangle,
-  ArrowLeft,
   BellRing,
   Boxes,
-  ChartNoAxesColumn,
+  CalendarClock,
+  Check,
+  Download,
   House,
+  LayoutGrid,
   LogOut,
-  PackagePlus,
+  QrCode,
   ReceiptText,
   Search,
-  ShieldCheck,
+  Settings,
+  TrendingDown,
   TrendingUp,
-  UserRound
+  TriangleAlert,
+  Trash2,
+  Upload,
+  Users,
+  X,
+  Zap
 } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
+import useMarcaEmpresa from "../../hooks/useMarcaEmpresa";
+import { useColeccionesEmpresa } from "../../hooks/useColeccionesEmpresa";
+import { cambiarQrActivo, quitarQrCobro, subirQrCobro } from "../../services/qrCobroService";
+import { sonidoPop } from "../../utils/sonidos";
 
-import { db } from "../../services/firebase/firebaseConfig";
+import "../../styles/app-movil-go.css";
 
-import "../../styles/admin_movil.css";
+// ------------------------------------------------------------------
+// Ayudas
+// ------------------------------------------------------------------
 
-
-// ==========================================
-// A. FUNCIONES AUXILIARES
-// ==========================================
-
-const dinero = (n) =>
-  `Bs ${Number(n || 0).toLocaleString("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
-
-const numero = (n) =>
-  Number(n || 0).toLocaleString("es-BO", {
-    maximumFractionDigits: 2
-  });
-
-const fechaDe = (v) => {
-  if (!v) return null;
-
-  const d =
-    typeof v.toDate === "function"
-      ? v.toDate()
-      : new Date(v);
-
-  return Number.isNaN(d.getTime()) ? null : d;
+const dinero = (valor) => {
+  const n = Number(valor || 0);
+  return `${n < 0 ? "−" : ""}Bs ${Math.abs(n).toLocaleString("es-BO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 };
 
-const diaLocal = (d = new Date()) => [
-  d.getFullYear(),
-  String(d.getMonth() + 1).padStart(2, "0"),
-  String(d.getDate()).padStart(2, "0")
-].join("-");
+const cantidad = (valor) => Number(valor || 0).toLocaleString("es-BO", { maximumFractionDigits: 2 });
 
-const diasHasta = (s) => {
-  if (
-    typeof s !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(s)
-  ) {
-    return null;
-  }
+const normalizar = (v) =>
+  String(v ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
 
-  const [y, m, d] = s.split("-").map(Number);
+const milis = (valor) => valor?.toMillis?.() || 0;
+const inicioDia = (f) => new Date(f.getFullYear(), f.getMonth(), f.getDate());
+const textoFecha = (f) =>
+  [f.getFullYear(), String(f.getMonth() + 1).padStart(2, "0"), String(f.getDate()).padStart(2, "0")].join("-");
 
-  const fecha = new Date(Date.UTC(y, m - 1, d));
+const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia", CREDITO: "A crédito" };
+const DIAS = ["D", "L", "M", "M", "J", "V", "S"];
+const EN_LINEA_MS = 150000;
 
-  if (fecha.toISOString().slice(0, 10) !== s) {
-    return null;
-  }
+function hace(ms, ahora) {
+  if (!ms) return "Nunca se conectó";
+  const dif = Math.max(0, ahora - ms);
+  if (dif < 60000) return "Hace un momento";
+  if (dif < 3600000) return `Hace ${Math.floor(dif / 60000)} min`;
+  if (dif < 86400000) return `Hace ${Math.floor(dif / 3600000)} h`;
+  return `Hace ${Math.floor(dif / 86400000)} d`;
+}
 
-  return Math.round(
-    (
-      Date.parse(`${s}T00:00:00Z`) -
-      Date.parse(`${diaLocal()}T00:00:00Z`)
-    ) / 86400000
-  );
-};
-
-
-// ==========================================
-// B. APLICACION PRINCIPAL
-// ==========================================
-
-export default function MobileLayout() {
-
-  const {
-    usuario,
-    cargando,
-    cerrarSesion
-  } = useAuth();
-
-  const navigate = useNavigate();
-
-  const empresaId =
-    usuario?.tipoUsuario === "ADMIN"
-      ? usuario.empresaId
-      : null;
-
-
-  // ========================================
-  // ESTADOS
-  // ========================================
-
-  const [pagina, setPagina] = useState("inicio");
-
-  const [sucursalId, setSucursalId] = useState("TODAS");
-
-  const [busqueda, setBusqueda] = useState("");
-
-  const [productos, setProductos] = useState([]);
-
-  const [inventarios, setInventarios] = useState([]);
-
-  const [ventas, setVentas] = useState([]);
-
-  const [sucursales, setSucursales] = useState([]);
-
-  const [lotes, setLotes] = useState([]);
-
-  const [error, setError] = useState("");
-
-  const [cargandoDatos, setCargandoDatos] = useState(true);
-
-
-  // ========================================
-  // C. ESCUCHAR FIREBASE EN TIEMPO REAL
-  // ========================================
+// Reloj que se actualiza solo, para "hace 5 min" y "en línea"
+function useAhora(cadaMs = 30000) {
+  const [ahora, setAhora] = useState(() => Date.now());
 
   useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), cadaMs);
+    return () => clearInterval(id);
+  }, [cadaMs]);
 
-    if (!empresaId) {
-      setCargandoDatos(false);
+  return ahora;
+}
+
+// Número que sube hasta su valor (sin animación si la persona prefiere menos movimiento)
+function useContador(meta, duracion = 700) {
+  const [valor, setValor] = useState(meta);
+  const actual = useRef(meta);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      actual.current = meta;
+      const id = requestAnimationFrame(() => setValor(meta));
+      return () => cancelAnimationFrame(id);
+    }
+
+    const desde = actual.current;
+    const inicio = performance.now();
+    let id;
+
+    const paso = (t) => {
+      const p = Math.min(1, (t - inicio) / duracion);
+      const suave = 1 - Math.pow(1 - p, 3);
+      const v = desde + (meta - desde) * suave;
+      actual.current = v;
+      setValor(v);
+      if (p < 1) id = requestAnimationFrame(paso);
+    };
+
+    id = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(id);
+  }, [meta, duracion]);
+
+  return valor;
+}
+
+function Avatar({ nombre, logo, tamano = 40 }) {
+  return (
+    <span className="gx-avatar" style={{ width: tamano, height: tamano }}>
+      {logo ? <img src={logo} alt="" /> : <b>{(nombre || "?").charAt(0).toUpperCase()}</b>}
+    </span>
+  );
+}
+
+const entrada = (i = 0) => ({
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.28, delay: Math.min(i, 8) * 0.045, ease: [0.23, 1, 0.32, 1] }
+});
+
+// ------------------------------------------------------------------
+// Aplicación
+// ------------------------------------------------------------------
+
+export default function MobileLayout() {
+  const { usuario, cargando, cerrarSesion } = useAuth();
+  const navigate = useNavigate();
+  const marca = useMarcaEmpresa();
+
+  const esDueno = usuario?.tipoUsuario === "ADMIN" && Boolean(usuario?.empresaId);
+  const empresaId = esDueno ? usuario.empresaId : null;
+
+  const { datos, cargando: cargandoDatos } = useColeccionesEmpresa(empresaId, [
+    "productos",
+    "inventarios",
+    "ventas",
+    "sucursales",
+    "lotesInventario",
+    "usuarios",
+    "rolesEmpresa"
+  ]);
+
+  const [pagina, setPagina] = useState("inicio");
+  const [sucursalId, setSucursalId] = useState("TODAS");
+  const [hoja, setHoja] = useState(false);
+  const [buscar, setBuscar] = useState("");
+  const [consulta, setConsulta] = useState("");
+  const [aviso, setAviso] = useState(null);
+  const ahora = useAhora();
+
+  const tema = marca.tema;
+
+  const estilo = useMemo(
+    () => ({
+      "--gx-p": tema.primario,
+      "--gx-s": tema.secundario,
+      "--gx-bg": tema.fondo,
+      "--gx-tx": tema.texto,
+      "--gx-mu": tema.apagado,
+      "--gx-on": tema.sobrePrimario,
+      "--gx-card": tema.superficie,
+      "--gx-card2": tema.superficie2,
+      "--gx-line": tema.borde,
+      "--gx-pl": tema.primarioLegible,
+      "--gx-font": `"${marca.tipografia}", "Inter", system-ui, sans-serif`
+    }),
+    [tema, marca.tipografia]
+  );
+
+  const filtraSucursal = (x) => sucursalId === "TODAS" || x.sucursalId === sucursalId;
+
+  // ---------------- Ventas ----------------
+  const ventas = useMemo(
+    () =>
+      datos.ventas
+        .filter(filtraSucursal)
+        .map((v) => ({ ...v, fecha: v.fechaRegistro?.toDate?.() || null }))
+        .filter((v) => v.fecha)
+        .sort((a, b) => b.fecha - a.fecha),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [datos.ventas, sucursalId]
+  );
+
+  const resumenVentas = useMemo(() => {
+    const hoy0 = inicioDia(new Date(ahora)).getTime();
+    const dia = 86400000;
+    const validas = ventas.filter((v) => v.estado !== "ANULADA");
+    const suma = (lista) => lista.reduce((s, v) => s + Number(v.total || 0), 0);
+
+    const deHoy = validas.filter((v) => v.fecha.getTime() >= hoy0);
+    const deAyer = validas.filter((v) => v.fecha.getTime() >= hoy0 - dia && v.fecha.getTime() < hoy0);
+
+    const semana = Array.from({ length: 7 }, (_, i) => {
+      const desde = hoy0 - (6 - i) * dia;
+      const dentro = validas.filter((v) => v.fecha.getTime() >= desde && v.fecha.getTime() < desde + dia);
+      return { dia: DIAS[new Date(desde).getDay()], total: suma(dentro), esHoy: i === 6 };
+    });
+
+    const totalHoy = suma(deHoy);
+    const totalAyer = suma(deAyer);
+
+    return {
+      deHoy,
+      totalHoy,
+      totalAyer,
+      cambio: totalAyer > 0 ? Math.round(((totalHoy - totalAyer) / totalAyer) * 100) : null,
+      semana,
+      ultimas: ventas.slice(0, 3)
+    };
+  }, [ventas, ahora]);
+
+  // ---------------- Stock y alertas ----------------
+  const stock = useMemo(() => {
+    const hoy = textoFecha(new Date(ahora));
+    const productos = new Map(datos.productos.map((p) => [p.id, p]));
+    const vendibles = new Map();
+    const vencidos = new Map();
+    const porVencer = new Map();
+
+    datos.lotesInventario.forEach((lote) => {
+      const disponible = Number(lote.cantidadDisponible || 0);
+      if (disponible <= 0 || lote.estado !== "ACTIVO") return;
+
+      const clave = `${lote.sucursalId}_${lote.productoId}`;
+      const vencido = !lote.fechaVencimiento || lote.fechaVencimiento < hoy;
+      (vencido ? vencidos : vendibles).set(clave, ((vencido ? vencidos : vendibles).get(clave) || 0) + disponible);
+
+      if (!vencido) {
+        const dias = Number(productos.get(lote.productoId)?.diasAlertaVencimiento || 15);
+        const limite = new Date(ahora);
+        limite.setDate(limite.getDate() + dias);
+        if (lote.fechaVencimiento <= textoFecha(limite)) {
+          porVencer.set(clave, (porVencer.get(clave) || 0) + disponible);
+        }
+      }
+    });
+
+    return datos.inventarios
+      .filter(filtraSucursal)
+      .map((inv) => {
+        const producto = productos.get(inv.productoId);
+        if (!producto) return null;
+
+        const clave = `${inv.sucursalId}_${inv.productoId}`;
+        const fisico = Math.max(0, Number(inv.stock || 0));
+        const controla = producto.controlaVencimiento === true;
+        const vendible = controla ? Math.min(fisico, vendibles.get(clave) || 0) : fisico;
+        const vencido = controla ? vencidos.get(clave) || 0 : 0;
+        const minimo = Number(producto.stockMinimo || 0);
+
+        let estado = "NORMAL";
+        if (vendible <= 0) estado = fisico > 0 && vencido > 0 ? "SOLO_VENCIDO" : "AGOTADO";
+        else if (vendible <= minimo) estado = "BAJO";
+
+        return {
+          id: inv.id,
+          producto,
+          sucursalId: inv.sucursalId,
+          vendible,
+          vencido,
+          minimo,
+          porVencer: controla ? porVencer.get(clave) || 0 : 0,
+          estado,
+          tope: Math.max(minimo * 3, vendible, 1)
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.vendible - b.vendible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datos.inventarios, datos.productos, datos.lotesInventario, sucursalId, ahora]);
+
+  const alertas = useMemo(() => {
+    const lista = [];
+
+    stock.forEach((fila) => {
+      if (fila.estado === "AGOTADO") lista.push({ clave: `A${fila.id}`, tipo: "peligro", titulo: `${fila.producto.nombre} se agotó`, detalle: "No queda stock para vender." });
+      else if (fila.estado === "SOLO_VENCIDO") lista.push({ clave: `V${fila.id}`, tipo: "peligro", titulo: `${fila.producto.nombre} solo tiene unidades vencidas`, detalle: `${cantidad(fila.vencido)} vencidas. Compra más.` });
+      else if (fila.estado === "BAJO") lista.push({ clave: `B${fila.id}`, tipo: "alerta", titulo: `${fila.producto.nombre} se está acabando`, detalle: `Quedan ${cantidad(fila.vendible)}. El mínimo es ${cantidad(fila.minimo)}.` });
+
+      if (fila.porVencer > 0) lista.push({ clave: `P${fila.id}`, tipo: "alerta", titulo: `${fila.producto.nombre} está por vencer`, detalle: `${cantidad(fila.porVencer)} unidades vencen pronto.` });
+    });
+
+    return lista;
+  }, [stock]);
+
+  // Suena y vibra cuando aparece una alerta nueva mientras la app está abierta
+  const vistas = useRef(null);
+
+  useEffect(() => {
+    if (cargandoDatos) return;
+
+    const claves = new Set(alertas.map((a) => a.clave));
+
+    if (vistas.current) {
+      const nueva = alertas.find((a) => !vistas.current.has(a.clave));
+
+      if (nueva) {
+        const id = requestAnimationFrame(() => setAviso(nueva));
+        sonidoPop();
+        navigator.vibrate?.([120, 60, 120]);
+
+        if (typeof Notification !== "undefined" && Notification.permission === "granted" && document.hidden) {
+          navigator.serviceWorker?.ready
+            .then((registro) => registro.showNotification(`${marca.appNombre}: ${nueva.titulo}`, { body: nueva.detalle, icon: undefined }))
+            .catch(() => {});
+        }
+
+        vistas.current = claves;
+        return () => cancelAnimationFrame(id);
+      }
+    }
+
+    vistas.current = claves;
+    return undefined;
+  }, [alertas, cargandoDatos, marca.appNombre]);
+
+  useEffect(() => {
+    if (!aviso) return undefined;
+    const id = setTimeout(() => setAviso(null), 6000);
+    return () => clearTimeout(id);
+  }, [aviso]);
+
+  // ---------------- Equipo ----------------
+  const nombreRol = (id) => datos.rolesEmpresa.find((r) => r.id === id)?.nombre || "Trabajador";
+
+  const equipo = useMemo(() => {
+    return datos.usuarios
+      .filter((u) => u.tipoUsuario === "TRABAJADOR" && u.estado === true)
+      .map((u) => {
+        const ultima = milis(u.ultimaActividad);
+        const enLinea = u.conectado === true && ahora - ultima < EN_LINEA_MS;
+        return { ...u, ultima, enLinea, vendiendo: enLinea && u.enPos === true };
+      })
+      .sort((a, b) => Number(b.vendiendo) - Number(a.vendiendo) || Number(b.enLinea) - Number(a.enLinea) || b.ultima - a.ultima);
+  }, [datos.usuarios, ahora]);
+
+  const conectados = equipo.filter((u) => u.enLinea).length;
+
+  // ---------------- Navegación ----------------
+  const cambiar = (id) => {
+    setPagina(id);
+    window.scrollTo(0, 0);
+  };
+
+  if (cargando) {
+    return (
+      <div className="gx gx-cargando" style={estilo}>
+        <span className="gx-girando" aria-hidden="true" />
+        <p>Abriendo tu app…</p>
+      </div>
+    );
+  }
+
+  if (!usuario) return <Navigate to="/login" replace />;
+  if (!esDueno) return <Navigate to="/sin-permiso" replace />;
+
+  const hayVariasSucursales = datos.sucursales.length > 1;
+
+  const barraSucursal = hayVariasSucursales && ["inicio", "ventas", "stock"].includes(pagina) && (
+    <div className="gx-chips" role="radiogroup" aria-label="Sucursal">
+      {[{ id: "TODAS", nombre: "Todas" }, ...datos.sucursales].map((s) => (
+        <button key={s.id} type="button" role="radio" aria-checked={sucursalId === s.id} data-on={sucursalId === s.id} onClick={() => setSucursalId(s.id)}>
+          {s.nombre}
+        </button>
+      ))}
+    </div>
+  );
+
+  const paginas = {
+    inicio: (
+      <Inicio
+        marca={marca}
+        resumen={resumenVentas}
+        alertas={alertas}
+        conectados={conectados}
+        totalEquipo={equipo.length}
+        equipo={equipo}
+        ir={cambiar}
+        abrirAlertas={() => setHoja(true)}
+        stockEnRiesgo={stock.filter((f) => f.estado !== "NORMAL")}
+        cargando={cargandoDatos}
+      />
+    ),
+    ventas: <Ventas ventas={ventas} sucursales={datos.sucursales} ahora={ahora} />,
+    stock: <Stock key={consulta} filas={stock} consulta={consulta} />,
+    equipo: <Equipo equipo={equipo} nombreRol={nombreRol} ahora={ahora} />,
+    ajustes: <Ajustes marca={marca} usuario={usuario} empresaId={empresaId} salir={async () => { await cerrarSesion(); navigate("/login", { replace: true }); }} />
+  };
+
+  const NAV = [
+    ["inicio", "Inicio", House],
+    ["ventas", "Ventas", ReceiptText],
+    ["stock", "Stock", Boxes],
+    ["equipo", "Equipo", Users],
+    ["ajustes", "Ajustes", Settings]
+  ];
+
+  return (
+    <div className="gx" style={estilo}>
+      <header className="gx-cabecera">
+        <span className="gx-cabecera__aro gx-cabecera__aro--uno" aria-hidden="true" />
+        <span className="gx-cabecera__aro gx-cabecera__aro--dos" aria-hidden="true" />
+
+        <div className="gx-cabecera__fila">
+          <Avatar nombre={marca.nombre} logo={marca.logoUrl} tamano={52} />
+          <div className="gx-cabecera__texto">
+            <span>Hola, {(usuario.nombreCompleto || "dueño").split(" ")[0]}</span>
+            <strong>{marca.appNombre}</strong>
+          </div>
+          <button type="button" className="gx-campana" onClick={() => setHoja(true)} aria-label={alertas.length ? `Alertas, ${alertas.length} nuevas` : "Alertas"}>
+            <BellRing size={21} />
+            {alertas.length > 0 && <i>{alertas.length > 9 ? "9+" : alertas.length}</i>}
+          </button>
+        </div>
+
+        <form
+          className="gx-busqueda"
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setConsulta(buscar.trim());
+            cambiar("stock");
+          }}
+        >
+          <Search size={19} aria-hidden="true" />
+          <input type="search" placeholder="Buscar un producto…" aria-label="Buscar un producto" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
+        </form>
+      </header>
+
+      <main className="gx-contenido">
+        {barraSucursal}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={pagina} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}>
+            {paginas[pagina]}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      <AnimatePresence>
+        {aviso && (
+          <motion.button
+            type="button"
+            className="gx-toast"
+            data-tipo={aviso.tipo}
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            onClick={() => {
+              setAviso(null);
+              cambiar("stock");
+            }}
+          >
+            <TriangleAlert size={20} aria-hidden="true" />
+            <span>
+              <b>{aviso.titulo}</b>
+              <small>{aviso.detalle}</small>
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {hoja && (
+          <motion.div className="gx-fondo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setHoja(false)}>
+            <motion.section
+              className="gx-hoja"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Alertas"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="gx-hoja__asa" aria-hidden="true" />
+              <header>
+                <h2>Alertas</h2>
+                <button type="button" onClick={() => setHoja(false)} aria-label="Cerrar">
+                  <X size={20} />
+                </button>
+              </header>
+              {alertas.length === 0 ? (
+                <p className="gx-vacio">Todo en orden. Te avisamos aquí cuando algo se esté acabando o por vencer.</p>
+              ) : (
+                <ul className="gx-lista">
+                  {alertas.map((a) => (
+                    <li key={a.clave} className="gx-alerta" data-tipo={a.tipo}>
+                      <TriangleAlert size={20} aria-hidden="true" />
+                      <span>
+                        <b>{a.titulo}</b>
+                        <small>{a.detalle}</small>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </motion.section>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <nav className="gx-nav" aria-label="Secciones">
+        <LayoutGroup>
+          {NAV.map(([id, titulo, Icono]) => (
+            <button key={id} type="button" data-on={pagina === id} aria-current={pagina === id ? "page" : undefined} onClick={() => cambiar(id)}>
+              {pagina === id && <motion.span layoutId="gx-pastilla" className="gx-nav__pastilla" transition={{ type: "spring", duration: 0.4, bounce: 0.18 }} />}
+              <Icono size={22} aria-hidden="true" />
+              <span>{titulo}</span>
+              {id === "stock" && alertas.length > 0 && <i aria-hidden="true" />}
+              {id === "equipo" && conectados > 0 && <em aria-hidden="true">{conectados}</em>}
+            </button>
+          ))}
+        </LayoutGroup>
+      </nav>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
+// Pantallas
+// ------------------------------------------------------------------
+
+// Curva suave por los puntos (Catmull-Rom convertida a Bézier)
+function curva(puntos) {
+  if (puntos.length < 2) return "";
+
+  let d = `M ${puntos[0].x} ${puntos[0].y}`;
+
+  for (let i = 0; i < puntos.length - 1; i++) {
+    const p0 = puntos[i - 1] || puntos[i];
+    const p1 = puntos[i];
+    const p2 = puntos[i + 1];
+    const p3 = puntos[i + 2] || p2;
+
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+  }
+
+  return d;
+}
+
+function Grafico({ semana }) {
+  const ancho = 320;
+  const alto = 110;
+  const maximo = Math.max(1, ...semana.map((d) => d.total));
+
+  const puntos = semana.map((d, i) => ({
+    x: 12 + (i * (ancho - 24)) / (semana.length - 1),
+    y: alto - 14 - (d.total / maximo) * (alto - 34)
+  }));
+
+  const linea = curva(puntos);
+  const area = `${linea} L ${puntos[puntos.length - 1].x} ${alto} L ${puntos[0].x} ${alto} Z`;
+  const hoy = puntos[puntos.length - 1];
+
+  return (
+    <div className="gx-grafico" role="img" aria-label="Ventas de los últimos 7 días">
+      <svg viewBox={`0 0 ${ancho} ${alto}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="gx-area" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.38" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path className="gx-grafico__area" d={area} fill="url(#gx-area)" />
+        <path className="gx-grafico__linea" d={linea} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" pathLength="1" />
+        <circle className="gx-grafico__punto" cx={hoy.x} cy={hoy.y} r="6" fill="currentColor" />
+        <circle className="gx-grafico__halo" cx={hoy.x} cy={hoy.y} r="11" fill="none" stroke="currentColor" strokeWidth="2" />
+      </svg>
+      <div className="gx-grafico__dias" aria-hidden="true">
+        {semana.map((d, i) => (
+          <span key={i} data-hoy={d.esHoy}>
+            {d.dia}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Inicio({ marca, resumen, alertas, conectados, totalEquipo, equipo, ir, abrirAlertas, cargando, stockEnRiesgo }) {
+  const total = useContador(resumen.totalHoy);
+  const sube = resumen.cambio !== null && resumen.cambio >= 0;
+
+  const atajos = [
+    { id: "ventas", titulo: "Ventas", icono: ReceiptText, accion: () => ir("ventas") },
+    { id: "stock", titulo: "Stock", icono: Boxes, accion: () => ir("stock") },
+    { id: "equipo", titulo: "Equipo", icono: Users, accion: () => ir("equipo"), cuenta: conectados },
+    { id: "alertas", titulo: "Alertas", icono: BellRing, accion: abrirAlertas, cuenta: alertas.length, peligro: true },
+    { id: "qr", titulo: "Mi QR", icono: QrCode, accion: () => ir("ajustes") }
+  ];
+
+  return (
+    <div className="gx-pantalla">
+      <div className="gx-atajos" role="list">
+        {atajos.map((a, i) => (
+          <motion.button key={a.id} type="button" role="listitem" className="gx-atajo" onClick={a.accion} {...entrada(i)}>
+            <span>
+              <a.icono size={24} aria-hidden="true" />
+              {a.cuenta > 0 && <i data-peligro={a.peligro}>{a.cuenta > 9 ? "9+" : a.cuenta}</i>}
+            </span>
+            <small>{a.titulo}</small>
+          </motion.button>
+        ))}
+      </div>
+
+      <motion.section className="gx-hero" {...entrada(2)}>
+        <div className="gx-hero__arriba">
+          <small>Vendido hoy</small>
+          <span className="gx-hero__en-vivo">
+            <i className="gx-vivo" aria-hidden="true" /> En vivo
+          </span>
+        </div>
+        <strong>{dinero(Math.round(total * 100) / 100)}</strong>
+
+        <p className="gx-hero__cambio">
+          {resumen.cambio === null ? (
+            <span>{resumen.totalHoy > 0 ? "Ayer no hubo ventas" : "Aún sin ventas hoy"}</span>
+          ) : (
+            <span>
+              {sube ? <TrendingUp size={16} aria-hidden="true" /> : <TrendingDown size={16} aria-hidden="true" />}
+              {Math.abs(resumen.cambio)}% {sube ? "más" : "menos"} que ayer
+            </span>
+          )}
+        </p>
+
+        <Grafico semana={resumen.semana} />
+      </motion.section>
+
+      <div className="gx-tres">
+        <motion.div className="gx-mini" {...entrada(3)}>
+          <small>Ventas hoy</small>
+          <strong>{cargando ? "…" : resumen.deHoy.length}</strong>
+        </motion.div>
+        <motion.div className="gx-mini" {...entrada(4)}>
+          <small>En línea</small>
+          <strong>
+            {conectados}
+            <span>/{totalEquipo}</span>
+          </strong>
+        </motion.div>
+        <motion.div className="gx-mini" data-alerta={stockEnRiesgo.length > 0} {...entrada(5)}>
+          <small>Por acabarse</small>
+          <strong>{stockEnRiesgo.length}</strong>
+        </motion.div>
+      </div>
+
+      {alertas.length > 0 ? (
+        <motion.button type="button" className="gx-ticket" data-tipo="peligro" onClick={abrirAlertas} {...entrada(6)}>
+          <span className="gx-ticket__icono">
+            <TriangleAlert size={24} aria-hidden="true" />
+          </span>
+          <span className="gx-ticket__texto">
+            <b>{alertas.length === 1 ? "1 alerta de stock" : `${alertas.length} alertas de stock`}</b>
+            <small>{alertas[0].titulo}</small>
+          </span>
+          <span className="gx-ticket__ver">Ver</span>
+        </motion.button>
+      ) : (
+        <motion.div className="gx-ticket" data-tipo="ok" {...entrada(6)}>
+          <span className="gx-ticket__icono">
+            <Check size={24} aria-hidden="true" />
+          </span>
+          <span className="gx-ticket__texto">
+            <b>Todo en orden</b>
+            <small>Tu stock está bien por ahora.</small>
+          </span>
+        </motion.div>
+      )}
+
+      {stockEnRiesgo.length > 0 && (
+        <motion.section className="gx-seccion" {...entrada(7)}>
+          <header>
+            <h2>Se está acabando</h2>
+            <button type="button" onClick={() => ir("stock")}>
+              Ver todo
+            </button>
+          </header>
+          <div className="gx-carrusel">
+            {stockEnRiesgo.slice(0, 8).map((f) => (
+              <button key={f.id} type="button" className="gx-tarjeta-mini" data-estado={f.estado} onClick={() => ir("stock")}>
+                <span className="gx-tarjeta-mini__foto">
+                  {f.producto.imagenUrl ? <img src={f.producto.imagenUrl} alt="" loading="lazy" /> : <b>{(f.producto.nombre || "?").charAt(0).toUpperCase()}</b>}
+                </span>
+                <b>{f.producto.nombre}</b>
+                <small>{f.estado === "AGOTADO" ? "Agotado" : `Quedan ${cantidad(f.vendible)}`}</small>
+              </button>
+            ))}
+          </div>
+        </motion.section>
+      )}
+
+      <motion.section className="gx-seccion" {...entrada(8)}>
+        <header>
+          <h2>Últimas ventas</h2>
+          <button type="button" onClick={() => ir("ventas")}>
+            Ver todas
+          </button>
+        </header>
+        {resumen.ultimas.length === 0 ? (
+          <p className="gx-vacio">Cuando tu equipo venda, aparecerá aquí al instante.</p>
+        ) : (
+          <ul className="gx-lista">
+            {resumen.ultimas.map((v) => (
+              <li key={v.id} className="gx-fila">
+                <span className="gx-fila__icono">
+                  <ReceiptText size={18} aria-hidden="true" />
+                </span>
+                <span className="gx-fila__texto">
+                  <b>{v.clienteNombre || "Consumidor final"}</b>
+                  <small>
+                    {v.fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })} · {METODOS[v.metodoPago] || v.metodoPago}
+                  </small>
+                </span>
+                <strong>{dinero(v.total)}</strong>
+              </li>
+            ))}
+          </ul>
+        )}
+      </motion.section>
+
+      {equipo.some((u) => u.enLinea) && (
+        <motion.section className="gx-seccion" {...entrada(9)}>
+          <header>
+            <h2>Tu equipo ahora</h2>
+            <button type="button" onClick={() => ir("equipo")}>
+              Ver equipo
+            </button>
+          </header>
+          <div className="gx-equipo-mini">
+            {equipo
+              .filter((u) => u.enLinea)
+              .map((u) => (
+                <button key={u.id} type="button" onClick={() => ir("equipo")} aria-label={`${u.nombreCompleto}, ${u.vendiendo ? "vendiendo" : "en línea"}`}>
+                  <Avatar nombre={u.nombreCompleto} tamano={52} />
+                  <i data-vendiendo={u.vendiendo} aria-hidden="true" />
+                  <small>{(u.nombreCompleto || "").split(" ")[0]}</small>
+                </button>
+              ))}
+          </div>
+        </motion.section>
+      )}
+
+      <p className="gx-pie">
+        <span className="gx-vivo" aria-hidden="true" /> {marca.nombre} · datos en vivo
+      </p>
+    </div>
+  );
+}
+
+function Ventas({ ventas, sucursales, ahora }) {
+  const [periodo, setPeriodo] = useState("HOY");
+
+  const lista = useMemo(() => {
+    const hoy0 = inicioDia(new Date(ahora)).getTime();
+    const limite = periodo === "HOY" ? hoy0 : periodo === "SEMANA" ? hoy0 - 6 * 86400000 : new Date(new Date(ahora).getFullYear(), new Date(ahora).getMonth(), 1).getTime();
+    return ventas.filter((v) => v.fecha.getTime() >= limite);
+  }, [ventas, periodo, ahora]);
+
+  const validas = lista.filter((v) => v.estado !== "ANULADA");
+  const total = validas.reduce((s, v) => s + Number(v.total || 0), 0);
+  const nombreSucursal = (id) => sucursales.find((s) => s.id === id)?.nombre || "";
+
+  return (
+    <div className="gx-pantalla">
+      <h1 className="gx-titulo">Mis ventas</h1>
+
+      <div className="gx-chips" role="radiogroup" aria-label="Período">
+        {[["HOY", "Hoy"], ["SEMANA", "7 días"], ["MES", "Este mes"]].map(([id, texto]) => (
+          <button key={id} type="button" role="radio" aria-checked={periodo === id} data-on={periodo === id} onClick={() => setPeriodo(id)}>
+            {texto}
+          </button>
+        ))}
+      </div>
+
+      <motion.section className="gx-resumen" key={periodo} {...entrada(0)}>
+        <div>
+          <small>Vendido</small>
+          <strong>{dinero(total)}</strong>
+        </div>
+        <div>
+          <small>Ventas</small>
+          <strong>{validas.length}</strong>
+        </div>
+      </motion.section>
+
+      {lista.length === 0 ? (
+        <p className="gx-vacio">No hay ventas en este período.</p>
+      ) : (
+        <ul className="gx-lista">
+          {lista.slice(0, 60).map((v, i) => (
+            <motion.li key={v.id} className="gx-fila" data-anulada={v.estado === "ANULADA"} {...entrada(i)}>
+              <span className="gx-fila__icono">
+                <ReceiptText size={18} aria-hidden="true" />
+              </span>
+              <span className="gx-fila__texto">
+                <b>{v.clienteNombre || "Consumidor final"}</b>
+                <small>
+                  {v.fecha.toLocaleDateString("es-BO", { day: "2-digit", month: "short" })} {v.fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })} · {METODOS[v.metodoPago] || v.metodoPago}
+                  {nombreSucursal(v.sucursalId) ? ` · ${nombreSucursal(v.sucursalId)}` : ""}
+                </small>
+              </span>
+              <strong>{v.estado === "ANULADA" ? "Anulada" : dinero(v.total)}</strong>
+            </motion.li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Stock({ filas, consulta = "" }) {
+  const [filtro, setFiltro] = useState("TODOS");
+  const [busqueda, setBusqueda] = useState(consulta);
+
+  const visibles = filas.filter((f) => {
+    if (filtro === "ALERTA" && f.estado === "NORMAL" && f.porVencer === 0) return false;
+    if (filtro === "VENCER" && f.porVencer === 0) return false;
+    const t = normalizar(busqueda);
+    return !t || normalizar(f.producto.nombre).includes(t) || normalizar(f.producto.sku).includes(t);
+  });
+
+  const alertas = filas.filter((f) => f.estado !== "NORMAL").length;
+  const unidades = filas.reduce((s, f) => s + f.vendible, 0);
+
+  const ETIQUETA = { AGOTADO: "Agotado", SOLO_VENCIDO: "Vencido", BAJO: "Por acabarse", NORMAL: "Disponible" };
+
+  return (
+    <div className="gx-pantalla">
+      <h1 className="gx-titulo">Mi stock</h1>
+
+      <section className="gx-tres">
+        <div className="gx-mini">
+          <small>Productos</small>
+          <strong>{filas.length}</strong>
+        </div>
+        <div className="gx-mini">
+          <small>Unidades</small>
+          <strong>{cantidad(unidades)}</strong>
+        </div>
+        <div className="gx-mini" data-alerta={alertas > 0}>
+          <small>Por acabarse</small>
+          <strong>{alertas}</strong>
+        </div>
+      </section>
+
+      <label className="gx-buscar">
+        <Search size={18} aria-hidden="true" />
+        <input type="search" placeholder="Buscar producto…" aria-label="Buscar producto" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </label>
+
+      <div className="gx-chips" role="radiogroup" aria-label="Filtro">
+        {[
+          ["TODOS", "Todos", LayoutGrid],
+          ["ALERTA", "Por acabarse", TriangleAlert],
+          ["VENCER", "Por vencer", CalendarClock]
+        ].map(([id, texto, Icono]) => (
+          <button key={id} type="button" role="radio" aria-checked={filtro === id} data-on={filtro === id} onClick={() => setFiltro(id)}>
+            <Icono size={16} aria-hidden="true" />
+            {texto}
+          </button>
+        ))}
+      </div>
+
+      {visibles.length === 0 ? (
+        <p className="gx-vacio">{filas.length === 0 ? "Registra una compra para que entren tus primeros productos." : "No encontramos productos con ese filtro."}</p>
+      ) : (
+        <ul className="gx-rejilla">
+          {visibles.map((f, i) => (
+            <motion.li key={f.id} className="gx-producto" data-estado={f.estado} {...entrada(i)}>
+              <span className="gx-producto__foto">
+                {f.producto.imagenUrl ? <img src={f.producto.imagenUrl} alt="" loading="lazy" /> : <b>{(f.producto.nombre || "?").charAt(0).toUpperCase()}</b>}
+                <em>{ETIQUETA[f.estado]}</em>
+              </span>
+              <span className="gx-producto__texto">
+                <b>{f.producto.nombre}</b>
+                <span className="gx-nivel" aria-hidden="true">
+                  <i style={{ "--w": `${Math.min(100, (f.vendible / f.tope) * 100)}%` }} />
+                </span>
+                <span className="gx-producto__pie">
+                  <strong>{Number(f.producto.precioVenta) > 0 ? dinero(f.producto.precioVenta) : "—"}</strong>
+                  <small>{cantidad(f.vendible)} u.</small>
+                </span>
+                {f.porVencer > 0 && (
+                  <small className="gx-producto__vence">
+                    <CalendarClock size={12} aria-hidden="true" /> {cantidad(f.porVencer)} por vencer
+                  </small>
+                )}
+              </span>
+            </motion.li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Equipo({ equipo, nombreRol, ahora }) {
+  const conectados = equipo.filter((u) => u.enLinea).length;
+
+  return (
+    <div className="gx-pantalla">
+      <h1 className="gx-titulo">Mi equipo</h1>
+
+      <section className="gx-resumen">
+        <div>
+          <small>En línea</small>
+          <strong>{conectados}</strong>
+        </div>
+        <div>
+          <small>Trabajadores</small>
+          <strong>{equipo.length}</strong>
+        </div>
+      </section>
+
+      {equipo.length === 0 ? (
+        <p className="gx-vacio">Aún no tienes trabajadores activos. Créalos desde el panel web.</p>
+      ) : (
+        <ul className="gx-lista">
+          {equipo.map((u, i) => (
+            <motion.li key={u.id} className="gx-persona" data-linea={u.enLinea} {...entrada(i)}>
+              <span className="gx-persona__avatar">
+                <Avatar nombre={u.nombreCompleto} tamano={48} />
+                <i data-on={u.enLinea} data-vendiendo={u.vendiendo} aria-hidden="true" />
+              </span>
+              <span className="gx-fila__texto">
+                <b>{u.nombreCompleto}</b>
+                <small>{nombreRol(u.rolId)}</small>
+              </span>
+              <span className="gx-persona__estado" data-vendiendo={u.vendiendo} data-on={u.enLinea}>
+                {u.vendiendo ? (
+                  <>
+                    <Zap size={14} aria-hidden="true" /> Vendiendo
+                  </>
+                ) : u.enLinea ? (
+                  "En línea"
+                ) : (
+                  hace(u.ultima, ahora)
+                )}
+              </span>
+            </motion.li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Ajustes({ marca, usuario, empresaId, salir }) {
+  const entradaArchivo = useRef(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
+  const [confirmaQuitar, setConfirmaQuitar] = useState(false);
+  const [permiso, setPermiso] = useState(() => (typeof Notification === "undefined" ? "no-soportado" : Notification.permission));
+
+  const hayQr = Boolean(marca.qrUrl);
+
+  async function elegirArchivo(evento) {
+    const archivo = evento.target.files?.[0];
+    evento.target.value = "";
+    if (!archivo) return;
+
+    setError("");
+    setOk("");
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
+      setError("Sube la foto del QR en JPG, PNG o WEBP.");
       return;
     }
 
-    let activo = true;
+    if (archivo.size > 5 * 1024 * 1024) {
+      setError("La imagen pesa demasiado. Usa una de menos de 5 MB.");
+      return;
+    }
 
-    setCargandoDatos(true);
+    setSubiendo(true);
+
+    try {
+      await subirQrCobro(empresaId, archivo);
+      setOk("Listo: tu QR ya se muestra en caja cuando pagan con QR.");
+      sonidoPop();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "No pudimos subir el QR. Inténtalo otra vez.");
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  async function alternar() {
+    setError("");
+    try {
+      await cambiarQrActivo(empresaId, !marca.qrActivo);
+    } catch (e) {
+      console.error(e);
+      setError("No pudimos cambiar el estado del QR.");
+    }
+  }
+
+  async function quitar() {
+    if (!confirmaQuitar) {
+      setConfirmaQuitar(true);
+      setTimeout(() => setConfirmaQuitar(false), 4000);
+      return;
+    }
+
+    setConfirmaQuitar(false);
     setError("");
 
-    setProductos([]);
-    setInventarios([]);
-    setVentas([]);
-    setSucursales([]);
-    setLotes([]);
-
-    const pendientes = new Set([
-      "productos",
-      "inventarios",
-      "ventas",
-      "sucursales",
-      "lotesInventario"
-    ]);
-
-
-    function escuchar(nombre, actualizar) {
-
-      const consulta = query(
-        collection(db, nombre),
-        where("empresaId", "==", empresaId)
-      );
-
-      return onSnapshot(
-
-        consulta,
-
-        (snapshot) => {
-
-          if (!activo) return;
-
-          const registros = snapshot.docs.map(
-            (documento) => ({
-              id: documento.id,
-              ...documento.data()
-            })
-          );
-
-          actualizar(registros);
-
-          pendientes.delete(nombre);
-
-          if (pendientes.size === 0) {
-            setCargandoDatos(false);
-          }
-
-        },
-
-        (err) => {
-
-          if (!activo) return;
-
-          console.error(
-            `Arca Nova GO / ${nombre}`,
-            err
-          );
-
-          setError(
-            `No se pudo consultar ${nombre}: ${err.message}`
-          );
-
-          pendientes.delete(nombre);
-
-          setCargandoDatos(false);
-
-        }
-
-      );
-
+    try {
+      await quitarQrCobro(empresaId);
+      setOk("Quitaste tu QR. En caja ya no se muestra.");
+    } catch (e) {
+      console.error(e);
+      setError("No pudimos quitar el QR. Inténtalo otra vez.");
     }
-
-
-    const cancelar = [
-
-      escuchar("productos", setProductos),
-
-      escuchar("inventarios", setInventarios),
-
-      escuchar("ventas", setVentas),
-
-      escuchar("sucursales", setSucursales),
-
-      escuchar("lotesInventario", setLotes)
-
-    ];
-
-
-    return () => {
-
-      activo = false;
-
-      cancelar.forEach(
-        (funcion) => funcion()
-      );
-
-    };
-
-  }, [empresaId]);
-
-
-  // ========================================
-  // D. OBTENER TODOS LOS PRODUCTOS ACTIVOS
-  // ========================================
-
-  const activos = useMemo(() => {
-
-    return productos
-
-      .filter(
-        (producto) =>
-          producto.estado === "ACTIVO"
-      )
-
-      .sort(
-        (a, b) =>
-          String(a.nombre || "").localeCompare(
-            String(b.nombre || "")
-          )
-      );
-
-  }, [productos]);
-
-
-  // ========================================
-  // E. CREAR MAPAS
-  // ========================================
-
-  const productosMap = useMemo(
-    () => new Map(
-      activos.map(
-        (producto) => [
-          producto.id,
-          producto
-        ]
-      )
-    ),
-    [activos]
-  );
-
-
-  const sucursalesMap = useMemo(
-    () => new Map(
-      sucursales.map(
-        (sucursal) => [
-          sucursal.id,
-          sucursal.nombre
-        ]
-      )
-    ),
-    [sucursales]
-  );
-
-
-  // ========================================
-  // F. CALCULAR LOTES VIGENTES
-  // ========================================
-
-  const vigentesPorClave = useMemo(() => {
-
-    const mapa = new Map();
-
-    for (const lote of lotes) {
-
-      const dias = diasHasta(
-        lote.fechaVencimiento
-      );
-
-      if (
-        lote.estado !== "ACTIVO" ||
-        dias === null ||
-        dias < 0
-      ) {
-        continue;
-      }
-
-      const cantidad = Number(
-        lote.cantidadDisponible || 0
-      );
-
-      if (
-        !Number.isFinite(cantidad) ||
-        cantidad <= 0
-      ) {
-        continue;
-      }
-
-      const clave =
-        `${lote.sucursalId}_${lote.productoId}`;
-
-      mapa.set(
-        clave,
-        (mapa.get(clave) || 0) + cantidad
-      );
-
-    }
-
-    return mapa;
-
-  }, [lotes]);
-
-
-  // ========================================
-  // G. PREPARAR EXISTENCIAS
-  // ========================================
-
-  const existencias = useMemo(() => {
-
-    return inventarios
-
-      .map((inventario) => {
-
-        const producto = productosMap.get(
-          inventario.productoId
-        );
-
-        if (!producto) return null;
-
-        const fisico = Math.max(
-          0,
-          Number(inventario.stock || 0)
-        );
-
-        const clave =
-          `${inventario.sucursalId}_${inventario.productoId}`;
-
-
-        // PRODUCTOS CON VENCIMIENTO
-
-        const vendible =
-          producto.controlaVencimiento === true
-
-            ? Math.min(
-                fisico,
-                Math.max(
-                  0,
-                  vigentesPorClave.get(clave) || 0
-                )
-              )
-
-            : fisico;
-
-
-        return {
-
-          ...inventario,
-
-          producto,
-
-          fisico,
-
-          vendible,
-
-          tieneRegistro: true,
-
-          nombreSucursal:
-            sucursalesMap.get(inventario.sucursalId) ||
-            "Sucursal"
-
-        };
-
-      })
-
-      .filter(Boolean);
-
-  }, [
-    inventarios,
-    productosMap,
-    vigentesPorClave,
-    sucursalesMap
-  ]);
-
-
-  // ========================================
-  // H. CATALOGO COMPLETO
-  // ========================================
-
-  // IMPORTANTE:
-  // MOSTRAMOS TODOS LOS PRODUCTOS ACTIVOS.
-  // NO SOLO LOS QUE TIENEN INVENTARIO.
-
-  const catalogo = useMemo(() => {
-
-    const filas = [];
-
-
-    // TODAS LAS SUCURSALES
-
-    if (sucursalId === "TODAS") {
-
-      const conInventario = new Set();
-
-      existencias.forEach((item) => {
-
-        filas.push(item);
-
-        conInventario.add(
-          item.productoId
-        );
-
-      });
-
-
-      // AGREGAR PRODUCTOS SIN STOCK
-
-      activos
-
-        .filter(
-          (producto) =>
-            !conInventario.has(producto.id)
-        )
-
-        .forEach((producto) => {
-
-          filas.push({
-
-            id: `sin-stock-${producto.id}`,
-
-            productoId: producto.id,
-
-            sucursalId: null,
-
-            nombreSucursal:
-              "Sin inventario registrado",
-
-            producto,
-
-            fisico: 0,
-
-            vendible: 0,
-
-            tieneRegistro: false
-
-          });
-
-        });
-
-    } else {
-
-      // UNA SUCURSAL ESPECIFICA
-
-      const mapa = new Map(
-
-        existencias
-
-          .filter(
-            (item) =>
-              item.sucursalId === sucursalId
-          )
-
-          .map(
-            (item) => [
-              item.productoId,
-              item
-            ]
-          )
-
-      );
-
-
-      activos.forEach((producto) => {
-
-        const encontrado = mapa.get(
-          producto.id
-        );
-
-
-        filas.push(
-
-          encontrado || {
-
-            id:
-              `sin-stock-${sucursalId}-${producto.id}`,
-
-            productoId:
-              producto.id,
-
-            sucursalId,
-
-            nombreSucursal:
-              sucursalesMap.get(sucursalId) ||
-              "Sucursal",
-
-            producto,
-
-            fisico: 0,
-
-            vendible: 0,
-
-            tieneRegistro: false
-
-          }
-
-        );
-
-      });
-
-    }
-
-
-    return filas.sort(
-      (a, b) =>
-        String(a.producto.nombre || "").localeCompare(
-          String(b.producto.nombre || "")
-        )
-    );
-
-  }, [
-    sucursalId,
-    existencias,
-    activos,
-    sucursalesMap
-  ]);
-
-
-  // ========================================
-  // I. BUSCAR PRODUCTOS
-  // ========================================
-
-  const filtrados = useMemo(() => {
-
-    const texto = busqueda
-      .toLowerCase()
-      .trim();
-
-    return catalogo.filter((item) => {
-
-      return [
-
-        item.producto.nombre,
-
-        item.producto.sku,
-
-        item.producto.codigoBarras
-
-      ].some(
-        (valor) =>
-          String(valor || "")
-            .toLowerCase()
-            .includes(texto)
-      );
-
-    });
-
-  }, [catalogo, busqueda]);
-
-
-  // ========================================
-  // J. FILTRAR EXISTENCIAS
-  // ========================================
-
-  const existenciasVista = existencias.filter(
-    (item) =>
-      sucursalId === "TODAS" ||
-      item.sucursalId === sucursalId
-  );
-
-
-  // ========================================
-  // K. FILTRAR VENTAS
-  // ========================================
-
-  const ventasVista = ventas.filter(
-    (venta) =>
-      sucursalId === "TODAS" ||
-      venta.sucursalId === sucursalId
-  );
-
-
-  const completadas = ventasVista.filter(
-    (venta) =>
-      venta.estado === "COMPLETADA"
-  );
-
-
-  // ========================================
-  // L. VENTAS DEL DIA
-  // ========================================
-
-  const hoyVentas = completadas.filter(
-    (venta) => {
-
-      const fecha = fechaDe(
-        venta.fechaRegistro
-      );
-
-      return fecha &&
-        diaLocal(fecha) === diaLocal();
-
-    }
-  );
-
-
-  // ========================================
-  // M. ESTADISTICAS
-  // ========================================
-
-  const totalHoy = hoyVentas.reduce(
-    (suma, venta) =>
-      suma + Number(venta.total || 0),
-    0
-  );
-
-
-  const totalVentas = completadas.reduce(
-    (suma, venta) =>
-      suma + Number(venta.total || 0),
-    0
-  );
-
-
-  const stockTotal = existenciasVista.reduce(
-    (suma, item) =>
-      suma + item.vendible,
-    0
-  );
-
-
-  // ========================================
-  // N. ALERTAS DE VENCIMIENTO
-  // ========================================
-
-  const alertas = lotes
-
-    .filter(
-      (lote) =>
-        sucursalId === "TODAS" ||
-        lote.sucursalId === sucursalId
-    )
-
-    .filter(
-      (lote) =>
-        lote.estado === "ACTIVO" &&
-        Number(lote.cantidadDisponible || 0) > 0
-    )
-
-    .map((lote) => ({
-
-      ...lote,
-
-      dias: diasHasta(
-        lote.fechaVencimiento
-      ),
-
-      producto: productosMap.get(
-        lote.productoId
-      )
-
-    }))
-
-    .filter(
-      (lote) =>
-        lote.dias === null ||
-        lote.dias <= Number(
-          lote.producto?.diasAlertaVencimiento ?? 15
-        )
-    )
-
-    .sort(
-      (a, b) =>
-        (a.dias ?? -9999) -
-        (b.dias ?? -9999)
-    );
-
-
-  // ========================================
-  // O. PRODUCTOS CON STOCK BAJO
-  // ========================================
-
-  const stockBajo = catalogo.filter(
-    (item) =>
-      item.vendible <= Number(
-        item.producto.stockMinimo || 0
-      )
-  );
-
-
-  // ========================================
-  // P. ULTIMAS VENTAS
-  // ========================================
-
-  const ultimas = [...ventasVista]
-
-    .sort(
-      (a, b) =>
-        (
-          fechaDe(b.fechaRegistro)?.getTime() || 0
-        ) -
-        (
-          fechaDe(a.fechaRegistro)?.getTime() || 0
-        )
-    )
-
-    .slice(0, 80);
-
-
-  // ========================================
-  // Q. PROTEGER ACCESO
-  // ========================================
-
-  if (cargando) {
-
-    return (
-      <div className="go-loading">
-        Comprobando acceso...
-      </div>
-    );
-
   }
 
-
-  if (!usuario) {
-
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
-
+  async function activarAvisos() {
+    if (typeof Notification === "undefined") return;
+    setPermiso(await Notification.requestPermission());
   }
-
-
-  if (
-    usuario.tipoUsuario !== "ADMIN" ||
-    !usuario.empresaId
-  ) {
-
-    return (
-      <Navigate
-        to="/sin-permiso"
-        replace
-      />
-    );
-
-  }
-
-
-  // ========================================
-  // R. CAMBIAR PANTALLA
-  // ========================================
-
-  const cambiar = (paginaNueva) => {
-
-    setPagina(paginaNueva);
-
-    window.scrollTo(0, 0);
-
-  };
-
-
-  // ========================================
-  // S. CERRAR SESION
-  // ========================================
-
-  const salir = async () => {
-
-    await cerrarSesion();
-
-    navigate("/login", {
-      replace: true
-    });
-
-  };
-
-
-  // ========================================
-  // T. INTERFAZ
-  // ========================================
 
   return (
+    <div className="gx-pantalla">
+      <h1 className="gx-titulo">Ajustes</h1>
 
-    <div className="go-app">
+      <motion.section className="gx-perfil" {...entrada(0)}>
+        <Avatar nombre={marca.nombre} logo={marca.logoUrl} tamano={64} />
+        <span>
+          <b>{marca.nombre}</b>
+          <small>{usuario.nombreCompleto}</small>
+          <small>{usuario.correo || usuario.email}</small>
+        </span>
+      </motion.section>
 
-      {/* ENCABEZADO */}
+      <motion.section className="gx-bloque" {...entrada(1)}>
+        <h2>
+          <QrCode size={18} aria-hidden="true" /> Mi QR de cobro
+        </h2>
+        <p className="gx-ayuda">Súbelo una vez. Cuando tu equipo cobre con QR, el cliente lo ve en la pantalla de caja.</p>
 
-      <header className="go-header">
-
-        <div className="go-brand">
-
-          <img className="arca-nova-mark" src="/brand/arca-nova-mark.png" alt="" width={46} height={46} />
-
-          <div>
-
-            <strong>
-              Arca Nova <span>GO</span>
-            </strong>
-
-            <small>
-              PANEL DEL ADMINISTRADOR
-            </small>
-
+        <div className="gx-qr">
+          <div className="gx-qr__vista" data-vacio={!hayQr} data-apagado={hayQr && !marca.qrActivo}>
+            {hayQr ? <img src={marca.qrUrl} alt="Tu QR de cobro" /> : <QrCode size={44} aria-hidden="true" />}
+            {subiendo && <span className="gx-girando" aria-label="Subiendo" />}
           </div>
 
+          <div className="gx-qr__acciones">
+            <input ref={entradaArchivo} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={elegirArchivo} />
+            <button type="button" className="gx-boton" onClick={() => entradaArchivo.current?.click()} disabled={subiendo}>
+              <Upload size={18} aria-hidden="true" />
+              {subiendo ? "Subiendo…" : hayQr ? "Cambiar QR" : "Subir mi QR"}
+            </button>
+
+            {hayQr && (
+              <>
+                <label className="gx-interruptor">
+                  <input type="checkbox" checked={marca.qrActivo} onChange={alternar} />
+                  <span aria-hidden="true" />
+                  <b>Mostrar en caja</b>
+                </label>
+                <button type="button" className="gx-boton gx-boton--suave" data-peligro={confirmaQuitar} onClick={quitar}>
+                  <Trash2 size={17} aria-hidden="true" />
+                  {confirmaQuitar ? "Toca otra vez para quitar" : "Quitar QR"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-
-        <button
-          type="button"
-          className="go-icon-button"
-          onClick={() => navigate("/dashboard")}
-          title="Volver a la web"
-        >
-
-          <ArrowLeft size={20} />
-
-        </button>
-
-      </header>
-
-
-      {/* SELECTOR DE SUCURSAL */}
-
-      <div className="go-sucursal">
-
-        <span>
-
-          ● {error
-            ? "ERROR DE SINCRONIZACIÓN"
-            : "FIREBASE CONECTADO"}
-
-        </span>
-
-
-        <select
-          value={sucursalId}
-          onChange={(e) => {
-
-            setSucursalId(e.target.value);
-
-            setBusqueda("");
-
-          }}
-        >
-
-          <option value="TODAS">
-            Todas las sucursales
-          </option>
-
-
-          {sucursales
-
-            .filter(
-              (sucursal) =>
-                sucursal.estado === "ACTIVA"
-            )
-
-            .map((sucursal) => (
-
-              <option
-                key={sucursal.id}
-                value={sucursal.id}
-              >
-
-                {sucursal.nombre}
-
-              </option>
-
-            ))}
-
-        </select>
-
-      </div>
-
-
-      {/* CONTENIDO */}
-
-      <main className="go-content">
-
         {error && (
-
-          <div className="go-error">
+          <p className="gx-mensaje" data-tipo="error" role="alert">
             {error}
-          </div>
-
+          </p>
         )}
+        {ok && (
+          <p className="gx-mensaje" data-tipo="ok" role="status">
+            <Check size={16} aria-hidden="true" /> {ok}
+          </p>
+        )}
+      </motion.section>
 
-
-        {cargandoDatos ? (
-
-          <div className="go-loading">
-            Sincronizando información...
-          </div>
-
+      <motion.section className="gx-bloque" {...entrada(2)}>
+        <h2>
+          <BellRing size={18} aria-hidden="true" /> Avisos en el teléfono
+        </h2>
+        {permiso === "granted" ? (
+          <p className="gx-mensaje" data-tipo="ok">
+            <Check size={16} aria-hidden="true" /> Activados. Te avisamos cuando algo se esté acabando.
+          </p>
+        ) : permiso === "denied" ? (
+          <p className="gx-ayuda">Los bloqueaste en el navegador. Puedes activarlos desde los permisos del sitio.</p>
+        ) : permiso === "no-soportado" ? (
+          <p className="gx-ayuda">Este teléfono no permite avisos desde el navegador. Igual verás las alertas dentro de la app.</p>
         ) : (
-
           <>
-
-            {/* ========================== */}
-            {/* INICIO */}
-            {/* ========================== */}
-
-            {pagina === "inicio" && (
-
-              <div className="go-animation">
-
-                <div className="go-title">
-
-                  <small>
-                    BIENVENIDO A TU NEGOCIO
-                  </small>
-
-                  <h1>
-                    Todo bajo control ✦
-                  </h1>
-
-                  <p>
-                    Consulta tu empresa desde cualquier lugar.
-                  </p>
-
-                </div>
-
-
-                <div className="go-hero">
-
-                  <div className="go-hero-label">
-
-                    <TrendingUp size={17} />
-
-                    VENTAS DE HOY
-
-                  </div>
-
-
-                  <strong>
-                    {dinero(totalHoy)}
-                  </strong>
-
-                  <span>
-                    {hoyVentas.length} ventas completadas
-                  </span>
-
-                </div>
-
-
-                <div className="go-stat-grid">
-
-                  <button
-                    onClick={() => cambiar("inventario")}
-                  >
-
-                    <Boxes size={22} />
-
-                    <strong>
-                      {numero(activos.length)}
-                    </strong>
-
-                    <span>
-                      Productos
-                    </span>
-
-                  </button>
-
-
-                  <button
-                    onClick={() => cambiar("ventas")}
-                  >
-
-                    <ReceiptText size={22} />
-
-                    <strong>
-                      {numero(completadas.length)}
-                    </strong>
-
-                    <span>
-                      Ventas
-                    </span>
-
-                  </button>
-
-
-                  <button
-                    onClick={() => cambiar("inventario")}
-                  >
-
-                    <ChartNoAxesColumn size={22} />
-
-                    <strong>
-                      {numero(stockTotal)}
-                    </strong>
-
-                    <span>
-                      Stock vendible
-                    </span>
-
-                  </button>
-
-
-                  <button
-                    onClick={() => cambiar("alertas")}
-                  >
-
-                    <BellRing size={22} />
-
-                    <strong>
-                      {numero(alertas.length)}
-                    </strong>
-
-                    <span>
-                      Lotes con alerta
-                    </span>
-
-                  </button>
-
-                </div>
-
-
-                <h2 className="go-section-title">
-                  Accesos rápidos
-                </h2>
-
-
-                <div className="go-quick">
-
-                  <button
-                    onClick={() => cambiar("inventario")}
-                  >
-                    📦 Ver inventario
-                  </button>
-
-
-                  <button
-                    onClick={() => cambiar("ventas")}
-                  >
-                    🧾 Ver ventas
-                  </button>
-
-                </div>
-
-              </div>
-
-            )}
-
-
-            {/* ========================== */}
-            {/* INVENTARIO Y CATALOGO */}
-            {/* ========================== */}
-
-            {pagina === "inventario" && (
-
-              <div className="go-animation">
-
-                <div className="go-title">
-
-                  <small>
-                    CATÁLOGO E INVENTARIO
-                  </small>
-
-                  <h1>
-                    Mis productos
-                  </h1>
-
-                  <p>
-
-                    {activos.length} productos activos.
-                    Los recién creados aparecen
-                    incluso con stock cero.
-
-                  </p>
-
-                </div>
-
-
-                <div className="go-search">
-
-                  <Search size={19} />
-
-                  <input
-                    type="text"
-                    placeholder="Buscar producto, SKU o código..."
-                    value={busqueda}
-                    onChange={(e) =>
-                      setBusqueda(e.target.value)
-                    }
-                  />
-
-                </div>
-
-
-                <div className="go-product-list">
-
-                  {filtrados.map((item) => (
-
-                    <div
-                      className="go-product-card"
-                      key={
-                        `${item.sucursalId || "general"}_${item.productoId}`
-                      }
-                    >
-
-                      {/* FOTOGRAFIA */}
-
-                      <div className="go-product-image">
-
-                        {item.producto.imagenUrl ? (
-
-                          <img
-                            src={item.producto.imagenUrl}
-                            alt={item.producto.nombre}
-                            loading="lazy"
-                          />
-
-                        ) : (
-
-                          <Boxes size={27} />
-
-                        )}
-
-                      </div>
-
-
-                      {/* DATOS DEL PRODUCTO */}
-
-                      <div className="go-product-info">
-
-                        <strong>
-                          {item.producto.nombre}
-                        </strong>
-
-                        <span>
-                          {item.nombreSucursal}
-                        </span>
-
-                        <span>
-                          {item.producto.sku || "Sin SKU"}
-                        </span>
-
-                        <b>
-                          {dinero(item.producto.precioVenta)}
-                        </b>
-
-
-                        {item.producto.controlaVencimiento && (
-
-                          <small>
-                            Control por lotes
-                          </small>
-
-                        )}
-
-
-                        {!item.tieneRegistro && (
-
-                          <small
-                            style={{
-                              color: "#ffc783"
-                            }}
-                          >
-
-                            <PackagePlus
-                              size={12}
-                            />
-
-                            Sin inventario registrado
-
-                          </small>
-
-                        )}
-
-                      </div>
-
-
-                      {/* STOCK */}
-
-                      <div className="go-product-stock">
-
-                        <strong>
-                          {numero(item.vendible)}
-                        </strong>
-
-                        <span>
-                          Vendible
-                        </span>
-
-                        <small>
-                          Físico: {numero(item.fisico)}
-                        </small>
-
-                      </div>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
-
-                {!filtrados.length && (
-
-                  <div className="go-loading">
-
-                    No encontramos productos.
-
-                  </div>
-
-                )}
-
-              </div>
-
-            )}
-
-
-            {/* ========================== */}
-            {/* VENTAS */}
-            {/* ========================== */}
-
-            {pagina === "ventas" && (
-
-              <div className="go-animation">
-
-                <div className="go-title">
-
-                  <small>
-                    HISTORIAL
-                  </small>
-
-                  <h1>
-                    Mis ventas
-                  </h1>
-
-                  <p>
-                    Ventas registradas en tu empresa.
-                  </p>
-
-                </div>
-
-
-                <div className="go-list">
-
-                  {ultimas.map((venta) => (
-
-                    <div
-                      className="go-list-card"
-                      key={venta.id}
-                    >
-
-                      <div className="go-list-icon">
-                        <ReceiptText size={21} />
-                      </div>
-
-
-                      <div className="go-list-info">
-
-                        <strong>
-                          Venta #{venta.id.slice(0, 8)}
-                        </strong>
-
-                        <span>
-
-                          {fechaDe(
-                            venta.fechaRegistro
-                          )?.toLocaleString("es-BO") || "-"}
-
-                        </span>
-
-                        <small>
-
-                          {venta.metodoPago}
-
-                          {" · "}
-
-                          {venta.estado}
-
-                        </small>
-
-                      </div>
-
-
-                      <b>
-                        {dinero(venta.total)}
-                      </b>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
-
-                {!ultimas.length && (
-
-                  <div className="go-loading">
-                    No hay ventas registradas.
-                  </div>
-
-                )}
-
-              </div>
-
-            )}
-
-
-            {/* ========================== */}
-            {/* RESUMEN */}
-            {/* ========================== */}
-
-            {pagina === "finanzas" && (
-
-              <div className="go-animation">
-
-                <div className="go-title">
-
-                  <small>
-                    RESUMEN GERENCIAL
-                  </small>
-
-                  <h1>
-                    Resumen de ventas
-                  </h1>
-
-                  <p>
-
-                    Importes registrados;
-                    no representan utilidad neta
-                    ni saldo de caja.
-
-                  </p>
-
-                </div>
-
-
-                <div className="go-hero">
-
-                  <div className="go-hero-label">
-
-                    <ChartNoAxesColumn size={18} />
-
-                    TOTAL REGISTRADO
-
-                  </div>
-
-
-                  <strong>
-                    {dinero(totalVentas)}
-                  </strong>
-
-                  <span>
-                    {completadas.length} ventas completadas
-                  </span>
-
-                </div>
-
-
-                <h2 className="go-section-title">
-                  Por método de pago
-                </h2>
-
-
-                <div className="go-list">
-
-                  {[
-                    "EFECTIVO",
-                    "QR",
-                    "TARJETA",
-                    "TRANSFERENCIA",
-                    "CREDITO"
-                  ].map((metodo) => {
-
-                    const totalMetodo = completadas
-
-                      .filter(
-                        (venta) =>
-                          venta.metodoPago === metodo
-                      )
-
-                      .reduce(
-                        (suma, venta) =>
-                          suma + Number(venta.total || 0),
-                        0
-                      );
-
-
-                    return (
-
-                      <div
-                        className="go-list-card"
-                        key={metodo}
-                      >
-
-                        <div className="go-list-icon">
-                          <ChartNoAxesColumn size={19} />
-                        </div>
-
-                        <div className="go-list-info">
-                          <strong>{metodo}</strong>
-                        </div>
-
-                        <b>
-                          {dinero(totalMetodo)}
-                        </b>
-
-                      </div>
-
-                    );
-
-                  })}
-
-                </div>
-
-              </div>
-
-            )}
-
-
-            {/* ========================== */}
-            {/* ALERTAS */}
-            {/* ========================== */}
-
-            {pagina === "alertas" && (
-
-              <div className="go-animation">
-
-                <div className="go-title">
-
-                  <small>
-                    MONITOREO
-                  </small>
-
-                  <h1>
-                    Alertas
-                  </h1>
-
-                  <p>
-                    Vencimientos y stock bajo.
-                  </p>
-
-                </div>
-
-
-                <h2 className="go-section-title">
-                  Vencimientos
-                </h2>
-
-
-                <div className="go-list">
-
-                  {alertas.map((lote) => (
-
-                    <div
-                      className="go-list-card"
-                      key={lote.id}
-                    >
-
-                      <div className="go-list-icon go-warning">
-                        <AlertTriangle size={20} />
-                      </div>
-
-
-                      <div className="go-list-info">
-
-                        <strong>
-                          {lote.producto?.nombre || "Producto"}
-                        </strong>
-
-                        <span>
-
-                          Lote {lote.numeroLote || lote.id.slice(0, 8)}
-
-                          {" · "}
-
-                          {lote.fechaVencimiento || "Sin fecha"}
-
-                        </span>
-
-                        <small>
-
-                          {numero(lote.cantidadDisponible)}
-                          {" "}unidades
-
-                        </small>
-
-                      </div>
-
-
-                      <b className="go-warning-text">
-
-                        {lote.dias === null
-
-                          ? "Fecha inválida"
-
-                          : lote.dias < 0
-
-                            ? "Vencido"
-
-                            : lote.dias === 0
-
-                              ? "Hoy"
-
-                              : `${lote.dias} días`}
-
-                      </b>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
-
-                {!alertas.length && (
-
-                  <div className="go-loading">
-
-                    No hay lotes con alerta.
-
-                  </div>
-
-                )}
-
-
-                <h2 className="go-section-title">
-                  Stock bajo
-                </h2>
-
-
-                <div className="go-list">
-
-                  {stockBajo.map((item) => (
-
-                    <div
-                      className="go-list-card"
-                      key={
-                        `${item.sucursalId || "general"}_${item.productoId}`
-                      }
-                    >
-
-                      <div className="go-list-icon go-warning">
-                        <Boxes size={19} />
-                      </div>
-
-
-                      <div className="go-list-info">
-
-                        <strong>
-                          {item.producto.nombre}
-                        </strong>
-
-                        <span>
-                          {item.nombreSucursal}
-                        </span>
-
-                      </div>
-
-
-                      <b className="go-warning-text">
-                        {numero(item.vendible)}
-                      </b>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
-              </div>
-
-            )}
-
-
-            {/* ========================== */}
-            {/* PERFIL */}
-            {/* ========================== */}
-
-            {pagina === "perfil" && (
-
-              <div className="go-animation">
-
-                <div className="go-title">
-
-                  <small>
-                    MI CUENTA
-                  </small>
-
-                  <h1>
-                    Mi perfil
-                  </h1>
-
-                </div>
-
-
-                <div className="go-profile">
-
-                  <div className="go-profile-avatar">
-                    <UserRound size={32} />
-                  </div>
-
-                  <h2>
-                    {usuario.nombreCompleto || "Administrador"}
-                  </h2>
-
-                  <span>
-
-                    <ShieldCheck size={16} />
-
-                    ADMIN
-
-                  </span>
-
-                </div>
-
-
-                <div className="go-profile-details">
-
-                  <p>
-
-                    Correo:
-
-                    <strong>
-                      {usuario.email || usuario.correo}
-                    </strong>
-
-                  </p>
-
-
-                  <p>
-
-                    Empresa:
-
-                    <strong>
-                      {usuario.empresaId}
-                    </strong>
-
-                  </p>
-
-                </div>
-
-
-                <button
-                  type="button"
-                  className="go-logout"
-                  onClick={salir}
-                >
-
-                  <LogOut size={19} />
-
-                  Cerrar sesión
-
-                </button>
-
-              </div>
-
-            )}
-
+            <p className="gx-ayuda">Recibe un aviso cuando se acabe un producto mientras la app esté en segundo plano.</p>
+            <button type="button" className="gx-boton gx-boton--suave" onClick={activarAvisos}>
+              <Download size={17} aria-hidden="true" /> Activar avisos
+            </button>
           </>
-
         )}
+      </motion.section>
 
-      </main>
-
-
-      {/* NAVEGACION INFERIOR */}
-
-      <nav className="go-navigation">
-
-        {[
-          ["inicio", "Inicio", House],
-          ["inventario", "Stock", Boxes],
-          ["ventas", "Ventas", ReceiptText],
-          ["finanzas", "Resumen", ChartNoAxesColumn],
-          ["alertas", "Alertas", BellRing],
-          ["perfil", "Perfil", UserRound]
-        ].map(([id, titulo, Icono]) => (
-
-          <button
-            type="button"
-            key={id}
-            className={
-              pagina === id
-                ? "go-nav-active"
-                : ""
-            }
-            onClick={() => cambiar(id)}
-          >
-
-            <Icono size={20} />
-
-            <span>
-              {titulo}
-            </span>
-
-          </button>
-
-        ))}
-
-      </nav>
-
+      <motion.button type="button" className="gx-salir" onClick={salir} {...entrada(3)}>
+        <LogOut size={19} aria-hidden="true" />
+        Cerrar sesión
+      </motion.button>
     </div>
-
   );
-
 }

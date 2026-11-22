@@ -1,0 +1,386 @@
+/* =========================================================
+   TRABAJADORES
+   Comparte variables y piezas con Roles y permisos (.re).
+========================================================= */
+
+.tr-metricas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tr-metrica {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 20px;
+  background: var(--re-superficie);
+
+  transition: transform 200ms var(--re-salida), border-color 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tr-metrica:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--re-primario) 50%, transparent);
+  }
+}
+
+.tr-metrica__icono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--re-primario) 20%, transparent);
+  color: var(--re-primario);
+}
+
+.tr-metrica div {
+  display: grid;
+  min-width: 0;
+}
+
+.tr-metrica small {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.tr-metrica strong {
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.tr-metrica em {
+  font-size: 13px;
+  font-style: normal;
+  color: var(--re-apagado);
+}
+
+/* ---------- Selector de rol (filtro) ---------- */
+
+.tr-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.tr-selector select {
+  min-height: 50px;
+  padding: 0 40px 0 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-fondo) 55%, transparent);
+  color: var(--re-texto);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+
+  appearance: none;
+  cursor: pointer;
+
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tr-selector--formulario select {
+  width: 100%;
+  min-height: 50px;
+}
+
+.tr-selector select:focus {
+  border-color: var(--re-primario);
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--re-primario) 24%, transparent);
+}
+
+.tr-selector option {
+  background: var(--re-fondo);
+  color: var(--re-texto);
+}
+
+.tr-selector svg {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: var(--re-apagado);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tr-selector select:hover {
+    border-color: var(--re-primario);
+  }
+}
+
+.tr-selector--formulario {
+  display: block;
+}
+
+/* ---------- Tarjetas de trabajadores ---------- */
+
+.tr-lista {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.tr-tarjeta__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tr-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+
+  border-radius: 16px;
+  background: var(--re-primario);
+  color: var(--re-sobre);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tr-tarjeta__titulo {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tr-tarjeta__titulo h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 19px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-rol {
+  justify-self: start;
+  max-width: 100%;
+  padding: 3px 10px;
+  overflow: hidden;
+
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--re-primario) 18%, transparent);
+  color: var(--re-primario);
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tr-datos {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.tr-datos div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tr-datos dt {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 22px;
+  color: var(--re-apagado);
+}
+
+.tr-datos dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.tr-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tr-estados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tr-verificacion {
+  padding: 4px 12px;
+
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--re-ok) 16%, transparent);
+  color: var(--re-ok);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tr-verificacion[data-verificado="false"] {
+  background: color-mix(in srgb, #ffb454 18%, transparent);
+  color: #ffb454;
+}
+
+/* ---------- Formulario ---------- */
+
+.tr-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--re-apagado);
+}
+
+.tr-clave {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 18px;
+  background: var(--re-superficie);
+}
+
+.tr-clave__campo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px 0 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-fondo) 55%, transparent);
+  color: var(--re-apagado);
+
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tr-clave__campo:focus-within {
+  border-color: var(--re-primario);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--re-primario) 24%, transparent);
+}
+
+.tr-clave__campo input,
+.tr-clave__campo input:focus {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--re-texto);
+  font: inherit;
+  font-size: 16px;
+}
+
+.tr-clave__ojo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--re-texto);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tr-clave__ojo:hover {
+    background: var(--re-superficie-alta);
+  }
+}
+
+/* Los navegadores pintan de blanco los campos autocompletados */
+.re input:-webkit-autofill,
+.re input:-webkit-autofill:hover,
+.re input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--re-texto);
+  caret-color: var(--re-texto);
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--re-fondo) 92%, var(--re-texto)) inset;
+  transition: background-color 9999s ease-out;
+}
+
+/* ---------- Adaptación ---------- */
+
+@media (max-width: 760px) {
+  .tr-metricas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tr-metrica {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .tr-metrica__icono {
+    width: 38px;
+    height: 38px;
+  }
+
+  .tr-metrica strong {
+    font-size: 24px;
+  }
+
+  .tr-metrica em {
+    display: none;
+  }
+
+  .tr-metrica small {
+    font-size: 11px;
+  }
+}
+
+/* El rol debe leerse bien aunque el color de la empresa sea intenso */
+.tr-rol {
+  background: color-mix(in srgb, var(--re-primario) 30%, transparent);
+  color: var(--re-texto);
+}
+
+@media (max-width: 700px) {
+  .re-herramientas > * {
+    max-width: 100%;
+  }
+
+  .re-busqueda {
+    flex: 1 1 100%;
+  }
+
+  .re-herramientas > .tr-selector {
+    display: block;
+    flex: 1 1 100%;
+  }
+
+  .re-herramientas > .tr-selector select {
+    width: 100%;
+  }
+}

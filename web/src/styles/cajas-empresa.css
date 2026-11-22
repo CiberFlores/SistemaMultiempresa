@@ -1,0 +1,195 @@
+/* =========================================================
+   CAJAS, MOVIMIENTOS, GASTOS Y CUENTAS
+   Comparte variables con Roles (.re) e Inventario
+========================================================= */
+
+.cj-titulo {
+  margin: 4px 0 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.cj-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.cj-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 22px;
+  background: var(--re-superficie);
+
+  transition: transform 200ms var(--re-salida), border-color 200ms ease;
+}
+
+.cj-tarjeta > * {
+  min-width: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cj-tarjeta:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--re-primario) 50%, transparent);
+  }
+}
+
+.cj-tarjeta[data-negativo="true"] {
+  border-color: color-mix(in srgb, var(--re-peligro) 60%, transparent);
+}
+
+.cj-tarjeta header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cj-tarjeta h3 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.cj-tarjeta header span:not(.inv-pastilla) {
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.cj-saldo {
+  display: grid;
+  gap: 2px;
+  padding: 16px;
+
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--re-primario) 14%, transparent);
+}
+
+.cj-saldo small {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.cj-saldo strong {
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.cj-tarjeta[data-negativo="true"] .cj-saldo strong {
+  color: var(--re-peligro);
+}
+
+.cj-alerta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--re-peligro);
+}
+
+.cj-alerta svg {
+  flex: none;
+}
+
+.cj-tarjeta dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.cj-tarjeta dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.cj-tarjeta dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--re-apagado);
+}
+
+.cj-tarjeta dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cj-entra {
+  color: var(--re-ok);
+}
+
+.cj-sale {
+  color: #ffb454;
+}
+
+.cj-tarjeta footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--re-borde);
+}
+
+.inv-tabla small.inv-ok {
+  color: var(--re-ok);
+  font-weight: 700;
+}
+
+.inv-sin {
+  color: var(--re-apagado);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .cj-lista {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cj-saldo strong {
+    font-size: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cj-tarjeta {
+    transition: none;
+  }
+}
+
+.co-iguales {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.re-modal .re-campo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 640px) {
+  .co-iguales {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.re-chip {
+  white-space: nowrap;
+}

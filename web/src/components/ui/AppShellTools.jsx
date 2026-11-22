@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 const COMMANDS = [
   ["Dashboard", "/dashboard"], ["Productos", "/inventario/productos"], ["Inventario", "/inventario"],
-  ["Clientes", "/clientes"], ["Proveedores", "/compras/proveedores"], ["Compras", "/compras"],
+  ["Proveedores", "/compras/proveedores"], ["Compras", "/compras"],
   ["Punto de venta", "/ventas/pos"], ["Ventas", "/ventas"], ["Gastos", "/finanzas/gastos"],
   ["Cuentas por cobrar", "/finanzas/cuentas-cobrar"], ["Cuentas por pagar", "/finanzas/cuentas-pagar"],
   ["Reportes", "/reportes/ventas"], ["Super Admin", "/superadmin/dashboard"], ["Empresas", "/superadmin/empresas"]

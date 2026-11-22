@@ -326,6 +326,8 @@ export async function registrarVenta({
   empresaId,
   sucursalId,
   clienteId,
+  clienteNombre,
+  clienteDocumento,
   metodoPago,
   cajaId,
   descuento,
@@ -1030,6 +1032,12 @@ export async function registrarVenta({
 
       clienteId:
         clienteId || null,
+
+      clienteNombre:
+        String(clienteNombre || "").trim(),
+
+      clienteDocumento:
+        String(clienteDocumento || "").trim(),
 
       metodoPago,
 

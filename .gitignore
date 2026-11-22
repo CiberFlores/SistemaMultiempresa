@@ -42,3 +42,6 @@ yarn-error.log*
 
 # Comprimidos
 *.zip
+# Copias de seguridad con datos de personas y capturas de pruebas (no subir)
+Respaldo_*/
+.playwright-mcp/

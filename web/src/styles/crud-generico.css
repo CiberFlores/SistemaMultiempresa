@@ -1,0 +1,274 @@
+/* =========================================================
+   LISTADOS GENÉRICOS (categorías, marcas, proveedores, gastos…)
+   Comparte variables y piezas con Roles (.re).
+========================================================= */
+
+.cg-metricas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cg-metrica {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 16px 18px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 18px;
+  background: var(--re-superficie);
+}
+
+.cg-metrica small {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.cg-metrica strong {
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.cg-metrica em {
+  font-size: 13px;
+  font-style: normal;
+  color: var(--re-apagado);
+}
+
+/* ---------- Rangos de fecha o número ---------- */
+
+.cg-rangos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.cg-rangos label {
+  display: grid;
+  gap: 6px;
+}
+
+.cg-rangos span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--re-apagado);
+}
+
+.cg-rangos input {
+  min-height: 46px;
+  padding: 0 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--re-fondo) 55%, transparent);
+  color: var(--re-texto);
+  font: inherit;
+  font-size: 15px;
+}
+
+.cg-rangos input:focus {
+  border-color: var(--re-primario);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--re-primario) 24%, transparent);
+}
+
+/* ---------- Tarjetas ---------- */
+
+.cg-lista {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.cg-tarjeta__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cg-inicial {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+
+  border-radius: 15px;
+  background: var(--re-primario);
+  color: var(--re-sobre);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.cg-titulo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.cg-datos {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.cg-datos > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 38%) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.cg-datos dt {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.cg-datos dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.cg-peligro {
+  color: var(--re-peligro);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cg-peligro:hover:not(:disabled) {
+    border-color: var(--re-peligro);
+    background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  }
+}
+
+.cg-mas {
+  justify-self: center;
+  min-width: 220px;
+}
+
+/* ---------- Formulario y ficha ---------- */
+
+.cg-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cg-campos > [data-ancho="completo"] {
+  grid-column: 1 / -1;
+}
+
+.cg-campos textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-fondo) 55%, transparent);
+  color: var(--re-texto);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.cg-campos textarea:focus {
+  border-color: var(--re-primario);
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--re-primario) 24%, transparent);
+}
+
+.cg-campos textarea[aria-invalid="true"],
+.cg-campos select[aria-invalid="true"] {
+  border-color: var(--re-peligro);
+}
+
+.cg-campos input[type="date"],
+.cg-campos input[type="number"] {
+  color-scheme: dark;
+}
+
+.cg-ficha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.cg-ficha > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+
+  border-radius: 14px;
+  background: var(--re-superficie);
+}
+
+.cg-ficha > [data-ancho="completo"] {
+  grid-column: 1 / -1;
+}
+
+.cg-ficha dt {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.cg-ficha dd {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.cg-detalle .re-estado {
+  display: inline-block;
+  margin-top: 6px;
+}
+
+/* ---------- Adaptación ---------- */
+
+@media (max-width: 700px) {
+  .cg-campos,
+  .cg-ficha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cg-metricas {
+    gap: 8px;
+  }
+
+  .cg-metrica {
+    padding: 12px;
+  }
+
+  .cg-metrica strong {
+    font-size: 24px;
+  }
+
+  .cg-metrica em {
+    display: none;
+  }
+
+  .cg-metrica small {
+    font-size: 11px;
+  }
+}

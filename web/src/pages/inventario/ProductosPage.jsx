@@ -9,6 +9,7 @@ import {
   Camera,
   CheckCircle2,
   Image as ImageIcon,
+  Eye,
   Info,
   Package,
   Pencil,
@@ -40,8 +41,10 @@ import { eliminarRegistro } from "../../services/genericCrudService";
 import { subirImagenEmpresa } from "../../services/storageService";
 
 import AdvancedFilterBar from "../../components/filters/AdvancedFilterBar";
+import DetalleProductoModal from "../../components/inventario/DetalleProductoModal";
 
 import "../../styles/productos-premium.css";
+import "../../styles/productos-tema.css";
 
 
 // ==========================================
@@ -269,6 +272,8 @@ export default function ProductosPage() {
   // ========================================
 
   const [abierto, setAbierto] = useState(false);
+
+  const [detalle, setDetalle] = useState(null);
 
   const [editando, setEditando] = useState(null);
 
@@ -883,7 +888,7 @@ export default function ProductosPage() {
       if (archivo) {
 
         setEtapa(
-          "Subiendo fotografía a Cloudinary..."
+          "Subiendo la fotografía..."
         );
 
 
@@ -996,7 +1001,7 @@ export default function ProductosPage() {
 
             "Los datos del producto se guardaron, " +
 
-            "pero Cloudinary no pudo subir la nueva fotografía. " +
+            "pero no se pudo subir la nueva fotografía. " +
 
             (
               datos.imagenUrl
@@ -1016,7 +1021,7 @@ export default function ProductosPage() {
       // ====================================
 
       setEtapa(
-        "Guardando producto en Firebase..."
+        "Guardando el producto..."
       );
 
 
@@ -1685,6 +1690,16 @@ export default function ProductosPage() {
 
                     <div className="row-actions">
 
+                      {/* VER DETALLE */}
+                      <button
+                        type="button"
+                        title="Ver detalle"
+                        aria-label={`Ver detalle de ${p.nombre}`}
+                        onClick={() => setDetalle(p)}
+                      >
+                        <Eye size={16} />
+                      </button>
+
                       {/* EDITAR */}
 
                       <button
@@ -1759,6 +1774,23 @@ export default function ProductosPage() {
       {/* ================================= */}
       {/* MODAL PARA REGISTRAR O EDITAR */}
       {/* ================================= */}
+
+      <AnimatePresence>
+        {detalle && (
+          <DetalleProductoModal
+            producto={detalle}
+            categorias={categorias}
+            marcas={marcas}
+            empresaId={usuario?.empresaId}
+            alCerrar={() => setDetalle(null)}
+            alEditar={() => {
+              const producto = detalle;
+              setDetalle(null);
+              editar(producto);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
 
@@ -2451,7 +2483,7 @@ export default function ProductosPage() {
 
 
                       <p>
-                        Tu imagen se guarda en Cloudinary.
+                        Una foto clara ayuda a encontrar el producto al vender.
                       </p>
 
 
@@ -2619,14 +2651,13 @@ export default function ProductosPage() {
                       <div>
 
                         <strong>
-                          Datos de tu empresa
+                          Solo tu empresa lo ve
                         </strong>
 
                         <span>
 
-                          Se respetan el empresaId
-                          y los permisos actuales
-                          de Firebase.
+                          Este producto es privado de tu negocio y
+                          solo lo ven las personas que tú autorices.
 
                         </span>
 

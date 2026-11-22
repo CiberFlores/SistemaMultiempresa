@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 770 200"><defs><linearGradient id="g" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#B03BEA"/><stop offset="1" stop-color="#5B0F8F"/></linearGradient><linearGradient id="o" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A14"/><stop offset="1" stop-color="#FFA83D"/></linearGradient></defs><rect width="770" height="200" rx="28" fill="#1E0630"/>
+<g stroke-linejoin="round" stroke-linecap="round">
+<polygon points="100,28 170,164 30,164" fill="url(#g)" stroke="url(#g)" stroke-width="30"/>
+<polygon points="100,64 139,148 61,148" fill="#1E0630" stroke="#1E0630" stroke-width="18"/>
+</g>
+<g fill="#fff" transform="translate(-10 -42) scale(1.1)"><path d="M78 96h9l4 8h34l-8 22H98z" /><path d="M78 96h9" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="101" cy="133" r="5"/><circle cx="123" cy="133" r="5"/></g>
+<path d="M20 172C64 128 128 146 184 98C178 130 142 152 102 160C68 166 40 168 20 172Z" fill="url(#o)" stroke="#1E0630" stroke-width="6" paint-order="stroke" stroke-linejoin="round"/><text x="210" y="150" font-size="104" font-family="Nunito,Poppins,'Segoe UI',Arial,sans-serif" font-weight="900" letter-spacing="-3"><tspan fill="#FFF6EC">Arca</tspan><tspan fill="#FF8A14">Nova</tspan></text><path d="M602 52l6 15 15 6-15 6-6 15-6-15-15-6 15-6z" fill="#FF8A14"/></svg>

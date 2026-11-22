@@ -18,6 +18,7 @@ import { registrarAuditoria } from "../../services/auditService";
 import AdvancedFilterBar from "../../components/filters/AdvancedFilterBar";
 import PasswordStrength from "../../components/common/PasswordStrength";
 import useAuth from "../../hooks/useAuth";
+import useConfirmar from "../../hooks/useConfirmar";
 
 const initial = {
   empresaId: "",
@@ -31,6 +32,7 @@ const initial = {
 
 export default function AdministradoresPage() {
   const { usuario } = useAuth();
+  const confirmar = useConfirmar();
   const [rows, setRows] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [search, setSearch] = useState("");
@@ -43,6 +45,7 @@ export default function AdministradoresPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avisoError, setAvisoError] = useState("");
 
   useEffect(() => {
     const unsub = suscribirAdministradores(setRows, console.error);
@@ -160,7 +163,13 @@ export default function AdministradoresPage() {
   const toggle = async (row) => {
     if (row.eliminado === true) return;
     const next = row.estado !== true;
-    await actualizarPerfilUsuario(row.id, { estado: next });
+    setAvisoError("");
+    try {
+      await actualizarPerfilUsuario(row.id, { estado: next });
+    } catch (err) {
+      setAvisoError(err.message || "No se pudo cambiar el estado del administrador.");
+      return;
+    }
     await registrarAuditoria({
       empresaId: null,
       usuarioId: usuario?.uid,
@@ -174,20 +183,29 @@ export default function AdministradoresPage() {
   };
 
   const remove = async (row) => {
-    if (
-      !window.confirm(
-        `¿Retirar al administrador ${row.nombreCompleto}? Se bloqueará su acceso a la aplicación y se conservará el registro para auditoría.`
-      )
-    ) {
+    const confirmado = await confirmar({
+      titulo: "Retirar administrador",
+      mensaje: `${row.nombreCompleto} perderá el acceso a la aplicación. El registro se conserva para auditoría.`,
+      accion: "Retirar acceso",
+      peligro: true
+    });
+
+    if (!confirmado) {
       return;
     }
 
-    await actualizarPerfilUsuario(row.id, {
-      estado: false,
-      eliminado: true,
-      eliminadoPor: usuario?.uid || null,
-      eliminadoMotivo: "Retirado por SUPER_ADMIN"
-    });
+    setAvisoError("");
+    try {
+      await actualizarPerfilUsuario(row.id, {
+        estado: false,
+        eliminado: true,
+        eliminadoPor: usuario?.uid || null,
+        eliminadoMotivo: "Retirado por SUPER_ADMIN"
+      });
+    } catch (err) {
+      setAvisoError(err.message || "No se pudo retirar el acceso del administrador.");
+      return;
+    }
 
     await registrarAuditoria({
       empresaId: null,
@@ -215,6 +233,12 @@ export default function AdministradoresPage() {
           <UserPlus size={17} /> Nuevo administrador
         </button>
       </div>
+
+      {avisoError && (
+        <div className="form-error" role="alert">
+          {avisoError}
+        </div>
+      )}
 
       <AdvancedFilterBar
         search={search}

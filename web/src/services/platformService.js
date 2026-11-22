@@ -71,11 +71,13 @@ export async function guardarConfiguracionEmpresaGlobal(
       { ...personalizacion, empresaId, fechaActualizacion: serverTimestamp() },
       { merge: true }
     ),
-    setDoc(
-      doc(db, "modulosEmpresa", empresaId),
-      { empresaId, modulos: modulosHabilitados || [], fechaActualizacion: serverTimestamp() },
-      { merge: true }
-    )
+    modulosHabilitados === undefined
+      ? Promise.resolve()
+      : setDoc(
+          doc(db, "modulosEmpresa", empresaId),
+          { empresaId, modulos: modulosHabilitados || [], fechaActualizacion: serverTimestamp() },
+          { merge: true }
+        )
   ]);
 }
 

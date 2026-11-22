@@ -1,800 +1,275 @@
-import ReportPage from "../../components/common/ReportPage";
-
-import {
-  Boxes,
-  Package,
-  AlertTriangle,
-  Wallet
-} from "lucide-react";
-
-
-// ==========================================
-// CONVERTIR A NUMERO
-// ==========================================
-
-function numero(valor) {
-
-  const resultado = Number(valor);
-
-  return Number.isFinite(resultado)
-    ? resultado
-    : 0;
-
-}
-
-
-// ==========================================
-// FORMATEAR DINERO
-// ==========================================
-
-function dinero(valor) {
-
-  return `Bs ${numero(valor).toFixed(2)}`;
-
-}
-
-
-// ==========================================
-// OBTENER EL PRIMER VALOR NUMERICO
-// ==========================================
-
-function primerCosto(...valores) {
-
-  for (const valor of valores) {
-
-    if (
-      valor === undefined ||
-      valor === null ||
-      valor === ""
-    ) {
-      continue;
-    }
-
-    const convertido = Number(valor);
-
-    if (
-      Number.isFinite(convertido) &&
-      convertido >= 0
-    ) {
-
-      return convertido;
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-// ==========================================
-// FORMATEAR FECHA
-// ==========================================
-
-function mostrarFecha(valor) {
-
-  if (!valor) return "-";
-
-  let fecha;
-
-  if (typeof valor.toDate === "function") {
-
-    fecha = valor.toDate();
-
-  } else {
-
-    fecha = new Date(valor);
-
-  }
-
-  if (
-    !fecha ||
-    Number.isNaN(fecha.getTime())
-  ) {
-
-    return "-";
-
-  }
-
-  return fecha.toLocaleString("es-BO");
-
-}
-
-
-// ==========================================
-// COLECCIONES RELACIONADAS
-// ==========================================
-
-const coleccionesRelacionadas = [
-
-  "productos",
-
-  "sucursales"
-
-];
-
-
-// ==========================================
-// RELACIONAR INVENTARIO CON PRODUCTOS
-// ==========================================
-
-function prepararInventario(inventarios, relaciones) {
-
-  const productos = relaciones.productos || [];
-
-  const sucursales = relaciones.sucursales || [];
-
-
-  // MAPA DE PRODUCTOS
-
-  const mapaProductos = new Map(
-
-    productos.map((producto) => [
-
-      producto.id,
-
-      producto
-
-    ])
-
-  );
-
-
-  // MAPA DE SUCURSALES
-
-  const mapaSucursales = new Map(
-
-    sucursales.map((sucursal) => [
-
-      sucursal.id,
-
-      sucursal
-
-    ])
-
-  );
-
-
-  // PREPARAR FILAS
-
-  return inventarios.map((inventario) => {
-
-    const producto = mapaProductos.get(
-      inventario.productoId
-    );
-
-    const sucursal = mapaSucursales.get(
-      inventario.sucursalId
-    );
-
-
-    // STOCK ACTUAL
-
-    const stock = numero(
-
-      inventario.stock ??
-      inventario.cantidad ??
-      0
-
-    );
-
-
-    // STOCK MINIMO
-
-    const stockMinimo = numero(
-
-      inventario.stockMinimo ??
-      producto?.stockMinimo ??
-      producto?.stockMin ??
-      producto?.minimoStock ??
-      0
-
-    );
-
-
-    // COSTO ACTUAL REGISTRADO
-
-    const costoUnitario = primerCosto(
-
-      inventario.costoPromedio,
-
-      inventario.ultimoCosto,
-
-      inventario.costoUnitario,
-
-      inventario.costo,
-
-      producto?.costoActual,
-
-      producto?.costoPromedio,
-
-      producto?.costoUnitario,
-
-      producto?.costoCompra,
-
-      producto?.precioCosto,
-
-      producto?.precioCompra,
-
-      producto?.costo
-
-    );
-
-
-    // VALORIZACION
-
-    const valorizacion =
-
-      costoUnitario === null
-
-        ? null
-
-        : Number(
-            (stock * costoUnitario).toFixed(2)
-          );
-
-
-    // ESTADO DEL STOCK
-
-    let estadoStock = "NORMAL";
-
-    if (stock <= 0) {
-
-      estadoStock = "AGOTADO";
-
-    } else if (
-
-      stockMinimo > 0 &&
-      stock <= stockMinimo
-
-    ) {
-
-      estadoStock = "BAJO";
-
-    }
-
-
-    return {
-
-      ...inventario,
-
-      stock,
-
-      stockMinimo,
-
-      costoUnitario,
-
-      valorizacion,
-
-      estadoStock,
-
-      productoNombre:
-
-        producto?.nombre ||
-        producto?.nombreProducto ||
-        inventario.productoNombre ||
-        inventario.productoId ||
-        "Producto desconocido",
-
-      sku:
-
-        producto?.sku ||
-        producto?.codigo ||
-        inventario.sku ||
-        "-",
-
-      sucursalNombre:
-
-        sucursal?.nombre ||
-        sucursal?.codigo ||
-        inventario.sucursalNombre ||
-        inventario.sucursalId ||
-        "Sucursal desconocida",
-
-      fechaActualizacion:
-        inventario.fechaActualizacion
-
-    };
-
-  });
-
-}
-
-
-// ==========================================
-// INDICADORES DEL REPORTE
-// ==========================================
-
-function indicadoresInventario(filas) {
-
-  const totalUnidades = filas.reduce(
-
-    (total, fila) => {
-
-      return total + numero(fila.stock);
-
-    },
-
-    0
-
-  );
-
-
-  const totalValorizacion = filas.reduce(
-
-    (total, fila) => {
-
-      return total + numero(
-        fila.valorizacion
-      );
-
-    },
-
-    0
-
-  );
-
-
-  const stockBajo = filas.filter(
-
-    (fila) =>
-
-      fila.estadoStock === "BAJO" ||
-      fila.estadoStock === "AGOTADO"
-
-  ).length;
-
-
-  const sinCosto = filas.filter(
-
-    (fila) => fila.costoUnitario === null
-
-  ).length;
-
-
-  return [
-
-    {
-
-      label: "Registros de inventario",
-
-      value: filas.length,
-
-      icon: Boxes,
-
-      help: "Productos por sucursal"
-
-    },
-
-    {
-
-      label: "Unidades disponibles",
-
-      value: totalUnidades,
-
-      icon: Package,
-
-      help: "Existencias actuales"
-
-    },
-
-    {
-
-      label: "Valorización del stock",
-
-      value: dinero(totalValorizacion),
-
-      icon: Wallet,
-
-      help: sinCosto > 0
-        ? `${sinCosto} registro(s) sin costo`
-        : "Según costos registrados"
-
-    },
-
-    {
-
-      label: "Productos con alerta",
-
-      value: stockBajo,
-
-      icon: AlertTriangle,
-
-      help: "Stock bajo o agotado"
-
-    }
-
-  ];
-
-}
-
-
-// ==========================================
-// COLUMNAS DEL REPORTE
-// ==========================================
-
-const columnasInventario = [
-
-  {
-
-    key: "productoNombre",
-
-    label: "PRODUCTO",
-
-    value: (fila) => fila.productoNombre,
-
-    render: (fila) => (
-
-      <div className="ri-producto">
-
-        <strong>
-          {fila.productoNombre}
-        </strong>
-
-        <small>
-          {fila.sku}
-        </small>
-
-      </div>
-
-    )
-
-  },
-
-  {
-
-    key: "sucursalNombre",
-
-    label: "SUCURSAL",
-
-    value: (fila) => fila.sucursalNombre
-
-  },
-
-  {
-
-    key: "stock",
-
-    label: "STOCK",
-
-    value: (fila) => fila.stock,
-
-    render: (fila) => (
-
-      <strong className="ri-stock">
-
-        {fila.stock}
-
-      </strong>
-
-    )
-
-  },
-
-  {
-
-    key: "stockMinimo",
-
-    label: "MÍNIMO",
-
-    value: (fila) => fila.stockMinimo
-
-  },
-
-  {
-
-    key: "costoUnitario",
-
-    label: "COSTO UNITARIO",
-
-    value: (fila) =>
-
-      fila.costoUnitario === null
-        ? "SIN COSTO"
-        : dinero(fila.costoUnitario),
-
-    render: (fila) => (
-
-      <span>
-
-        {fila.costoUnitario === null
-
-          ? "Sin costo"
-
-          : dinero(fila.costoUnitario)}
-
-      </span>
-
-    )
-
-  },
-
-  {
-
-    key: "valorizacion",
-
-    label: "VALORIZACIÓN",
-
-    value: (fila) =>
-
-      fila.valorizacion === null
-        ? "SIN COSTO"
-        : dinero(fila.valorizacion),
-
-    render: (fila) => (
-
-      <strong className="ri-valor">
-
-        {fila.valorizacion === null
-
-          ? "Sin costo"
-
-          : dinero(fila.valorizacion)}
-
-      </strong>
-
-    )
-
-  },
-
-  {
-
-    key: "estadoStock",
-
-    label: "ESTADO",
-
-    value: (fila) => fila.estadoStock,
-
-    render: (fila) => (
-
-      <span
-
-        className={`ri-estado ${
-          fila.estadoStock === "NORMAL"
-            ? "normal"
-            : fila.estadoStock === "BAJO"
-            ? "bajo"
-            : "agotado"
-        }`}
-
-      >
-
-        {fila.estadoStock === "NORMAL"
-
-          ? "NORMAL"
-
-          : fila.estadoStock === "BAJO"
-
-          ? "STOCK BAJO"
-
-          : "AGOTADO"}
-
-      </span>
-
-    )
-
-  },
-
-  {
-
-    key: "fechaActualizacion",
-
-    label: "ACTUALIZADO",
-
-    value: (fila) =>
-
-      mostrarFecha(
-        fila.fechaActualizacion
-      )
-
-  }
-
-];
-
-
-// ==========================================
-// ESTILOS DEL REPORTE
-// ==========================================
-
-const estilosInventario = `
-
-.inventory-report-v2 .report-metrics {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(190px, 1fr)
-  );
-  gap: 14px;
-  margin: 20px 0;
-}
-
-.inventory-report-v2 .neo-metric {
-  min-width: 0;
-  border-radius: 16px;
-  padding: 19px;
-  background: linear-gradient(
-    145deg,
-    rgba(104, 68, 210, 0.12),
-    rgba(15, 17, 32, 0.95)
-  );
-  border: 1px solid rgba(
-    149, 119, 255, 0.2
-  );
-}
-
-.inventory-report-v2 .neo-metric strong {
-  font-size: 24px;
-  font-weight: 800;
-  color: #f5f3ff;
-}
-
-.inventory-report-v2 .neo-metric small {
-  display: block;
-  margin-top: 6px;
-  color: #9799b3;
-  font-size: 11px;
-}
-
-.inventory-report-v2 .neo-metric svg {
-  color: #9b80ff;
-  flex-shrink: 0;
-}
-
-.inventory-report-v2 .data-card {
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.inventory-report-v2 .modern-table th {
-  white-space: nowrap;
-}
-
-.inventory-report-v2 .modern-table td {
-  vertical-align: middle;
-}
-
-.ri-producto {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 125px;
-}
-
-.ri-producto strong {
-  color: #f5f4ff;
-  font-weight: 700;
-}
-
-.ri-producto small {
-  color: #a18aff;
-  font-size: 11px;
-}
-
-.ri-stock {
-  font-size: 15px;
-  color: #ede9ff;
-}
-
-.ri-valor {
-  color: #61d6c3;
-  white-space: nowrap;
-}
-
-.ri-estado {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 10px;
-  border-radius: 30px;
-  font-size: 10px;
-  font-weight: 800;
-  white-space: nowrap;
-  letter-spacing: .4px;
-}
-
-.ri-estado.normal {
-  color: #5ce1b8;
-  background: rgba(36, 180, 126, .12);
-  border: 1px solid rgba(36, 180, 126, .25);
-}
-
-.ri-estado.bajo {
-  color: #ffce6a;
-  background: rgba(255, 172, 55, .12);
-  border: 1px solid rgba(255, 172, 55, .25);
-}
-
-.ri-estado.agotado {
-  color: #ff869a;
-  background: rgba(255, 87, 116, .12);
-  border: 1px solid rgba(255, 87, 116, .25);
-}
-
-.inventory-report-v2 .report-note {
-  margin-bottom: 15px;
-  padding: 13px 17px;
-  border-radius: 12px;
-  border: 1px solid rgba(150, 119, 255, .2);
-  background: rgba(101, 76, 190, .07);
-  color: #a8a7c2;
-  font-size: 12px;
-}
-
-@media (max-width: 700px) {
-
-  .inventory-report-v2 .neo-metric strong {
-    font-size: 20px;
-  }
-
-}
-
-`;
-
-
-// ==========================================
-// COMPONENTE PRINCIPAL
-// ==========================================
+import { useMemo, useState } from "react";
+import { AlertTriangle, Boxes, Package, Search, Wallet } from "lucide-react";
+
+import useAuth from "../../hooks/useAuth";
+import { useColeccionesEmpresa, useIdentidadEmpresa } from "../../hooks/useColeccionesEmpresa";
+import { descargarExcel, imprimirReporte } from "../../utils/exportarReporte";
+import { hoyLocal } from "../../utils/promociones";
+import { BarrasReporte, CabeceraReporte, SelectorFiltro, TablaReporte, TarjetasResumen } from "../../components/reportes/ReporteUI";
+import { cantidad, dinero, normalizar } from "../../utils/reporteHelpers";
+
+const ESTADOS = {
+  NORMAL: "Normal",
+  BAJO: "Stock bajo",
+  AGOTADO: "Agotado",
+  SOLO_VENCIDO: "Solo vencido"
+};
 
 export default function ReportesInventarioPage() {
+  const { usuario } = useAuth();
+  const empresaId = usuario?.empresaId;
+
+  const { datos, cargando, error } = useColeccionesEmpresa(empresaId, ["inventarios", "productos", "sucursales", "lotesInventario", "categorias"]);
+  const { empresa, personalizacion } = useIdentidadEmpresa(empresaId);
+
+  const [sucursalId, setSucursalId] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
+  const [estado, setEstado] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+
+  const nombreSucursal = (id) => datos.sucursales.find((s) => s.id === id)?.nombre || "—";
+  const nombreCategoria = (id) => datos.categorias.find((c) => c.id === id)?.nombre || "Sin categoría";
+
+  // Una fila por producto y sucursal; los productos eliminados no aparecen
+  const filas = useMemo(() => {
+    const hoy = hoyLocal();
+    const productos = new Map(datos.productos.map((p) => [p.id, p]));
+    const vendibles = new Map();
+    const vencidos = new Map();
+
+    datos.lotesInventario.forEach((lote) => {
+      const disponible = Number(lote.cantidadDisponible || 0);
+      if (disponible <= 0 || lote.estado !== "ACTIVO") return;
+
+      const clave = `${lote.sucursalId}_${lote.productoId}`;
+      const mapa = !lote.fechaVencimiento || lote.fechaVencimiento < hoy ? vencidos : vendibles;
+      mapa.set(clave, (mapa.get(clave) || 0) + disponible);
+    });
+
+    return datos.inventarios
+      .map((inv) => {
+        const producto = productos.get(inv.productoId);
+        if (!producto) return null;
+
+        const clave = `${inv.sucursalId}_${inv.productoId}`;
+        const fisico = Math.max(0, Number(inv.stock || 0));
+        const controla = producto.controlaVencimiento === true;
+        const vendible = controla ? Math.min(fisico, vendibles.get(clave) || 0) : fisico;
+        const vencido = controla ? vencidos.get(clave) || 0 : 0;
+        const minimo = Number(producto.stockMinimo || 0);
+        const costo = Number(producto.costo) > 0 ? Number(producto.costo) : null;
+
+        let situacion = "NORMAL";
+        if (vendible <= 0) situacion = fisico > 0 && vencido > 0 ? "SOLO_VENCIDO" : "AGOTADO";
+        else if (vendible <= minimo) situacion = "BAJO";
+
+        return {
+          id: inv.id,
+          producto,
+          sucursalId: inv.sucursalId,
+          vendible,
+          vencido,
+          minimo,
+          costo,
+          valor: costo === null ? null : vendible * costo,
+          situacion
+        };
+      })
+      .filter(Boolean);
+  }, [datos.inventarios, datos.productos, datos.lotesInventario]);
+
+  const visibles = useMemo(() => {
+    const texto = normalizar(busqueda);
+
+    return filas
+      .filter((f) => {
+        if (sucursalId && f.sucursalId !== sucursalId) return false;
+        if (categoriaId && f.producto.categoriaId !== categoriaId) return false;
+        if (estado === "ALERTA" ? f.situacion === "NORMAL" : estado && f.situacion !== estado) return false;
+        if (!texto) return true;
+        return [f.producto.nombre, f.producto.sku, f.producto.codigoBarras].some((x) => normalizar(x).includes(texto));
+      })
+      .sort((a, b) => (b.valor || 0) - (a.valor || 0) || String(a.producto.nombre).localeCompare(String(b.producto.nombre)));
+  }, [filas, sucursalId, categoriaId, estado, busqueda]);
+
+  const unidades = visibles.reduce((s, f) => s + f.vendible, 0);
+  const valorTotal = visibles.reduce((s, f) => s + (f.valor || 0), 0);
+  const sinCosto = visibles.filter((f) => f.vendible > 0 && f.costo === null).length;
+  const alertas = visibles.filter((f) => f.situacion !== "NORMAL").length;
+  const vencidas = visibles.reduce((s, f) => s + f.vencido, 0);
+
+  const porCategoria = useMemo(() => {
+    const mapa = new Map();
+    visibles.forEach((f) => mapa.set(f.producto.categoriaId, (mapa.get(f.producto.categoriaId) || 0) + (f.valor || 0)));
+    return [...mapa.entries()]
+      .map(([id, valor]) => ({ etiqueta: nombreCategoria(id), valor }))
+      .filter((c) => c.valor > 0)
+      .sort((a, b) => b.valor - a.valor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibles, datos.categorias]);
+
+  const textoFiltros = [
+    sucursalId ? nombreSucursal(sucursalId) : "Todas las sucursales",
+    categoriaId ? nombreCategoria(categoriaId) : null,
+    estado === "ALERTA" ? "Solo alertas" : estado ? ESTADOS[estado] : null,
+    `Existencias al ${new Date().toLocaleDateString("es-BO", { dateStyle: "long" })}`
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const armarReporte = () => ({
+    titulo: "Reporte de inventario",
+    subtitulo: "Lo que tienes para vender, cuánto vale y qué se está acabando.",
+    filtros: textoFiltros,
+    resumen: [
+      { etiqueta: "Unidades para vender", valor: cantidad(unidades) },
+      { etiqueta: "Valor del stock", valor: dinero(valorTotal) },
+      { etiqueta: "Productos en alerta", valor: String(alertas) },
+      { etiqueta: "Unidades vencidas", valor: cantidad(vencidas) }
+    ],
+    secciones: [
+      {
+        titulo: "Existencias",
+        nota: sinCosto ? `${sinCosto} producto(s) no tienen costo, por eso no suman al valor.` : "",
+        columnas: [
+          { etiqueta: "Producto", tipo: "texto" },
+          { etiqueta: "Código", tipo: "texto" },
+          { etiqueta: "Categoría", tipo: "texto" },
+          { etiqueta: "Sucursal", tipo: "texto" },
+          { etiqueta: "Para vender", tipo: "numero", total: true },
+          { etiqueta: "Vencido", tipo: "numero", total: true },
+          { etiqueta: "Mínimo", tipo: "numero" },
+          { etiqueta: "Costo", tipo: "dinero" },
+          { etiqueta: "Valor", tipo: "dinero", total: true },
+          { etiqueta: "Estado", tipo: "texto" }
+        ],
+        filas: visibles.map((f) => [
+          f.producto.nombre,
+          f.producto.sku || "",
+          nombreCategoria(f.producto.categoriaId),
+          nombreSucursal(f.sucursalId),
+          f.vendible,
+          f.vencido,
+          f.minimo,
+          f.costo,
+          f.valor,
+          ESTADOS[f.situacion]
+        ])
+      },
+      {
+        titulo: "Valor por categoría",
+        columnas: [
+          { etiqueta: "Categoría", tipo: "texto" },
+          { etiqueta: "Valor", tipo: "dinero", total: true }
+        ],
+        filas: porCategoria.map((c) => [c.etiqueta, c.valor])
+      }
+    ]
+  });
+
+  const hayFiltros = Boolean(sucursalId || categoriaId || estado || busqueda);
 
   return (
-
-    <div className="inventory-report-v2">
-
-      <style>
-        {estilosInventario}
-      </style>
-
-      <ReportPage
-
-        title="Reporte de inventario"
-
-        description="Existencias, costos actuales, valorización y alertas de stock por sucursal."
-
-        collectionName="inventarios"
-
-        relatedCollections={
-          coleccionesRelacionadas
-        }
-
-        transformRows={
-          prepararInventario
-        }
-
-        searchFields={[
-
-          "productoNombre",
-
-          "sku",
-
-          "sucursalNombre",
-
-          "productoId"
-
-        ]}
-
-        amountField="stock"
-
-        amountLabel="unidades"
-
-        dateFilters={false}
-
-        statusField="estadoStock"
-
-        statusLabel="Todos los niveles"
-
-        metrics={indicadoresInventario}
-
-        columns={columnasInventario}
-
-        showNote={
-          "La valorización utiliza los costos registrados. Los productos sin costo no se incluyen en el valor acumulado."
-        }
-
+    <div className="re inv">
+      <CabeceraReporte
+        titulo="Reporte de inventario"
+        descripcion="Lo que tienes para vender, cuánto vale y qué se está acabando. Se actualiza solo."
+        onExcel={() => descargarExcel(armarReporte(), empresa, personalizacion)}
+        onPdf={() => imprimirReporte(armarReporte(), empresa, personalizacion) || window.alert("Permite las ventanas emergentes para ver el PDF.")}
+        deshabilitado={cargando}
+        aviso={error}
       />
 
+      <div className="re-herramientas">
+        <label className="re-busqueda">
+          <Search size={19} aria-hidden="true" />
+          <input type="search" placeholder="Buscar producto o código…" aria-label="Buscar productos" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+        </label>
+
+        <SelectorFiltro valor={sucursalId} onChange={setSucursalId} etiqueta="Sucursal" opciones={[["", "Todas las sucursales"], ...datos.sucursales.map((s) => [s.id, s.nombre])]} />
+        <SelectorFiltro valor={categoriaId} onChange={setCategoriaId} etiqueta="Categoría" opciones={[["", "Todas las categorías"], ...datos.categorias.map((c) => [c.id, c.nombre])]} />
+        <SelectorFiltro
+          valor={estado}
+          onChange={setEstado}
+          etiqueta="Estado"
+          opciones={[["", "Todos los estados"], ["ALERTA", "Solo alertas"], ...Object.entries(ESTADOS)]}
+        />
+
+        {hayFiltros && (
+          <button
+            type="button"
+            className="re-chip"
+            onClick={() => {
+              setSucursalId("");
+              setCategoriaId("");
+              setEstado("");
+              setBusqueda("");
+            }}
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      {cargando ? (
+        <div className="re-vacio">Preparando el reporte…</div>
+      ) : (
+        <>
+          <TarjetasResumen
+            items={[
+              { icono: Boxes, titulo: "Productos", valor: visibles.length.toLocaleString("es-BO"), nota: "por sucursal" },
+              { icono: Package, titulo: "Para vender", valor: cantidad(unidades), nota: vencidas > 0 ? `${cantidad(vencidas)} vencidas aparte` : "unidades disponibles" },
+              { icono: Wallet, titulo: "Valor del stock", valor: dinero(valorTotal), nota: sinCosto ? `${sinCosto} sin costo no suman` : "al costo de compra" },
+              { icono: AlertTriangle, titulo: "En alerta", valor: String(alertas), nota: "agotados o por acabarse", tono: alertas > 0 ? "alerta" : undefined }
+            ]}
+          />
+
+          <BarrasReporte titulo="Dónde está tu dinero" subtitulo="Valor del stock por categoría" items={porCategoria.slice(0, 8)} />
+
+          <TablaReporte
+            titulo="Existencias"
+            filas={visibles}
+            claveFila={(f) => f.id}
+            vacio={{ titulo: "No hay productos para mostrar", texto: "Registra una compra para que entren los primeros productos." }}
+            columnas={[
+              {
+                etiqueta: "Producto",
+                render: (f) => (
+                  <div className="inv-celda">
+                    <strong>{f.producto.nombre}</strong>
+                    <small>{f.producto.sku || nombreCategoria(f.producto.categoriaId)}</small>
+                  </div>
+                )
+              },
+              { etiqueta: "Sucursal", render: (f) => nombreSucursal(f.sucursalId) },
+              {
+                etiqueta: "Para vender",
+                der: true,
+                render: (f) => (
+                  <div className="inv-celda" style={{ justifyItems: "end" }}>
+                    <strong data-bajo={f.situacion !== "NORMAL" ? "true" : undefined}>{cantidad(f.vendible)}</strong>
+                    {f.vencido > 0 && <small className="inv-vencido">{cantidad(f.vencido)} vencidas</small>}
+                  </div>
+                )
+              },
+              { etiqueta: "Mínimo", der: true, render: (f) => cantidad(f.minimo) },
+              { etiqueta: "Costo", der: true, render: (f) => (f.costo === null ? <span className="inv-sin">Sin costo</span> : dinero(f.costo)) },
+              { etiqueta: "Valor", der: true, render: (f) => (f.valor === null ? "—" : <strong>{dinero(f.valor)}</strong>) },
+              {
+                etiqueta: "Estado",
+                render: (f) => (
+                  <span
+                    className="inv-pastilla"
+                    data-estado={f.situacion === "NORMAL" ? "NORMAL" : f.situacion === "BAJO" ? "POR_VENCER" : "VENCIDO"}
+                  >
+                    {ESTADOS[f.situacion]}
+                  </span>
+                )
+              }
+            ]}
+          />
+        </>
+      )}
     </div>
-
   );
-
 }

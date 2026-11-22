@@ -4,7 +4,6 @@ import {
 } from "react";
 
 import {
-  Bell,
   Building2,
   LogOut
 } from "lucide-react";
@@ -19,6 +18,8 @@ import { useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 
 import { db } from "../../services/firebase/firebaseConfig";
+import CampanaAvisosEmpresa from "./CampanaAvisosEmpresa";
+import "../../styles/campana-empresa.css";
 
 function Header() {
   const {
@@ -112,12 +113,7 @@ function Header() {
 
       <div className="admin-header-right">
 
-        <button
-          className="admin-icon-button"
-          title="Notificaciones"
-        >
-          <Bell size={19} />
-        </button>
+        <CampanaAvisosEmpresa />
 
         <div className="admin-user">
 

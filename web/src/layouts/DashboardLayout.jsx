@@ -3,20 +3,30 @@ import { Outlet, useLocation } from "react-router-dom";
 
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
+import usePersonalizacionEmpresa from "../hooks/usePersonalizacionEmpresa";
+import usePresencia from "../hooks/usePresencia";
 
 import AppShellTools from "../components/ui/AppShellTools.jsx";
+import ConfirmProvider from "../components/ui/ConfirmProvider.jsx";
 
 import "../styles/dashboard.css";
 import "../styles/sprint2.css";
 import "../styles/commerce.css";
 import "../styles/innovation.css";
+import "../styles/empresa-tema.css";
+import "../styles/empresa-panel.css";
 
 function DashboardLayout() {
   const location = useLocation();
+  const { identidad, variables, personalizada } = usePersonalizacionEmpresa();
+
+  // Le dice al dueño que esta persona está conectada
+  usePresencia();
 
   return (
-    <div className="admin-layout">
-      <Sidebar />
+    <ConfirmProvider>
+    <div className="admin-layout" style={variables} data-personalizada={personalizada}>
+      <Sidebar marca={identidad} />
 
       <div className="admin-main">
         <Header />
@@ -36,6 +46,7 @@ function DashboardLayout() {
         </AnimatePresence>
       </div>
     </div>
+    </ConfirmProvider>
   );
 }
 

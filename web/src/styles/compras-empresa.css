@@ -1,0 +1,498 @@
+/* =========================================================
+   COMPRAS (registrar compra e historial)
+   Comparte variables y piezas con Roles (.re) e Inventario
+========================================================= */
+
+.co-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: 18px;
+  align-items: start;
+}
+
+.co-grid > *,
+.co-principal > * {
+  min-width: 0;
+}
+
+.co-principal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+/* ---------- Pasos ---------- */
+
+.co-paso__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.co-paso__cabecera h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.co-paso__cabecera p {
+  margin: 3px 0 0;
+  font-size: 15px;
+  color: var(--re-apagado);
+}
+
+.co-paso__numero {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+
+  border-radius: 14px;
+  background: var(--re-primario);
+  color: var(--re-sobre-primario, #fff);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* ---------- Forma de pago ---------- */
+
+.co-pagos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.co-pago {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 56px;
+  padding: 0 12px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+  color: var(--re-texto);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+
+  transition: transform 140ms var(--re-salida), border-color 160ms ease, background-color 160ms ease;
+}
+
+.co-pago:active {
+  transform: scale(0.97);
+}
+
+.co-pago:focus-visible {
+  outline: 2px solid var(--re-primario);
+  outline-offset: 2px;
+}
+
+.co-pago[data-activo="true"] {
+  border-color: var(--re-primario);
+  background: color-mix(in srgb, var(--re-primario) 22%, transparent);
+  color: var(--re-texto);
+}
+
+.co-pago[data-activo="true"] svg {
+  color: var(--re-primario);
+}
+
+.co .re-campos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.co .re-campo,
+.co .sb {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.co .re-campo,
+.co .sb {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.co .sb-boton {
+  width: 100%;
+  max-width: 100%;
+}
+
+.co .sb-boton__texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.co .sb-etiqueta {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+@media (max-width: 640px) {
+  .co .re-campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .co-pago:hover {
+    border-color: color-mix(in srgb, var(--re-primario) 60%, transparent);
+  }
+}
+
+.co-nota {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  color: var(--re-apagado);
+}
+
+.co-nota svg {
+  flex: none;
+  color: var(--re-primario);
+}
+
+.co-nota b {
+  color: var(--re-texto);
+}
+
+.re-ayuda a,
+.re-aviso a {
+  color: var(--re-primario);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Lote y vencimiento ---------- */
+
+.co-lote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+
+  border: 1px solid color-mix(in srgb, #ffb454 45%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, #ffb454 9%, transparent);
+}
+
+.co-lote__titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffb454;
+}
+
+.co-lote__titulo svg {
+  flex: none;
+}
+
+.co-lote__titulo div {
+  display: grid;
+}
+
+.co-lote__titulo strong {
+  font-size: 17px;
+}
+
+.co-lote__titulo span {
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.co-atajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.co-agregar {
+  justify-self: start;
+  min-height: 52px;
+  font-size: 16px;
+}
+
+/* ---------- Resumen ---------- */
+
+.co-resumen {
+  position: sticky;
+  top: 16px;
+}
+
+.co-resumen__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.co-resumen__cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 22px;
+}
+
+.co-resumen__cabecera h2 svg {
+  color: var(--re-primario);
+}
+
+.co-resumen__cabecera span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--re-apagado);
+}
+
+.co-lineas {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.co-linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+}
+
+.co-linea__texto {
+  display: grid;
+  min-width: 0;
+}
+
+.co-linea__texto strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.co-linea__texto span {
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.co-linea__texto small {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffb454;
+}
+
+.co-linea__subtotal {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.co-quitar {
+  min-height: 38px;
+  width: 38px;
+  padding: 0;
+}
+
+.co-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 26px 12px;
+
+  border: 1px dashed var(--re-borde);
+  border-radius: 16px;
+  text-align: center;
+  color: var(--re-apagado);
+}
+
+.co-vacio strong {
+  color: var(--re-texto);
+  font-size: 16px;
+}
+
+.co-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+
+  border-top: 1px solid var(--re-borde);
+}
+
+.co-total span {
+  font-size: 15px;
+  color: var(--re-apagado);
+}
+
+.co-total strong {
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--re-primario);
+}
+
+.co-registrar {
+  width: 100%;
+  min-height: 58px;
+  font-size: 17px;
+}
+
+.co-falta {
+  margin: -4px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+/* ---------- Historial ---------- */
+
+.co-detalle-resumen {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.co-detalle-resumen div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+}
+
+.co-detalle-resumen small {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.co-detalle-resumen strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.co-detalle-lineas {
+  display: grid;
+  gap: 8px;
+}
+
+.co-pastilla-pago {
+  display: inline-block;
+  padding: 4px 12px;
+
+  border-radius: 999px;
+  background: var(--re-superficie-alta);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.co-pastilla-pago[data-metodo="CREDITO"] {
+  background: color-mix(in srgb, #ffb454 18%, transparent);
+  color: #ffb454;
+}
+
+.co-pastilla-pago[data-estado="ANULADA"] {
+  background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  color: var(--re-peligro);
+}
+
+/* ---------- Adaptación ---------- */
+
+@media (max-width: 1100px) {
+  .co-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .co-resumen {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .co-metricas {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .co-metricas .inv-metrica {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .co-metricas .inv-metrica em {
+    display: block;
+  }
+
+  .co-pagos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .co-paso__numero {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+
+  .co-paso__cabecera h2 {
+    font-size: 19px;
+  }
+
+  .co-lote {
+    padding: 14px;
+  }
+
+  .co-agregar {
+    justify-self: stretch;
+  }
+
+  .co-total strong {
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .co-pago {
+    transition: none;
+  }
+}
+
+/* ---------- Botón de acción peligrosa (anular, eliminar) ---------- */
+
+.re-boton--peligro {
+  border: 1px solid color-mix(in srgb, var(--re-peligro) 55%, transparent);
+  background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  color: var(--re-peligro);
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .re-boton--peligro:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--re-peligro) 28%, transparent);
+  }
+}

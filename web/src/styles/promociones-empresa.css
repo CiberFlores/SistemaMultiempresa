@@ -1,0 +1,290 @@
+/* =========================================================
+   PROMOCIONES — comparte variables con Roles (.re)
+========================================================= */
+
+.pr-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.pr-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 22px;
+  background: var(--re-superficie);
+
+  transition: transform 200ms var(--re-salida), border-color 200ms ease;
+}
+
+.pr-tarjeta > * {
+  min-width: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pr-tarjeta:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--re-primario) 50%, transparent);
+  }
+}
+
+.pr-tarjeta[data-estado="DESACTIVADA"],
+.pr-tarjeta[data-estado="VENCIDA"] {
+  opacity: 0.7;
+}
+
+.pr-tarjeta header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pr-oferta {
+  display: grid;
+}
+
+.pr-oferta b {
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--re-primario);
+}
+
+.pr-oferta small {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.pr-tarjeta h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.pr-tarjeta dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.pr-tarjeta dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.pr-tarjeta dt {
+  color: var(--re-apagado);
+}
+
+.pr-tarjeta dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.pr-tarjeta footer {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--re-borde);
+}
+
+/* ---------- Formulario ---------- */
+
+.pr-opciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pr-opciones--tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pr-opcion {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-height: 60px;
+  padding: 10px 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+  color: var(--re-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  transition: transform 140ms var(--re-salida), border-color 160ms ease, background-color 160ms ease;
+}
+
+.pr-opcion--simple {
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.pr-opcion strong {
+  font-size: 16px;
+}
+
+.pr-opcion small {
+  font-size: 13px;
+  color: var(--re-apagado);
+}
+
+.pr-opcion:active {
+  transform: scale(0.97);
+}
+
+.pr-opcion:focus-visible {
+  outline: 2px solid var(--re-primario);
+  outline-offset: 2px;
+}
+
+.pr-opcion[data-activo="true"] {
+  border-color: var(--re-primario);
+  background: color-mix(in srgb, var(--re-primario) 22%, transparent);
+}
+
+.pr-activa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.pr-activa input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  accent-color: var(--re-primario);
+}
+
+.pr-activa span {
+  display: grid;
+}
+
+.pr-activa strong {
+  font-size: 16px;
+}
+
+.pr-activa small {
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.co-iguales {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.re-modal .re-campo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 640px) {
+  .pr-lista {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pr-opciones--tres {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .co-iguales {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-opcion,
+  .pr-tarjeta {
+    transition: none;
+  }
+}
+
+.re .sb-etiqueta {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.re-modal .sb {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.re-modal .sb-boton {
+  width: 100%;
+  max-width: 100%;
+}
+
+.re-herramientas > * {
+  min-width: 0;
+}
+
+.re-filtros {
+  flex-wrap: wrap;
+}
+
+/* ---------- Avisos del equipo ---------- */
+
+.ne-mensaje {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.ne-cuando {
+  font-size: 13px;
+  color: var(--re-apagado);
+}
+
+.ne-prioridad {
+  display: inline-block;
+  padding: 4px 12px;
+
+  border-radius: 999px;
+  background: var(--re-superficie-alta);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ne-prioridad[data-prioridad="ALTA"] {
+  background: color-mix(in srgb, #ffb454 18%, transparent);
+  color: #ffb454;
+}
+
+.ne-prioridad[data-prioridad="URGENTE"] {
+  background: color-mix(in srgb, var(--re-peligro) 18%, transparent);
+  color: var(--re-peligro);
+}
+
+.pr-tarjeta[data-prioridad="URGENTE"] {
+  border-color: color-mix(in srgb, var(--re-peligro) 55%, transparent);
+}

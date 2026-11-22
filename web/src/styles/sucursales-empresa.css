@@ -1,0 +1,67 @@
+/* =========================================================
+   SUCURSALES (comparte piezas con Roles y Trabajadores)
+========================================================= */
+
+.su-icono {
+  border-radius: 16px;
+}
+
+.su-codigo {
+  justify-self: start;
+  padding: 3px 10px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 8px;
+  background: var(--re-superficie-alta);
+  color: var(--re-texto);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.su-direccion {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--re-apagado);
+}
+
+.su-peligro {
+  color: var(--re-peligro);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .su-peligro:hover:not(:disabled) {
+    border-color: var(--re-peligro);
+    background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  }
+}
+
+/* El selector de país y región desplegable no debe quedar cortado por la ventana */
+.su-lugar {
+  overflow: visible;
+}
+
+.su-lugar .location-panel {
+  width: 100%;
+}
+
+.su-lugar .location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.su-lugar .location-grid .field-span-2 {
+  grid-column: 1 / -1;
+}
+
+.su-lugar .field-block {
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .su-lugar .location-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

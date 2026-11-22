@@ -1,1395 +1,524 @@
-import { useEffect, useMemo, useState } from "react";
-import { Ban, Eye, FileText, RefreshCw, X } from "lucide-react";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where
-} from "firebase/firestore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { Ban, ChevronDown, Eye, FileText, Plus, Receipt, Search, ShoppingBag, TrendingUp, Wallet, X } from "lucide-react";
+
 import useAuth from "../../hooks/useAuth";
+import useConfirmar from "../../hooks/useConfirmar";
 import { db } from "../../services/firebase/firebaseConfig";
 import { anularVenta, listarVentas } from "../../services/ventaService";
 import { registrarAuditoria } from "../../services/auditService";
-import AdvancedFilterBar from "../../components/filters/AdvancedFilterBar";
+import { construirComprobante } from "../../utils/comprobanteVenta";
+import { sonidoClick, sonidoError, sonidoExito } from "../../utils/sonidos";
 
-const dateOf = (v) => v?.toDate?.() || (v ? new Date(v) : null);
+import "../../styles/roles-empresa.css";
+import "../../styles/trabajadores-empresa.css";
+import "../../styles/inventario-empresa.css";
+import "../../styles/crud-generico.css";
+import "../../styles/compras-empresa.css";
+
+const POR_PAGINA = 30;
+
+const METODOS = {
+  EFECTIVO: "Efectivo",
+  QR: "QR",
+  TARJETA: "Tarjeta",
+  TRANSFERENCIA: "Transferencia",
+  CREDITO: "A crédito"
+};
+
+const normalizar = (valor) =>
+  String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+
+const dinero = (valor) =>
+  `Bs ${Number(valor || 0).toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const fechaDe = (valor) => {
+  const fecha = valor?.toDate?.() || (valor ? new Date(valor) : null);
+  return fecha && !Number.isNaN(fecha.getTime()) ? fecha : null;
+};
+
+const leer = (nombre, empresaId) =>
+  getDocs(query(collection(db, nombre), where("empresaId", "==", empresaId))).then((resultado) =>
+    resultado.docs.map((d) => ({ id: d.id, ...d.data() }))
+  );
 
 export default function VentasPage() {
   const { usuario } = useAuth();
-  const [rows, setRows] = useState([]);
-  const [clientes, setClientes] = useState({});
+  const confirmar = useConfirmar();
+  const empresaId = usuario?.empresaId;
+
+  const [ventas, setVentas] = useState([]);
+  const [clientes, setClientes] = useState(new Map());
   const [detalles, setDetalles] = useState([]);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("TODOS");
-  const [method, setMethod] = useState("TODOS");
-  const [clientFilter, setClientFilter] = useState("TODOS");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [minTotal, setMinTotal] = useState("");
-  const [maxTotal, setMaxTotal] = useState("");
-  const [selected, setSelected] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
 
-  const load = async () => {
-    if (!usuario?.empresaId) return;
-    setLoading(true);
-    const [ventas, cs, ds] = await Promise.all([
-      listarVentas(usuario.empresaId),
-      getDocs(query(collection(db, "clientes"), where("empresaId", "==", usuario.empresaId))),
-      getDocs(query(collection(db, "detalleVentas"), where("empresaId", "==", usuario.empresaId)))
-    ]);
-    setRows(ventas);
-    setClientes(Object.fromEntries(cs.docs.map((d) => [d.id, { id: d.id, ...d.data() }])));
-    setDetalles(ds.docs.map((d) => ({ id: d.id, ...d.data() })));
-    setLoading(false);
-  };
+  const [busqueda, setBusqueda] = useState("");
+  const [estado, setEstado] = useState("");
+  const [metodo, setMetodo] = useState("");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
+  const [limite, setLimite] = useState(POR_PAGINA);
+  const [elegida, setElegida] = useState(null);
 
-  useEffect(() => { load().catch(console.error); }, [usuario?.empresaId]);
+  const cargar = useCallback(async () => {
+    if (!empresaId) return;
 
-  const filtered = useMemo(() => rows.filter((r) => {
-    const q = search.toLowerCase();
-    const client = clientes[r.clienteId];
-    const searchOk = !q || [r.id, client?.nombre, client?.documento, r.metodoPago, r.estado, r.usuarioId, r.sucursalId]
-      .some((v) => String(v || "").toLowerCase().includes(q));
-    const d = dateOf(r.fechaRegistro);
-    const fromOk = !from || !d || d >= new Date(`${from}T00:00:00`);
-    const toOk = !to || !d || d <= new Date(`${to}T23:59:59`);
-    const total = Number(r.total || 0);
-    const minOk = minTotal === "" || total >= Number(minTotal);
-    const maxOk = maxTotal === "" || total <= Number(maxTotal);
-    const clientOk = clientFilter === "TODOS" || (clientFilter === "FINAL" ? !r.clienteId : r.clienteId === clientFilter);
-    return searchOk && (status === "TODOS" || r.estado === status) && (method === "TODOS" || r.metodoPago === method) && clientOk && fromOk && toOk && minOk && maxOk;
-  }), [rows, clientes, search, status, method, clientFilter, from, to, minTotal, maxTotal]);
-
-  const saleDetails = (saleId) => detalles.filter((d) => d.ventaId === saleId);
-
-  const annul = async (r) => {
-    if (!window.confirm(`¿Anular la venta ${r.id}? El stock será restaurado y se registrará la reversión.`)) return;
     try {
-      await anularVenta({ ventaId: r.id, empresaId: usuario.empresaId, usuarioId: usuario.uid });
-      await registrarAuditoria({ empresaId: usuario.empresaId, usuarioId: usuario.uid, usuarioNombre: usuario.nombreCompleto || usuario.correo || "", accion: "ANULAR_VENTA", modulo: "ventas", entidad: "venta", entidadId: r.id, detalle: `Anuló venta por ${Number(r.total || 0).toFixed(2)}` });
-      setSelected(null);
-      await load();
-    } catch (e) { alert(e.message || "No se pudo anular."); }
+      const [lista, ds, cs] = await Promise.all([
+        listarVentas(empresaId),
+        leer("detalleVentas", empresaId),
+        leer("clientes", empresaId).catch(() => [])
+      ]);
+
+      setVentas(lista);
+      setDetalles(ds);
+      setClientes(new Map(cs.map((c) => [c.id, c])));
+    } catch (e) {
+      console.error(e);
+      setError("No pudimos cargar tus ventas. Revisa tu conexión e inténtalo otra vez.");
+    } finally {
+      setCargando(false);
+    }
+  }, [empresaId]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  const nombreDe = (v) => clientes.get(v.clienteId)?.nombre || v.clienteNombre || "Consumidor final";
+  const documentoDe = (v) => clientes.get(v.clienteId)?.documento || v.clienteDocumento || "";
+  const lineasDe = (id) => detalles.filter((d) => d.ventaId === id);
+
+  const filtradas = useMemo(() => {
+    const texto = normalizar(busqueda);
+    const inicio = desde ? new Date(`${desde}T00:00:00`) : null;
+    const fin = hasta ? new Date(`${hasta}T23:59:59`) : null;
+
+    return ventas.filter((venta) => {
+      if (estado && venta.estado !== estado) return false;
+      if (metodo && venta.metodoPago !== metodo) return false;
+
+      const fecha = fechaDe(venta.fechaRegistro);
+      if (inicio && fecha && fecha < inicio) return false;
+      if (fin && fecha && fecha > fin) return false;
+
+      if (!texto) return true;
+
+      return [venta.id, nombreDe(venta), documentoDe(venta), METODOS[venta.metodoPago]].some((valor) =>
+        normalizar(valor).includes(texto)
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventas, clientes, busqueda, estado, metodo, desde, hasta]);
+
+  const activas = filtradas.filter((v) => v.estado !== "ANULADA");
+  const totalVendido = activas.reduce((suma, v) => suma + Number(v.total || 0), 0);
+  const promedio = activas.length ? totalVendido / activas.length : 0;
+  const anuladas = filtradas.length - activas.length;
+  const visibles = filtradas.slice(0, limite);
+  const hayFiltros = Boolean(busqueda || estado || metodo || desde || hasta);
+
+  const limpiar = () => {
+    setBusqueda("");
+    setEstado("");
+    setMetodo("");
+    setDesde("");
+    setHasta("");
+    setLimite(POR_PAGINA);
   };
 
- // ==========================================
-// HU-18 - COMPROBANTE DE VENTA PROFESIONAL
-// ==========================================
+  const cambiar = (fijar) => (e) => {
+    fijar(e.target.value);
+    setLimite(POR_PAGINA);
+  };
 
-const receipt = async (r) => {
+  async function anular(venta) {
+    const ok = await confirmar({
+      titulo: "Anular esta venta",
+      mensaje: `Se anulará la venta de ${dinero(venta.total)}. El stock vuelve a Existencias y la venta queda marcada como anulada.`,
+      accion: "Anular venta",
+      peligro: true
+    });
+    if (!ok) return;
 
-  // ABRIR VENTANA DEL COMPROBANTE
-  const ventana = window.open(
-    "",
-    "_blank",
-    "width=1000,height=900"
-  );
+    setError("");
+    setAviso("");
 
-  if (!ventana) {
-    alert("Permite las ventanas emergentes para ver el comprobante.");
-    return;
+    try {
+      await anularVenta({ ventaId: venta.id, empresaId, usuarioId: usuario.uid });
+      await registrarAuditoria({
+        empresaId,
+        usuarioId: usuario.uid,
+        usuarioNombre: usuario.nombreCompleto || usuario.correo || "",
+        accion: "ANULAR_VENTA",
+        modulo: "ventas",
+        entidad: "venta",
+        entidadId: venta.id,
+        detalle: `Anuló venta por ${Number(venta.total || 0).toFixed(2)}`
+      }).catch(() => {});
+
+      sonidoExito();
+      setAviso("La venta quedó anulada y el stock volvió a Existencias.");
+      setElegida(null);
+      await cargar();
+    } catch (e) {
+      console.error(e);
+      sonidoError();
+      setError(e.message || "No pudimos anular la venta.");
+    }
   }
 
-  ventana.document.write(`
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <title>Preparando comprobante</title>
-    </head>
-    <body style="
-      background:#101125;
-      color:white;
-      font-family:Arial;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:90vh;
-    ">
-      <h2>Preparando comprobante...</h2>
-    </body>
-    </html>
-  `);
+  // Comprobante imprimible con el logo y los colores vigentes de la empresa.
+  async function comprobante(venta) {
+    const ventana = window.open("", "_blank", "width=1000,height=900");
 
-  ventana.document.close();
-
-  try {
-
-    // ======================================
-    // 1. OBTENER DATOS DE LA VENTA
-    // ======================================
-
-    const cliente = clientes[r.clienteId];
-
-    const productosVenta = saleDetails(r.id);
-
-    // ======================================
-    // 2. OBTENER EMPRESA Y SUCURSAL
-    // ======================================
-
-    // ESTAS CONSULTAS SON SOLO DE LECTURA
-    // SI UNA NO ESTA PERMITIDA, CONTINUAMOS
-    // SIN MODIFICAR LOS DATOS DE LA VENTA
-
-    const resultados = await Promise.allSettled([
-
-      getDoc(
-        doc(db, "empresas", usuario.empresaId)
-      ),
-
-      r.sucursalId
-        ? getDoc(doc(db, "sucursales", r.sucursalId))
-        : Promise.resolve(null)
-
-    ]);
-
-    const empresaSnapshot =
-      resultados[0].status === "fulfilled"
-        ? resultados[0].value
-        : null;
-
-    const sucursalSnapshot =
-      resultados[1].status === "fulfilled"
-        ? resultados[1].value
-        : null;
-
-    const empresa = empresaSnapshot?.exists()
-      ? empresaSnapshot.data()
-      : {};
-
-    const sucursal = sucursalSnapshot?.exists()
-      ? sucursalSnapshot.data()
-      : {};
-
-    // ======================================
-    // 3. DATOS COMERCIALES
-    // ======================================
-
-    const nombreEmpresa =
-      empresa.nombreComercial ||
-      empresa.nombre ||
-      empresa.razonSocial ||
-      usuario.empresaNombre ||
-      "Empresa";
-
-    const nitEmpresa =
-      empresa.nit ||
-      empresa.nitEmpresa ||
-      "";
-
-    const direccionEmpresa =
-      sucursal.direccion ||
-      empresa.direccion ||
-      empresa.direccionFiscal ||
-      "";
-
-    const telefonoEmpresa =
-      empresa.telefono ||
-      empresa.celular ||
-      "";
-
-    const nombreSucursal =
-      sucursal.nombre ||
-      sucursal.codigo ||
-      "";
-
-    const logoEmpresa =
-      empresa.logoUrl ||
-      empresa.logo ||
-      empresa.imagenUrl ||
-      "";
-
-    // ======================================
-    // 4. FORMATEAR DATOS
-    // ======================================
-
-    const fecha = dateOf(r.fechaRegistro)
-      ?.toLocaleString("es-BO") || "-";
-
-    const numeroComprobante =
-      r.numeroComprobante ||
-      r.codigo ||
-      r.id;
-
-    const nombreCliente =
-      cliente?.nombre ||
-      "Consumidor final";
-
-    const documentoCliente =
-      cliente?.documento ||
-      cliente?.nit ||
-      "";
-
-    const nombreVendedor =
-      r.usuarioNombre ||
-      r.vendedorNombre ||
-      "";
-
-    const dinero = (valor) => {
-
-      const numero = Number(valor);
-
-      return Number.isFinite(numero)
-        ? numero.toLocaleString("es-BO", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          })
-        : "0,00";
-
-    };
-
-    // EVITAR QUE LOS DATOS MODIFIQUEN EL HTML
-    const escapar = (valor) => {
-
-      return String(valor ?? "").replace(
-        /[&<>"']/g,
-        (caracter) => ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;"
-        })[caracter]
-      );
-
-    };
-
-    // SOLO PERMITIR DIRECCIONES DE IMAGEN WEB
-    let logoSeguro = "";
-
-    if (logoEmpresa) {
-
-      try {
-
-        const url = new URL(logoEmpresa, window.location.origin);
-
-        if (
-          url.protocol === "https:" ||
-          url.origin === window.location.origin
-        ) {
-          logoSeguro = url.href;
-        }
-
-      } catch {
-        logoSeguro = "";
-      }
-
+    if (!ventana) {
+      setError("Tu navegador bloqueó la ventana. Permite las ventanas emergentes para ver el comprobante.");
+      return;
     }
 
-    // ======================================
-    // 5. GENERAR FILAS DE PRODUCTOS
-    // ======================================
-
-    const filasProductos = productosVenta.map(
-      (producto, indice) => {
-
-        const cantidad = Number(producto.cantidad || 0);
-
-        const precio = Number(
-          producto.precioUnitario || 0
-        );
-
-        const subtotalProducto =
-          producto.subtotal != null
-            ? Number(producto.subtotal)
-            : cantidad * precio;
-
-        return `
-          <tr>
-
-            <td>
-              <span class="numero-item">
-                ${indice + 1}.
-              </span>
-
-              <strong>
-                ${escapar(
-                  producto.nombreProducto ||
-                  producto.productoId ||
-                  "Producto"
-                )}
-              </strong>
-            </td>
-
-            <td class="numero">
-              ${cantidad}
-            </td>
-
-            <td class="numero">
-              ${dinero(precio)}
-            </td>
-
-            <td class="numero destacado">
-              ${dinero(subtotalProducto)}
-            </td>
-
-          </tr>
-        `;
-
-      }
-    ).join("");
-
-    const tablaProductos = filasProductos || `
-      <tr>
-        <td colspan="4" class="sin-productos">
-          No se encontraron detalles de esta venta.
-        </td>
-      </tr>
-    `;
-
-    // ======================================
-    // 6. CREAR COMPROBANTE
-    // ======================================
-
-    const html = `
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
-<title>
-  Comprobante ${escapar(numeroComprobante)}
-</title>
-
-<style id="pageRule">
-  @page {
-    size: A4;
-    margin: 12mm;
-  }
-</style>
-
-<style>
-
-/* ======================================
-   DISEÑO GENERAL
-====================================== */
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 28px;
-
-  background: #0c0d1b;
-
-  font-family:
-    "Segoe UI",
-    Arial,
-    sans-serif;
-
-  color: #1c2035;
-}
-
-/* ======================================
-   BARRA DE OPCIONES
-====================================== */
-
-.barra-herramientas {
-
-  max-width: 820px;
-  margin: 0 auto 24px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 15px;
-  flex-wrap: wrap;
-
-  padding: 16px 20px;
-
-  border: 1px solid #34325c;
-  border-radius: 16px;
-
-  background: #191a30;
-
-  color: white;
-}
-
-.titulo-herramientas {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.titulo-herramientas strong {
-  font-size: 16px;
-}
-
-.titulo-herramientas span {
-  font-size: 12px;
-  color: #a0a4c0;
-}
-
-.botones {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-button {
-  border: none;
-  border-radius: 9px;
-
-  padding: 11px 15px;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  transition: 0.2s;
-}
-
-.boton-formato {
-  background: #30304c;
-  color: #c7c8dc;
-}
-
-.boton-formato.activo {
-  background: #7354ec;
-  color: white;
-}
-
-.boton-imprimir {
-
-  background: linear-gradient(
-    135deg,
-    #8953f5,
-    #4285ff
-  );
-
-  color: white;
-}
-
-button:hover {
-  filter: brightness(1.12);
-}
-
-/* ======================================
-   HOJA DEL COMPROBANTE
-====================================== */
-
-.comprobante {
-
-  width: 100%;
-  max-width: 820px;
-
-  margin: auto;
-
-  background: white;
-
-  border-radius: 18px;
-
-  overflow: hidden;
-
-  box-shadow:
-    0 20px 65px rgba(0,0,0,0.35);
-}
-
-/* ======================================
-   ENCABEZADO
-====================================== */
-
-.encabezado {
-
-  padding: 32px 36px;
-
-  background: linear-gradient(
-    135deg,
-    #4e36ac,
-    #7652e5,
-    #3689ee
-  );
-
-  color: white;
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  gap: 18px;
-}
-
-.empresa {
-
-  display: flex;
-  align-items: center;
-
-  gap: 15px;
-
-  min-width: 0;
-}
-
-.logo {
-
-  width: 65px;
-  height: 65px;
-
-  flex-shrink: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 16px;
-
-  background: rgba(255,255,255,0.17);
-
-  font-size: 26px;
-  font-weight: 800;
-
-  overflow: hidden;
-}
-
-.logo img {
-
-  width: 100%;
-  height: 100%;
-
-  object-fit: contain;
-}
-
-.empresa h1 {
-
-  margin: 0 0 6px;
-
-  font-size: 23px;
-  overflow-wrap: anywhere;
-}
-
-.empresa p {
-
-  margin: 3px 0;
-
-  font-size: 11px;
-  opacity: 0.9;
-}
-
-.tipo-documento {
-
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.tipo-documento span {
-
-  display: block;
-
-  font-size: 10px;
-  letter-spacing: 2px;
-
-  opacity: 0.85;
-}
-
-.tipo-documento strong {
-
-  display: block;
-
-  margin-top: 6px;
-
-  font-size: 18px;
-}
-
-/* ======================================
-   CONTENIDO
-====================================== */
-
-.contenido {
-  padding: 32px 36px;
-}
-
-.titulo-comprobante {
-
-  margin-bottom: 25px;
-  padding-bottom: 18px;
-
-  border-bottom: 1px solid #e6e6f1;
-}
-
-.titulo-comprobante h2 {
-
-  margin: 0 0 8px;
-
-  font-size: 25px;
-
-  color: #24233f;
-}
-
-.titulo-comprobante p {
-
-  margin: 0;
-
-  font-size: 11px;
-
-  color: #777b94;
-
-  overflow-wrap: anywhere;
-}
-
-/* ======================================
-   INFORMACIÓN
-====================================== */
-
-.informacion {
-
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-
-  gap: 16px;
-
-  margin-bottom: 30px;
-}
-
-.bloque {
-
-  padding: 18px;
-
-  border: 1px solid #e7e8f3;
-  border-radius: 13px;
-
-  background: #fafaff;
-}
-
-.bloque h3 {
-
-  margin: 0 0 15px;
-
-  font-size: 12px;
-
-  color: #7955dc;
-
-  text-transform: uppercase;
-
-  letter-spacing: 1px;
-}
-
-.dato {
-
-  display: flex;
-  justify-content: space-between;
-
-  gap: 12px;
-
-  margin: 10px 0;
-
-  font-size: 12px;
-}
-
-.dato span {
-  color: #85869e;
-}
-
-.dato strong {
-
-  color: #272945;
-  text-align: right;
-
-  overflow-wrap: anywhere;
-}
-
-/* ======================================
-   TABLA DE PRODUCTOS
-====================================== */
-
-.tabla {
-
-  width: 100%;
-
-  border-collapse: collapse;
-
-  margin-bottom: 30px;
-
-  font-size: 12px;
-}
-
-.tabla th {
-
-  padding: 14px 10px;
-
-  background: #f0ecff;
-
-  color: #5d43bc;
-
-  text-align: left;
-
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.tabla td {
-
-  padding: 15px 10px;
-
-  border-bottom: 1px solid #eeeeF5;
-}
-
-.numero {
-  text-align: right;
-}
-
-.destacado {
-  font-weight: 800;
-  color: #433b91;
-}
-
-.numero-item {
-  margin-right: 5px;
-  color: #a4a0bd;
-}
-
-.sin-productos {
-  text-align: center;
-  color: #999;
-}
-
-/* ======================================
-   RESUMEN
-====================================== */
-
-.resumen {
-
-  width: 100%;
-  max-width: 300px;
-
-  margin-left: auto;
-}
-
-.resumen-fila {
-
-  display: flex;
-  justify-content: space-between;
-
-  gap: 10px;
-
-  padding: 9px 0;
-
-  font-size: 13px;
-}
-
-.resumen-fila span {
-  color: #777b94;
-}
-
-.resumen-fila strong {
-  color: #262843;
-}
-
-.total {
-
-  margin-top: 12px;
-  padding: 17px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 10px;
-
-  border-radius: 13px;
-
-  background: linear-gradient(
-    135deg,
-    #6845d6,
-    #4786ee
-  );
-
-  color: white;
-}
-
-.total span {
-  font-size: 13px;
-}
-
-.total strong {
-  font-size: 24px;
-}
-
-/* ======================================
-   PIE
-====================================== */
-
-.pie {
-
-  padding: 24px 36px;
-
-  border-top: 1px solid #eeeeF5;
-
-  background: #fafaff;
-
-  text-align: center;
-}
-
-.pie h3 {
-
-  margin: 0 0 8px;
-
-  color: #6650c3;
-
-  font-size: 15px;
-}
-
-.pie p {
-
-  margin: 5px 0;
-
-  color: #85869e;
-
-  font-size: 11px;
-}
-
-.estado-anulada {
-  color: #b91c1c;
-  font-weight: 800;
-}
-
-.estado-completada {
-  color: #07845c;
-  font-weight: 800;
-}
-
-/* ======================================
-   FORMATO TICKET
-====================================== */
-
-body.ticket {
-  padding: 12px;
-}
-
-.ticket .comprobante {
-  width: 80mm;
-  max-width: 100%;
-  border-radius: 0;
-}
-
-.ticket .encabezado {
-
-  padding: 18px 12px;
-
-  flex-direction: column;
-  text-align: center;
-}
-
-.ticket .empresa {
-  flex-direction: column;
-}
-
-.ticket .empresa h1 {
-  font-size: 16px;
-}
-
-.ticket .logo {
-  width: 48px;
-  height: 48px;
-}
-
-.ticket .tipo-documento {
-  text-align: center;
-}
-
-.ticket .contenido {
-  padding: 15px 10px;
-}
-
-.ticket .informacion {
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.ticket .bloque {
-  padding: 10px;
-}
-
-.ticket .titulo-comprobante h2 {
-  font-size: 18px;
-}
-
-.ticket .tabla {
-  font-size: 9px;
-}
-
-.ticket .tabla th,
-.ticket .tabla td {
-  padding: 9px 3px;
-}
-
-.ticket .numero-item {
-  display: none;
-}
-
-.ticket .total strong {
-  font-size: 18px;
-}
-
-.ticket .pie {
-  padding: 15px 10px;
-}
-
-/* ======================================
-   IMPRESIÓN
-====================================== */
-
-@media print {
-
-  body {
-    background: white !important;
-    padding: 0 !important;
-  }
-
-  .barra-herramientas {
-    display: none !important;
-  }
-
-  .comprobante {
-
-    width: 100% !important;
-    max-width: none !important;
-
-    border-radius: 0 !important;
-
-    box-shadow: none !important;
-  }
-
-  .bloque,
-  .tabla tr,
-  .total {
-    break-inside: avoid;
-  }
-
-  .encabezado,
-  .total,
-  .logo {
-
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-}
-
-</style>
-
-</head>
-
-<body>
-
-<!-- ======================================
-     HERRAMIENTAS
-====================================== -->
-
-<div class="barra-herramientas">
-
-  <div class="titulo-herramientas">
-
-    <strong>Comprobante de venta</strong>
-
-    <span>
-      Selecciona el formato que deseas imprimir.
-    </span>
-
-  </div>
-
-  <div class="botones">
-
-    <button
-      id="a4Btn"
-      class="boton-formato activo"
-      onclick="cambiarFormato(false)"
-    >
-      Hoja A4
-    </button>
-
-    <button
-      id="ticketBtn"
-      class="boton-formato"
-      onclick="cambiarFormato(true)"
-    >
-      Ticket 80 mm
-    </button>
-
-    <button
-      class="boton-imprimir"
-      onclick="window.print()"
-    >
-      Imprimir / Guardar PDF
-    </button>
-
-  </div>
-
-</div>
-
-<!-- ======================================
-     COMPROBANTE
-====================================== -->
-
-<div class="comprobante">
-
-  <header class="encabezado">
-
-    <div class="empresa">
-
-      <div class="logo">
-
-        ${
-          logoSeguro
-            ? `<img
-                src="${escapar(logoSeguro)}"
-                alt="Logo de la empresa"
-              >`
-            : escapar(
-                nombreEmpresa
-                  .trim()
-                  .charAt(0)
-                  .toUpperCase() || "E"
-              )
-        }
-
-      </div>
-
-      <div>
-
-        <h1>
-          ${escapar(nombreEmpresa)}
-        </h1>
-
-        ${
-          nitEmpresa
-            ? `<p>NIT: ${escapar(nitEmpresa)}</p>`
-            : ""
-        }
-
-        ${
-          direccionEmpresa
-            ? `<p>${escapar(direccionEmpresa)}</p>`
-            : ""
-        }
-
-        ${
-          telefonoEmpresa
-            ? `<p>Tel: ${escapar(telefonoEmpresa)}</p>`
-            : ""
-        }
-
-      </div>
-
-    </div>
-
-    <div class="tipo-documento">
-
-      <span>
-        DOCUMENTO COMERCIAL
-      </span>
-
-      <strong>
-        VENTA
-      </strong>
-
-    </div>
-
-  </header>
-
-  <main class="contenido">
-
-    <div class="titulo-comprobante">
-
-      <h2>
-        Comprobante de venta
-      </h2>
-
-      <p>
-        N.º ${escapar(numeroComprobante)}
-      </p>
-
-    </div>
-
-    <!-- INFORMACIÓN -->
-
-    <section class="informacion">
-
-      <div class="bloque">
-
-        <h3>Información de venta</h3>
-
-        <div class="dato">
-          <span>Fecha</span>
-          <strong>${escapar(fecha)}</strong>
-        </div>
-
-        <div class="dato">
-          <span>Sucursal</span>
-          <strong>
-            ${escapar(nombreSucursal || "No disponible")}
-          </strong>
-        </div>
-
-        <div class="dato">
-          <span>Pago</span>
-          <strong>
-            ${escapar(r.metodoPago || "-")}
-          </strong>
-        </div>
-
-        <div class="dato">
-          <span>Estado</span>
-
-          <strong class="${
-            r.estado === "ANULADA"
-              ? "estado-anulada"
-              : "estado-completada"
-          }">
-            ${escapar(r.estado || "-")}
-          </strong>
-
-        </div>
-
-        ${
-          nombreVendedor
-            ? `
-              <div class="dato">
-                <span>Vendedor</span>
-                <strong>
-                  ${escapar(nombreVendedor)}
-                </strong>
-              </div>
-            `
-            : ""
-        }
-
-      </div>
-
-      <div class="bloque">
-
-        <h3>Información del cliente</h3>
-
-        <div class="dato">
-
-          <span>Cliente</span>
-
-          <strong>
-            ${escapar(nombreCliente)}
-          </strong>
-
-        </div>
-
-        ${
-          documentoCliente
-            ? `
-              <div class="dato">
-
-                <span>CI / NIT</span>
-
-                <strong>
-                  ${escapar(documentoCliente)}
-                </strong>
-
-              </div>
-            `
-            : ""
-        }
-
-        ${
-          cliente?.telefono
-            ? `
-              <div class="dato">
-
-                <span>Teléfono</span>
-
-                <strong>
-                  ${escapar(cliente.telefono)}
-                </strong>
-
-              </div>
-            `
-            : ""
-        }
-
-      </div>
-
-    </section>
-
-    <!-- PRODUCTOS -->
-
-    <table class="tabla">
-
-      <thead>
-
-        <tr>
-
-          <th>Producto</th>
-
-          <th class="numero">
-            Cant.
-          </th>
-
-          <th class="numero">
-            Precio
-          </th>
-
-          <th class="numero">
-            Subtotal
-          </th>
-
-        </tr>
-
-      </thead>
-
-      <tbody>
-
-        ${tablaProductos}
-
-      </tbody>
-
-    </table>
-
-    <!-- TOTALES -->
-
-    <section class="resumen">
-
-      <div class="resumen-fila">
-
-        <span>Subtotal</span>
-
-        <strong>
-          Bs ${dinero(r.subtotal)}
-        </strong>
-
-      </div>
-
-      <div class="resumen-fila">
-
-        <span>Descuento</span>
-
-        <strong>
-          - Bs ${dinero(r.descuento)}
-        </strong>
-
-      </div>
-
-      <div class="total">
-
-        <span>
-          TOTAL PAGADO
-        </span>
-
-        <strong>
-          Bs ${dinero(r.total)}
-        </strong>
-
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- PIE -->
-
-  <footer class="pie">
-
-    <h3>
-      ¡Gracias por tu compra!
-    </h3>
-
-    <p>
-      Conserva este comprobante como
-      respaldo de tu compra.
-    </p>
-
-    <p>
-      Comprobante comercial.
-      No constituye una factura fiscal.
-    </p>
-
-  </footer>
-
-</div>
-
-<script>
-
-function cambiarFormato(ticket) {
-
-  document.body.classList.toggle(
-    "ticket",
-    ticket
-  );
-
-  document.getElementById("a4Btn")
-    .classList.toggle("activo", !ticket);
-
-  document.getElementById("ticketBtn")
-    .classList.toggle("activo", ticket);
-
-  document.getElementById("pageRule").textContent =
-    ticket
-      ? "@page { size: 80mm 200mm; margin: 4mm; }"
-      : "@page { size: A4; margin: 12mm; }";
-
-}
-
-</script>
-
-</body>
-</html>
-`;
-
-    // ======================================
-    // 7. MOSTRAR COMPROBANTE
-    // ======================================
-
-    if (ventana.closed) return;
-
-    ventana.document.open();
-
-    ventana.document.write(html);
-
+    ventana.document.write(
+      '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Preparando comprobante</title></head>' +
+        '<body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui,sans-serif;background:#f4f2f6;color:#3a2a44">' +
+        "<p>Preparando comprobante…</p></body></html>"
+    );
     ventana.document.close();
 
-  } catch (error) {
+    try {
+      const lecturas = await Promise.allSettled([
+        getDoc(doc(db, "empresas", empresaId)),
+        getDoc(doc(db, "personalizacionesEmpresas", empresaId)),
+        venta.sucursalId ? getDoc(doc(db, "sucursales", venta.sucursalId)) : Promise.resolve(null)
+      ]);
 
-    console.error(
-      "Error al generar comprobante:",
-      error
-    );
+      const dato = (i) =>
+        lecturas[i].status === "fulfilled" && lecturas[i].value?.exists?.() ? lecturas[i].value.data() : {};
 
-    if (!ventana.closed) {
+      const html = construirComprobante({
+        venta,
+        productos: lineasDe(venta.id),
+        empresa: dato(0),
+        personalizacion: dato(1),
+        sucursal: dato(2),
+        cliente: clientes.get(venta.clienteId) || null,
+        vendedor: venta.usuarioNombre || venta.vendedorNombre || "",
+        fecha: fechaDe(venta.fechaRegistro)
+      });
 
-      ventana.document.body.innerHTML = `
-        <div style="
-          padding:40px;
-          font-family:Arial;
-          text-align:center;
-        ">
-          <h2>No se pudo generar el comprobante</h2>
-
-          <p>
-            Revisa la consola del navegador.
-          </p>
-        </div>
-      `;
-
+      if (ventana.closed) return;
+      ventana.document.open();
+      ventana.document.write(html);
+      ventana.document.close();
+    } catch (e) {
+      console.error(e);
+      if (!ventana.closed) {
+        ventana.document.body.innerHTML =
+          '<div style="padding:40px;font-family:system-ui,sans-serif;text-align:center"><h2>No se pudo generar el comprobante</h2><p>Inténtalo de nuevo en unos segundos.</p></div>';
+      }
     }
-
   }
 
-};
+  const metricas = [
+    { titulo: "Ventas", valor: activas.length.toLocaleString("es-BO"), nota: "completadas", icono: ShoppingBag },
+    { titulo: "Total vendido", valor: dinero(totalVendido), nota: "sin contar anuladas", icono: Wallet },
+    { titulo: "Venta promedio", valor: dinero(promedio), nota: "por cada venta", icono: TrendingUp },
+    { titulo: "Anuladas", valor: anuladas.toLocaleString("es-BO"), nota: "con stock devuelto", icono: Ban, tono: anuladas ? "alerta" : "" }
+  ];
 
-  const clientOptions = Object.values(clientes).sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""))).map((c) => ({ value: c.id, label: c.nombre || c.documento || c.id }));
+  return (
+    <div className="re inv">
+      <header className="re-cabecera">
+        <div>
+          <h1>Historial de ventas</h1>
+          <p>Revisa cada venta, imprime su comprobante o anúlala si hubo un error.</p>
+        </div>
 
-  return <div className="module-page">
-    <div className="module-page-header"><div><span className="eyebrow">VENTAS</span><h1>Historial de ventas</h1><p>Consulta detalle, filtra por múltiples criterios, genera comprobantes y anula operaciones con reversión de stock.</p></div><button className="secondary-action" onClick={load}><RefreshCw size={16}/> Actualizar</button></div>
-    <AdvancedFilterBar search={search} onSearch={setSearch} searchPlaceholder="Venta, cliente, documento, usuario, sucursal…" status={status} onStatus={setStatus} statusOptions={[{value:"TODOS",label:"Todos los estados"},{value:"COMPLETADA",label:"Completadas"},{value:"ANULADA",label:"Anuladas"}]} filters={[{key:"metodo",label:"Todos los métodos",value:method,onChange:setMethod,options:[{value:"EFECTIVO",label:"Efectivo"},{value:"QR",label:"QR"},{value:"TARJETA",label:"Tarjeta"},{value:"TRANSFERENCIA",label:"Transferencia"},{value:"CREDITO",label:"Crédito"}]},{key:"cliente",label:"Todos los clientes",value:clientFilter,onChange:setClientFilter,options:[{value:"FINAL",label:"Consumidor final"},...clientOptions]}]} onClear={()=>{setSearch("");setStatus("TODOS");setMethod("TODOS");setClientFilter("TODOS");setFrom("");setTo("");setMinTotal("");setMaxTotal("")}}/>
-    <div className="report-date-row filter-range-grid"><label>Desde<input type="date" value={from} onChange={(e)=>setFrom(e.target.value)}/></label><label>Hasta<input type="date" value={to} onChange={(e)=>setTo(e.target.value)}/></label><label>Total mínimo<input type="number" min="0" step="0.01" value={minTotal} onChange={(e)=>setMinTotal(e.target.value)} placeholder="0.00"/></label><label>Total máximo<input type="number" min="0" step="0.01" value={maxTotal} onChange={(e)=>setMaxTotal(e.target.value)} placeholder="Sin límite"/></label></div>
-    <section className="data-card glass-3d">{loading?<div className="empty-state">Cargando ventas…</div>:<div className="table-scroll"><table className="modern-table"><thead><tr><th>VENTA</th><th>CLIENTE</th><th>FECHA</th><th>MÉTODO</th><th>SUBTOTAL</th><th>DESC.</th><th>TOTAL</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody>{filtered.map((r)=><tr key={r.id}><td><code>{r.id.slice(0,10)}</code></td><td>{clientes[r.clienteId]?.nombre||"Consumidor final"}</td><td>{dateOf(r.fechaRegistro)?.toLocaleString()||"-"}</td><td>{r.metodoPago}</td><td>{Number(r.subtotal||0).toFixed(2)}</td><td>{Number(r.descuento||0).toFixed(2)}</td><td><strong>{Number(r.total||0).toFixed(2)}</strong></td><td><span className={`status-pill ${r.estado==="ANULADA"?"inactive":"active"}`}>{r.estado}</span></td><td><div className="row-actions"><button title="Ver detalle" onClick={()=>setSelected(r)}><Eye size={16}/></button><button title="Comprobante" onClick={()=>receipt(r)}><FileText size={16}/></button>{r.estado!=="ANULADA"&&<button className="danger" title="Anular" onClick={()=>annul(r)}><Ban size={16}/></button>}</div></td></tr>)}</tbody></table>{!filtered.length&&<div className="empty-state">Sin ventas para los filtros seleccionados.</div>}</div>}</section>
+        <Link to="/ventas/pos" className="re-boton">
+          <Plus size={17} />
+          Nueva venta
+        </Link>
+      </header>
 
-    <AnimatePresence>{selected&&<motion.div className="modal-backdrop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onMouseDown={()=>setSelected(null)}><motion.div className="modal-card modal-wide glass-3d" initial={{opacity:0,scale:.95,y:20}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97}} onMouseDown={(e)=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">DETALLE DE VENTA</span><h2>{selected.id}</h2></div><button onClick={()=>setSelected(null)}><X size={18}/></button></div><div className="detail-summary-grid"><div><span>Cliente</span><strong>{clientes[selected.clienteId]?.nombre||"Consumidor final"}</strong></div><div><span>Método</span><strong>{selected.metodoPago}</strong></div><div><span>Sucursal</span><strong>{selected.sucursalId||"-"}</strong></div><div><span>Usuario</span><strong>{selected.usuarioId||"-"}</strong></div></div><div className="table-scroll"><table className="modern-table"><thead><tr><th>PRODUCTO</th><th>CANTIDAD</th><th>PRECIO</th><th>SUBTOTAL</th></tr></thead><tbody>{saleDetails(selected.id).map((d)=><tr key={d.id}><td>{d.nombreProducto||d.productoId}</td><td>{d.cantidad}</td><td>{Number(d.precioUnitario||0).toFixed(2)}</td><td><strong>{Number(d.subtotal||0).toFixed(2)}</strong></td></tr>)}</tbody></table>{!saleDetails(selected.id).length&&<div className="empty-state">No se encontraron líneas de detalle.</div>}</div><div className="detail-totals"><span>Subtotal <strong>{Number(selected.subtotal||0).toFixed(2)}</strong></span><span>Descuento <strong>{Number(selected.descuento||0).toFixed(2)}</strong></span><span className="grand">Total <strong>{Number(selected.total||0).toFixed(2)}</strong></span></div><div className="modal-actions"><button className="secondary-action" onClick={()=>receipt(selected)}><FileText size={16}/> Imprimir comprobante</button>{selected.estado!=="ANULADA"&&<button className="danger-action" onClick={()=>annul(selected)}><Ban size={16}/> Anular venta</button>}</div></motion.div></motion.div>}</AnimatePresence>
-  </div>;
+      <section className="inv-metricas co-metricas" aria-label="Resumen">
+        {metricas.map(({ titulo, valor, nota, icono: Icono, tono }) => (
+          <article className="inv-metrica" key={titulo} data-tono={tono || undefined}>
+            <span className="inv-metrica__icono" aria-hidden="true">
+              <Icono size={22} />
+            </span>
+            <div>
+              <small>{titulo}</small>
+              <strong>{valor}</strong>
+              <em>{nota}</em>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <div className="re-herramientas">
+        <label className="re-busqueda">
+          <Search size={19} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Buscar por cliente, carnet o código…"
+            aria-label="Buscar ventas"
+            value={busqueda}
+            onChange={cambiar(setBusqueda)}
+          />
+        </label>
+
+        <label className="tr-selector">
+          <select value={estado} onChange={cambiar(setEstado)} aria-label="Estado">
+            <option value="">Todas las ventas</option>
+            <option value="COMPLETADA">Completadas</option>
+            <option value="ANULADA">Anuladas</option>
+          </select>
+          <ChevronDown size={17} aria-hidden="true" />
+        </label>
+
+        <label className="tr-selector">
+          <select value={metodo} onChange={cambiar(setMetodo)} aria-label="Forma de pago">
+            <option value="">Todas las formas de pago</option>
+            {Object.entries(METODOS).map(([valor, texto]) => (
+              <option key={valor} value={valor}>
+                {texto}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={17} aria-hidden="true" />
+        </label>
+
+        {hayFiltros && (
+          <button type="button" className="re-chip" onClick={limpiar}>
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      <div className="cg-rangos">
+        <label>
+          <span>Desde</span>
+          <input type="date" value={desde} onChange={cambiar(setDesde)} />
+        </label>
+        <label>
+          <span>Hasta</span>
+          <input type="date" value={hasta} onChange={cambiar(setHasta)} />
+        </label>
+      </div>
+
+      {aviso && (
+        <div className="re-aviso re-aviso--ok" role="status">
+          {aviso}
+        </div>
+      )}
+      {error && (
+        <div className="re-aviso re-aviso--error" role="alert">
+          {error}
+        </div>
+      )}
+
+      {cargando ? (
+        <div className="re-vacio">Cargando ventas…</div>
+      ) : filtradas.length === 0 ? (
+        <div className="re-vacio">
+          <Receipt size={34} />
+          <strong>{ventas.length === 0 ? "Todavía no hay ventas" : "No encontramos ventas"}</strong>
+          <span>
+            {ventas.length === 0 ? "Cuando cobres en el punto de venta, aparecerán aquí." : "Prueba con otras fechas o limpia los filtros."}
+          </span>
+          {ventas.length === 0 && (
+            <Link to="/ventas/pos" className="re-boton">
+              Hacer la primera venta
+            </Link>
+          )}
+        </div>
+      ) : (
+        <section className="inv-bloque">
+          <div className="inv-tabla-caja">
+            <table className="inv-tabla">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Pago</th>
+                  <th className="inv-der">Total</th>
+                  <th>Estado</th>
+                  <th className="inv-der">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibles.map((venta) => {
+                  const fecha = fechaDe(venta.fechaRegistro);
+                  const anulada = venta.estado === "ANULADA";
+
+                  return (
+                    <tr key={venta.id}>
+                      <td data-label="Fecha">
+                        <div className="inv-celda">
+                          <strong>
+                            {fecha ? fecha.toLocaleDateString("es-BO", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                          </strong>
+                          <small>{fecha ? fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" }) : ""}</small>
+                        </div>
+                      </td>
+                      <td data-label="Cliente">
+                        <div className="inv-celda">
+                          <strong>{nombreDe(venta)}</strong>
+                          <small>{documentoDe(venta) ? `Carnet ${documentoDe(venta)}` : ""}</small>
+                        </div>
+                      </td>
+                      <td data-label="Pago">
+                        <span className="co-pastilla-pago" data-metodo={venta.metodoPago}>
+                          {METODOS[venta.metodoPago] || venta.metodoPago || "—"}
+                        </span>
+                      </td>
+                      <td data-label="Total" className="inv-der">
+                        <div className="inv-celda" style={{ justifyItems: "end" }}>
+                          <strong>{dinero(venta.total)}</strong>
+                          {Number(venta.descuento || 0) > 0 && <small>Descuento {dinero(venta.descuento)}</small>}
+                        </div>
+                      </td>
+                      <td data-label="Estado">
+                        <span className="inv-pastilla" data-estado={anulada ? "VENCIDO" : "VIGENTE"}>
+                          {anulada ? "Anulada" : "Completada"}
+                        </span>
+                      </td>
+                      <td data-label="Acciones" className="inv-der">
+                        <div className="inv-fila-acciones">
+                          <button
+                            type="button"
+                            className="re-boton re-boton--suave re-boton--chico"
+                            onClick={() => {
+                              setElegida(venta);
+                              sonidoClick();
+                            }}
+                          >
+                            <Eye size={15} />
+                            Ver
+                          </button>
+                          <button
+                            type="button"
+                            className="re-boton re-boton--suave re-boton--chico"
+                            onClick={() => comprobante(venta)}
+                            aria-label="Imprimir comprobante"
+                          >
+                            <FileText size={15} />
+                            Comprobante
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filtradas.length > limite && (
+            <button type="button" className="re-boton re-boton--suave cg-mas" onClick={() => setLimite((previo) => previo + POR_PAGINA)}>
+              Mostrar más ({filtradas.length - limite} restantes)
+            </button>
+          )}
+        </section>
+      )}
+
+      <AnimatePresence>
+        {elegida && (
+          <motion.div className="re-fondo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={() => setElegida(null)}>
+            <motion.div
+              className="re-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="vt-detalle-titulo"
+              initial={{ opacity: 0, scale: 0.96, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <header className="re-modal__cabecera">
+                <div>
+                  <h2 id="vt-detalle-titulo">Venta a {nombreDe(elegida)}</h2>
+                  <p>
+                    {fechaDe(elegida.fechaRegistro)?.toLocaleString("es-BO", { dateStyle: "long", timeStyle: "short" }) || ""}
+                    {elegida.estado === "ANULADA" ? " · Anulada" : ""}
+                  </p>
+                </div>
+                <button type="button" className="re-cerrar" onClick={() => setElegida(null)} aria-label="Cerrar">
+                  <X size={18} />
+                </button>
+              </header>
+
+              <div className="re-modal__cuerpo">
+                <div className="co-detalle-resumen">
+                  <div>
+                    <small>Carnet</small>
+                    <strong>{documentoDe(elegida) || "—"}</strong>
+                  </div>
+                  <div>
+                    <small>Forma de pago</small>
+                    <strong>{METODOS[elegida.metodoPago] || elegida.metodoPago || "—"}</strong>
+                  </div>
+                </div>
+
+                <div className="co-detalle-lineas">
+                  {lineasDe(elegida.id).length === 0 ? (
+                    <div className="re-vacio">No encontramos el detalle de esta venta.</div>
+                  ) : (
+                    lineasDe(elegida.id).map((linea) => (
+                      <div className="co-linea" key={linea.id}>
+                        <div className="co-linea__texto">
+                          <strong>{linea.nombreProducto || "Producto"}</strong>
+                          <span>
+                            {Number(linea.cantidad || 0).toLocaleString("es-BO", { maximumFractionDigits: 2 })} × {dinero(linea.precioUnitario)}
+                          </span>
+                        </div>
+                        <strong className="co-linea__subtotal">{dinero(linea.subtotal)}</strong>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="co-detalle-resumen">
+                  <div>
+                    <small>Subtotal</small>
+                    <strong>{dinero(elegida.subtotal)}</strong>
+                  </div>
+                  <div>
+                    <small>Descuento por promociones</small>
+                    <strong>{dinero(elegida.descuento)}</strong>
+                  </div>
+                </div>
+
+                <div className="co-total">
+                  <span>Total cobrado</span>
+                  <strong>{dinero(elegida.total)}</strong>
+                </div>
+              </div>
+
+              <footer className="re-modal__pie">
+                <button type="button" className="re-boton re-boton--suave" onClick={() => comprobante(elegida)}>
+                  <FileText size={16} />
+                  Comprobante
+                </button>
+                {elegida.estado !== "ANULADA" && (
+                  <button type="button" className="re-boton re-boton--peligro" onClick={() => anular(elegida)}>
+                    <Ban size={16} />
+                    Anular venta
+                  </button>
+                )}
+              </footer>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }

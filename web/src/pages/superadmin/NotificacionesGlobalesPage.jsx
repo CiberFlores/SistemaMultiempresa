@@ -50,10 +50,39 @@ export default function NotificacionesGlobalesPage() {
         { key: "mensaje", label: "Mensaje", type: "textarea", wide: true, required: true }
       ]}
       columns={[
-        { key: "titulo", label: "TÍTULO" },
-        { key: "tipo", label: "TIPO" },
-        { key: "prioridad", label: "PRIORIDAD" },
-        { key: "audiencia", label: "AUDIENCIA" }
+        {
+          key: "titulo",
+          label: "TÍTULO",
+          render: (row) => (
+            <div className="not-titulo">
+              <strong>{row.titulo || "-"}</strong>
+              <small className="table-sub">{row.mensaje || ""}</small>
+            </div>
+          )
+        },
+        {
+          key: "tipo",
+          label: "TIPO",
+          render: (row) => (
+            <span className="tag-pill" data-tipo={row.tipo}>
+              {TIPOS_NOTIFICACION.find((item) => item.value === row.tipo)?.label || row.tipo || "-"}
+            </span>
+          )
+        },
+        {
+          key: "prioridad",
+          label: "PRIORIDAD",
+          render: (row) => (
+            <span className="tag-pill tag-pill--prioridad" data-prioridad={row.prioridad}>
+              {PRIORIDADES.find((item) => item.value === row.prioridad)?.label || row.prioridad || "-"}
+            </span>
+          )
+        },
+        {
+          key: "audiencia",
+          label: "AUDIENCIA",
+          render: (row) => AUDIENCIAS.find((item) => item.value === row.audiencia)?.label || row.audiencia || "-"
+        }
       ]}
       extraFilters={[
         { key: "tipo", label: "Todos los tipos", options: TIPOS_NOTIFICACION },

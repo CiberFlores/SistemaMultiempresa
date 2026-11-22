@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024"><rect width="1536" height="1024" fill="#FDF8F3"/><g transform="translate(90 250) scale(2.7)"><defs><linearGradient id="g" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#B02AEA"/><stop offset="1" stop-color="#5B0F8F"/></linearGradient></defs>
+<g stroke-linejoin="round" stroke-linecap="round" fill="none">
+<path d="M8 40H88" stroke="#3F0A52" stroke-width="14"/>
+<polygon points="90,34 110,34 168,146 32,146" fill="url(#g)" stroke="url(#g)" stroke-width="28"/>
+<polygon points="100,78 132,138 68,138" fill="#3F0A52" stroke="#3F0A52" stroke-width="14"/>
+<path d="M22 152C68 112 122 152 182 106" stroke="#fff" stroke-width="24"/>
+<path d="M22 152C68 112 122 152 182 106" stroke="#FF8A14" stroke-width="14"/>
+</g>
+<g><circle cx="66" cy="178" r="16" fill="#3F0A52"/><circle cx="66" cy="178" r="6" fill="#FFF6EC"/><circle cx="134" cy="178" r="16" fill="#3F0A52"/><circle cx="134" cy="178" r="6" fill="#FFF6EC"/></g>
+</g><text x="650" y="430" font-size="205" font-family="Arial Black,Segoe UI Black,Impact,sans-serif" font-weight="900" fill="#3F0A52" stroke="#3F0A52" stroke-width="14" stroke-linejoin="round" textLength="620" lengthAdjust="spacingAndGlyphs">Arca</text><path d="M660 570C630 480 760 465 850 478C970 494 1100 468 1260 468C1410 470 1425 580 1405 645C1385 715 1260 722 1100 706C960 694 840 722 740 716C650 708 655 625 660 570Z" fill="#3F0A52"/><text x="1032" y="672" text-anchor="middle" font-size="215" font-family="Arial Black,Segoe UI Black,Impact,sans-serif" font-weight="900" fill="#FFF6EC" stroke="#FFF6EC" stroke-width="10" stroke-linejoin="round" textLength="610" lengthAdjust="spacingAndGlyphs">Nova</text><path d="M1335 330q8 40 48 48q-40 8 -48 48q-8 -40 -48 -48q40 -8 48 -48z" fill="#FF8A14"/></svg>

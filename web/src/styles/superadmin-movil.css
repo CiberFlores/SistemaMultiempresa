@@ -1,0 +1,202 @@
+/* =========================================================
+   SUPER ADMIN · CELULAR Y TABLETA
+   Menú deslizable y ajustes de tamaño. Va después de
+   superadmin-marca.css.
+========================================================= */
+
+.sa-layout .sa-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sa-layout .sa-menu-button,
+.sa-layout .sa-sidebar-close,
+.sa-layout .sa-scrim {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sa-layout .sa-menu-button {
+    display: grid;
+    place-items: center;
+    flex: none;
+
+    width: 46px;
+    height: 46px;
+    padding: 0;
+
+    color: var(--sa-cream);
+
+    background: rgba(255, 249, 240, 0.06);
+    border: 1px solid rgba(255, 249, 240, 0.16);
+    border-radius: 13px;
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+
+    transition:
+      background-color 160ms ease,
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .sa-layout .sa-menu-button:active {
+    transform: scale(0.94);
+  }
+
+  .sa-layout .sa-menu-button:focus-visible,
+  .sa-layout .sa-sidebar-close:focus-visible {
+    outline: 2px solid var(--sa-orange);
+    outline-offset: 2px;
+  }
+
+  /* El menú vuelve a existir, pero fuera de pantalla */
+  .sa-layout .sa-sidebar {
+    display: flex;
+
+    z-index: 300;
+
+    width: min(300px, 86vw);
+
+    transform: translateX(-102%);
+    visibility: hidden;
+
+    transition:
+      transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s linear 280ms;
+  }
+
+  .sa-layout .sa-sidebar[data-abierto="true"] {
+    transform: none;
+    visibility: visible;
+
+    transition:
+      transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s;
+  }
+
+  .sa-layout .sa-sidebar-close {
+    position: absolute;
+    top: 40px;
+    right: 14px;
+    z-index: 3;
+
+    display: grid;
+    place-items: center;
+
+    width: 40px;
+    height: 40px;
+    padding: 0;
+
+    color: var(--sa-plum);
+
+    background: rgba(66, 5, 78, 0.1);
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  .sa-layout .sa-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+
+    display: block;
+
+    background: rgba(18, 1, 22, 0.66);
+    backdrop-filter: blur(3px);
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity 240ms ease;
+  }
+
+  .sa-layout .sa-scrim[data-abierto="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sa-layout .sa-header {
+    padding: 0 18px;
+  }
+
+  .sa-layout .sa-content {
+    padding: 22px 18px 90px;
+  }
+
+  .shell-tools {
+    display: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .sa-layout .sa-logout span {
+    display: none;
+  }
+
+  .sa-layout .sa-logout {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .sa-layout .sa-header-right {
+    gap: 10px;
+  }
+
+  .sa-layout .sa-page-header h1 {
+    font-size: 2rem;
+  }
+
+  .sa-layout .sa-metric-card {
+    min-height: 120px;
+  }
+
+  .sa-layout .sa-metric-card h2 {
+    font-size: 2.4rem;
+  }
+
+  .sa-layout .sa-panel {
+    padding: 20px 18px;
+  }
+
+  .sa-layout .sa-panel-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .sa-layout .sa-dashboard-actions-v4 {
+    width: 100%;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .sa-layout .sa-dashboard-refresh-v4 {
+    width: 100%;
+  }
+
+  .sa-layout .sa-dashboard-status-stack-v4 {
+    justify-items: start;
+  }
+
+  .sa-layout .sa-donut {
+    height: 210px;
+  }
+
+  .sa-layout .sa-chart {
+    height: 260px;
+  }
+
+  .shell-tools {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sa-layout .sa-sidebar,
+  .sa-layout .sa-sidebar[data-abierto="true"],
+  .sa-layout .sa-scrim {
+    transition-duration: 0.01ms;
+  }
+}

@@ -90,7 +90,7 @@ export default function RespaldosPage() {
       (err) => {
         console.error("Error al leer historial de respaldos:", err);
         setError(
-          "No se pudo cargar el historial. Verifica que firestore.rules tenga permisos para la colección respaldos."
+          "No se pudo cargar el historial de respaldos. Inténtalo de nuevo en unos minutos."
         );
         setLoading(false);
       }
@@ -148,14 +148,14 @@ export default function RespaldosPage() {
       }
 
       setOk(
-        "Respaldo generado correctamente. El JSON fue descargado en tu equipo y el historial quedó registrado en Firestore."
+        "Respaldo generado correctamente. El archivo se descargó en tu equipo y quedó registrado en el historial."
       );
     } catch (err) {
       console.error("Error al generar respaldo:", err);
 
       if (err?.code === "permission-denied") {
         setError(
-          "Firestore rechazó la operación. Publica las reglas actualizadas y comprueba que tu cuenta sea SUPER_ADMIN activa."
+          "No tienes permiso para esta operación. Comprueba que tu cuenta de super administrador esté activa."
         );
       } else {
         setError(err?.message || "No se pudo generar el respaldo.");
@@ -183,8 +183,7 @@ export default function RespaldosPage() {
           <span className="eyebrow">SISTEMA</span>
           <h1>Respaldos</h1>
           <p>
-            Exporta la información de Cloud Firestore a un archivo JSON y conserva
-            en Firebase el historial de cada exportación realizada.
+            Exporta toda la información de la plataforma a un archivo y conserva el historial de cada exportación.
           </p>
         </div>
 
@@ -205,12 +204,9 @@ export default function RespaldosPage() {
         <article className="hero-system-card glass-3d">
           <FileJson2 size={46} />
           <div>
-            <h2>Exportación JSON desde Firestore</h2>
+            <h2>Exportación completa en un archivo</h2>
             <p>
-              El sistema lee las colecciones principales de Cloud Firestore,
-              conserva los IDs y valores de cada documento y genera un archivo
-              JSON descargable. No modifica ni elimina información de la base de
-              datos.
+              El sistema lee las colecciones principales, conserva los identificadores y los valores de cada registro y genera un archivo descargable. No modifica ni elimina información.
             </p>
           </div>
         </article>
@@ -218,11 +214,9 @@ export default function RespaldosPage() {
         <article className="hero-system-card glass-3d">
           <ShieldCheck size={46} />
           <div>
-            <h2>Compatible con el plan Spark</h2>
+            <h2>El archivo queda en tu equipo</h2>
             <p>
-              Esta versión no utiliza Firebase Storage. El archivo se descarga en
-              tu computadora y Firestore conserva solamente la metadata e historial
-              del respaldo: fecha, usuario, tamaño, documentos y checksum.
+              El archivo se descarga en tu computadora. La plataforma solo guarda el historial del respaldo: fecha, usuario, tamaño, registros y firma de verificación.
             </p>
           </div>
         </article>
@@ -231,10 +225,7 @@ export default function RespaldosPage() {
       <div className="warning-panel" style={{ marginBottom: 22 }}>
         <Info size={18} style={{ flexShrink: 0 }} />
         <div>
-          <strong>Importante:</strong> el historial de Firestore confirma que el
-          respaldo se realizó, pero no guarda el archivo JSON completo. Conserva
-          el archivo descargado en una carpeta segura. Mientras esta pestaña siga
-          abierta podrás volver a descargar el último JSON generado.
+          <strong>Importante:</strong> el historial confirma que el respaldo se realizó, pero no guarda el archivo completo. Conserva el archivo descargado en una carpeta segura. Mientras esta pestaña siga abierta podrás volver a descargarlo.
         </div>
       </div>
 
@@ -314,7 +305,7 @@ export default function RespaldosPage() {
                 className="primary-action"
                 onClick={generar}
                 disabled={busy}
-                title="El JSON histórico no se almacena en la nube en el plan Spark. Genera una nueva copia actual."
+                title="El archivo histórico no se guarda en la plataforma. Genera una copia nueva."
               >
                 <DatabaseBackup size={17} />
                 Generar copia actual
@@ -330,7 +321,7 @@ export default function RespaldosPage() {
           <div>
             <h3>Historial de respaldos</h3>
             <p>
-              Registro permanente en Firestore de las exportaciones realizadas.
+              Registro permanente de las exportaciones realizadas.
             </p>
           </div>
         </div>
@@ -396,7 +387,7 @@ export default function RespaldosPage() {
                       ) : (
                         <span
                           className="table-sub"
-                          title="El archivo fue descargado localmente y no está almacenado en Firebase Storage."
+                          title="El archivo se descargó en el equipo y no está guardado en la plataforma."
                         >
                           Solo historial
                         </span>
@@ -415,7 +406,7 @@ export default function RespaldosPage() {
           <HardDriveDownload />
           <div>
             <h3>Cómo guardar correctamente tus respaldos</h3>
-            <p>Recomendación para trabajar sin Firebase Storage.</p>
+            <p>Recomendaciones para conservarlos de forma segura.</p>
           </div>
         </div>
 
@@ -429,7 +420,7 @@ export default function RespaldosPage() {
           <div className="hero-system-card glass-3d">
             <CheckCircle2 size={27} />
             <div>
-              <strong>1. Genera el JSON</strong>
+              <strong>1. Genera el respaldo</strong>
               <p>El navegador descargará automáticamente el archivo.</p>
             </div>
           </div>
@@ -438,7 +429,7 @@ export default function RespaldosPage() {
             <HardDriveDownload size={27} />
             <div>
               <strong>2. Guarda una copia</strong>
-              <p>Conserva los JSON en una carpeta exclusiva del proyecto.</p>
+              <p>Conserva los archivos en una carpeta segura y exclusiva.</p>
             </div>
           </div>
 
@@ -447,7 +438,7 @@ export default function RespaldosPage() {
             <div>
               <strong>3. No borres el archivo</strong>
               <p>
-                Firestore conserva el historial, no el contenido completo del JSON.
+                La plataforma conserva el historial, no el contenido completo del archivo.
               </p>
             </div>
           </div>

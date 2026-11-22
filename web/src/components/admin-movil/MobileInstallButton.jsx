@@ -1,3 +1,5 @@
+import useMarcaEmpresa from "../../hooks/useMarcaEmpresa";
+
 import {
   useEffect,
   useRef,
@@ -59,6 +61,9 @@ function yaInstalada() {
 export default function MobileInstallButton({
   usuario
 }) {
+  // La app se llama como la empresa: "OXXO GO"
+  const marca = useMarcaEmpresa();
+
 
   const promptRef = useRef(null);
 
@@ -325,7 +330,7 @@ export default function MobileInstallButton({
             }}
           >
 
-            Arca Nova GO
+            {marca.appNombre}
 
           </strong>
 
@@ -413,7 +418,7 @@ export default function MobileInstallButton({
           ? <Download size={19} />
           : <Smartphone size={19} />}
 
-        Instalar Arca Nova GO
+        Instalar {marca.appNombre}
 
       </button>
 

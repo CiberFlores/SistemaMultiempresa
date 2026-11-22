@@ -1,25 +1,18 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  useEffect,
-  useState
-} from "react";
-
-import {
-  CircleCheck,
+  Check,
   Pencil,
   Plus,
   Power,
   Search,
   ShieldCheck,
+  Sparkles,
   X
 } from "lucide-react";
 
-import {
-  AnimatePresence,
-  motion
-} from "framer-motion";
-
 import useAuth from "../../hooks/useAuth";
-
+import useConfirmar from "../../hooks/useConfirmar";
 import {
   PERMISOS_DISPONIBLES,
   actualizarRolEmpresa,
@@ -28,892 +21,611 @@ import {
   suscribirRolesEmpresa
 } from "../../services/rolEmpresaService";
 
-const formularioInicial = {
-  nombre: "",
-  descripcion: "",
-  permisos: []
-};
+import "../../styles/roles-empresa.css";
+
+// Permisos agrupados por área para encontrarlos rápido
+const GRUPOS = [
+  { titulo: "Inicio", ids: ["dashboard.ver"] },
+  { titulo: "Ventas", ids: ["ventas.registrar", "ventas.ver", "promociones.gestionar"] },
+  {
+    titulo: "Inventario y catálogo",
+    ids: ["inventario.ver", "inventario.ajustar", "productos.gestionar", "categorias.gestionar", "marcas.gestionar"]
+  },
+  { titulo: "Compras", ids: ["proveedores.gestionar", "compras.gestionar"] },
+  { titulo: "Dinero", ids: ["caja.gestionar", "finanzas.gestionar"] },
+  { titulo: "Negocio", ids: ["configuracion.gestionar", "sucursales.ver"] },
+  { titulo: "Análisis", ids: ["reportes.ver", "auditoria.ver", "notificaciones.ver"] }
+];
+
+// Combinaciones de uso común para empezar más rápido
+const PLANTILLAS = [
+  {
+    nombre: "Vendedor",
+    descripcion: "Cobra en el punto de venta y consulta las ventas.",
+    permisos: ["dashboard.ver", "ventas.registrar", "ventas.ver"]
+  },
+  {
+    nombre: "Cajero",
+    descripcion: "Cobra y maneja la caja.",
+    permisos: ["ventas.registrar", "ventas.ver", "caja.gestionar"]
+  },
+  {
+    nombre: "Encargado de inventario",
+    descripcion: "Controla productos, existencias y compras.",
+    permisos: [
+      "inventario.ver",
+      "inventario.ajustar",
+      "productos.gestionar",
+      "categorias.gestionar",
+      "marcas.gestionar",
+      "proveedores.gestionar",
+      "compras.gestionar"
+    ]
+  }
+];
+
+const MAX_NOMBRE = 40;
+const MAX_DESCRIPCION = 120;
+
+const porId = new Map(PERMISOS_DISPONIBLES.map((permiso) => [permiso.id, permiso]));
+
+const formularioInicial = { nombre: "", descripcion: "", permisos: [] };
+
+function normalizar(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+// Nombre: letras, números, espacios y . - / &
+function limpiarNombre(valor) {
+  return String(valor ?? "")
+    .replace(/[^\p{L}\p{N}\s.\-/&]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^\s+/, "")
+    .slice(0, MAX_NOMBRE);
+}
+
+function limpiarDescripcion(valor) {
+  return String(valor ?? "").replace(/\s{2,}/g, " ").replace(/^\s+/, "").slice(0, MAX_DESCRIPCION);
+}
 
 function RolesEmpresaPage() {
-  const {
-    usuario
-  } = useAuth();
+  const { usuario } = useAuth();
+  const confirmar = useConfirmar();
+  const primerCampo = useRef(null);
 
-  const [
-    roles,
-    setRoles
-  ] = useState([]);
-
-  const [
-    busqueda,
-    setBusqueda
-  ] = useState("");
-
-  const [
-    mostrarModal,
-    setMostrarModal
-  ] = useState(false);
-
-  const [
-    rolEditando,
-    setRolEditando
-  ] = useState(null);
-
-  const [
-    formulario,
-    setFormulario
-  ] = useState(
-    formularioInicial
-  );
-
-  const [
-    guardando,
-    setGuardando
-  ] = useState(false);
-
-  const [
-    cargando,
-    setCargando
-  ] = useState(true);
-
-  const [
-    error,
-    setError
-  ] = useState("");
+  const [roles, setRoles] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtro, setFiltro] = useState("TODOS");
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [rolEditando, setRolEditando] = useState(null);
+  const [formulario, setFormulario] = useState(formularioInicial);
+  const [guardando, setGuardando] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
 
   useEffect(() => {
     if (!usuario?.empresaId) {
-      setCargando(false);
-      return;
+      return undefined;
     }
 
-    const cancelar =
-      suscribirRolesEmpresa(
-        usuario.empresaId,
-
-        (datos) => {
-          setRoles(datos);
-          setCargando(false);
-        },
-
-        (error) => {
-          console.error(error);
-          setCargando(false);
-        }
-      );
-
-    return () => cancelar();
-
+    return suscribirRolesEmpresa(
+      usuario.empresaId,
+      (datos) => {
+        setRoles(datos);
+        setCargando(false);
+      },
+      (fallo) => {
+        console.error(fallo);
+        setCargando(false);
+      }
+    );
   }, [usuario?.empresaId]);
+
+  // Escape cierra la ventana
+  useEffect(() => {
+    if (!mostrarModal) return undefined;
+
+    const alTeclear = (evento) => {
+      if (evento.key === "Escape" && !guardando) {
+        setMostrarModal(false);
+        setRolEditando(null);
+      }
+    };
+
+    document.addEventListener("keydown", alTeclear);
+    return () => document.removeEventListener("keydown", alTeclear);
+  }, [mostrarModal, guardando]);
 
   const abrirNuevo = () => {
     setRolEditando(null);
-
-    setFormulario(
-      formularioInicial
-    );
-
+    setFormulario(formularioInicial);
     setError("");
-
     setMostrarModal(true);
   };
 
   const abrirEditar = (rol) => {
     setRolEditando(rol);
-
     setFormulario({
-      nombre:
-        rol.nombre || "",
-
-      descripcion:
-        rol.descripcion || "",
-
-      permisos:
-        rol.permisos || []
+      nombre: rol.nombre || "",
+      descripcion: rol.descripcion || "",
+      permisos: (rol.permisos || []).filter((id) => porId.has(id))
     });
-
     setError("");
-
     setMostrarModal(true);
   };
 
   const cerrarModal = () => {
     if (guardando) return;
-
     setMostrarModal(false);
-
     setRolEditando(null);
-
-    setFormulario(
-      formularioInicial
-    );
-
     setError("");
   };
 
-  const alternarPermiso = (
-    permisoId
-  ) => {
-    setFormulario(
-      (anterior) => {
-
-        const seleccionado =
-          anterior.permisos.includes(
-            permisoId
-          );
-
-        return {
-          ...anterior,
-
-          permisos:
-            seleccionado
-              ? anterior.permisos.filter(
-                  (id) =>
-                    id !== permisoId
-                )
-              : [
-                  ...anterior.permisos,
-                  permisoId
-                ]
-        };
-      }
-    );
+  const alternarPermiso = (id) => {
+    setFormulario((anterior) => ({
+      ...anterior,
+      permisos: anterior.permisos.includes(id)
+        ? anterior.permisos.filter((actual) => actual !== id)
+        : [...anterior.permisos, id]
+    }));
   };
 
-  const seleccionarTodos = () => {
-    setFormulario(
-      (anterior) => ({
+  const alternarGrupo = (ids) => {
+    setFormulario((anterior) => {
+      const todos = ids.every((id) => anterior.permisos.includes(id));
+
+      return {
         ...anterior,
-
-        permisos:
-          PERMISOS_DISPONIBLES.map(
-            (permiso) =>
-              permiso.id
-          )
-      })
-    );
+        permisos: todos
+          ? anterior.permisos.filter((id) => !ids.includes(id))
+          : [...new Set([...anterior.permisos, ...ids])]
+      };
+    });
   };
 
-  const limpiarPermisos = () => {
-    setFormulario(
-      (anterior) => ({
-        ...anterior,
-        permisos: []
-      })
-    );
+  const aplicarPlantilla = (plantilla) => {
+    setFormulario((anterior) => ({
+      nombre: anterior.nombre.trim() ? anterior.nombre : plantilla.nombre,
+      descripcion: anterior.descripcion.trim() ? anterior.descripcion : plantilla.descripcion,
+      permisos: [...plantilla.permisos]
+    }));
   };
 
-  const guardarRol = async (
-    evento
-  ) => {
+  // Validación del formulario
+  const nombreLimpio = formulario.nombre.trim();
+  const repetido = roles.some(
+    (rol) =>
+      rol.id !== rolEditando?.id &&
+      normalizar(rol.nombre) === normalizar(nombreLimpio)
+  );
+
+  let errorNombre = "";
+  if (!nombreLimpio) errorNombre = "Escribe un nombre para el rol.";
+  else if (nombreLimpio.length < 3) errorNombre = "El nombre necesita al menos 3 caracteres.";
+  else if (repetido) errorNombre = "Ya existe un rol con ese nombre.";
+
+  const errorPermisos = formulario.permisos.length === 0 ? "Elige al menos un permiso." : "";
+  const formularioValido = !errorNombre && !errorPermisos;
+
+  const guardarRol = async (evento) => {
     evento.preventDefault();
 
-    if (
-      !formulario.nombre.trim()
-    ) {
-      setError(
-        "El nombre del rol es obligatorio."
-      );
-
+    if (!formularioValido) {
+      setError(errorNombre || errorPermisos);
       return;
     }
 
     try {
       setGuardando(true);
-
       setError("");
 
+      const datos = { ...formulario, nombre: nombreLimpio, descripcion: formulario.descripcion.trim() };
+
       if (rolEditando) {
-
-        await actualizarRolEmpresa(
-          rolEditando.id,
-          formulario
-        );
-
+        await actualizarRolEmpresa(rolEditando.id, datos);
+        setAviso(`Rol «${nombreLimpio}» actualizado.`);
       } else {
-
-        await crearRolEmpresa(
-          usuario.empresaId,
-          formulario
-        );
-
+        await crearRolEmpresa(usuario.empresaId, datos);
+        setAviso(`Rol «${nombreLimpio}» creado.`);
       }
 
       setMostrarModal(false);
-
       setRolEditando(null);
-
-      setFormulario(
-        formularioInicial
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      setError(
-        error.message ||
-        "No se pudo guardar el rol."
-      );
-
+      setFormulario(formularioInicial);
+    } catch (fallo) {
+      console.error(fallo);
+      setError(fallo.message || "No se pudo guardar el rol.");
     } finally {
-
       setGuardando(false);
-
     }
   };
 
-  const cambiarEstado =
-    async (rol) => {
+  const cambiarEstado = async (rol) => {
+    const estado = rol.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    const desactivar = estado === "INACTIVO";
 
-      const estado =
-        rol.estado === "ACTIVO"
-          ? "INACTIVO"
-          : "ACTIVO";
-
-      if (
-        !window.confirm(
-          `¿Cambiar "${rol.nombre}" a ${estado}?`
-        )
-      ) {
-        return;
-      }
-
-      try {
-
-        await cambiarEstadoRolEmpresa(
-          rol.id,
-          estado
-        );
-
-      } catch (error) {
-
-        console.error(error);
-
-        alert(
-          "No se pudo cambiar el estado."
-        );
-
-      }
-    };
-
-  const filtrados =
-    roles.filter((rol) => {
-
-      const texto =
-        busqueda.toLowerCase();
-
-      return (
-        rol.nombre
-          ?.toLowerCase()
-          .includes(texto) ||
-
-        rol.descripcion
-          ?.toLowerCase()
-          .includes(texto)
-      );
+    const confirmado = await confirmar({
+      titulo: desactivar ? "Desactivar rol" : "Activar rol",
+      mensaje: desactivar
+        ? `Los trabajadores con el rol «${rol.nombre}» perderán sus permisos hasta que lo actives otra vez.`
+        : `Los trabajadores con el rol «${rol.nombre}» recuperarán sus permisos.`,
+      accion: desactivar ? "Desactivar" : "Activar",
+      peligro: desactivar
     });
 
+    if (!confirmado) return;
+
+    try {
+      await cambiarEstadoRolEmpresa(rol.id, estado);
+      setAviso(`Rol «${rol.nombre}» ${desactivar ? "desactivado" : "activado"}.`);
+    } catch (fallo) {
+      console.error(fallo);
+      setAviso("");
+      setError("No se pudo cambiar el estado del rol.");
+    }
+  };
+
+  useEffect(() => {
+    if (!aviso) return undefined;
+    const temporizador = setTimeout(() => setAviso(""), 4000);
+    return () => clearTimeout(temporizador);
+  }, [aviso]);
+
+  const filtrados = useMemo(() => {
+    const texto = normalizar(busqueda);
+
+    return roles.filter((rol) => {
+      const coincide =
+        !texto ||
+        normalizar(rol.nombre).includes(texto) ||
+        normalizar(rol.descripcion).includes(texto);
+
+      const estadoOk = filtro === "TODOS" || rol.estado === filtro;
+
+      return coincide && estadoOk;
+    });
+  }, [roles, busqueda, filtro]);
+
+  const total = PERMISOS_DISPONIBLES.length;
+
   return (
-
-    <div>
-
-      <div className="admin-page-header">
-
+    <div className="re">
+      <header className="re-cabecera">
         <div>
-
-          <h1>
-            Roles y permisos
-          </h1>
-
-          <p>
-            Define las funciones que
-            podrá realizar cada trabajador.
-          </p>
-
+          <h1>Roles y permisos</h1>
+          <p>Decide qué puede hacer cada trabajador en el sistema.</p>
         </div>
 
-        <motion.button
-          className="admin-primary-button"
-          onClick={abrirNuevo}
-          whileHover={{
-            scale: 1.03
-          }}
-          whileTap={{
-            scale: 0.97
-          }}
-        >
-          <Plus size={18} />
+        <button type="button" className="re-boton" onClick={abrirNuevo}>
+          <Plus size={19} />
           Nuevo rol
-        </motion.button>
+        </button>
+      </header>
 
+      {aviso && (
+        <div className="re-aviso re-aviso--ok" role="status">
+          <Check size={18} />
+          {aviso}
+        </div>
+      )}
+
+      {error && !mostrarModal && (
+        <div className="re-aviso re-aviso--error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <div className="re-herramientas">
+        <label className="re-busqueda">
+          <Search size={19} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Buscar rol…"
+            aria-label="Buscar rol"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
+
+        <div className="re-filtros" role="radiogroup" aria-label="Estado">
+          {[
+            ["TODOS", "Todos"],
+            ["ACTIVO", "Activos"],
+            ["INACTIVO", "Inactivos"]
+          ].map(([valor, texto]) => (
+            <button
+              key={valor}
+              type="button"
+              role="radio"
+              aria-checked={filtro === valor}
+              className="re-chip"
+              data-activo={filtro === valor}
+              onClick={() => setFiltro(valor)}
+            >
+              {texto}
+            </button>
+          ))}
+        </div>
+
+        <span className="re-contador">
+          {filtrados.length} {filtrados.length === 1 ? "rol" : "roles"}
+        </span>
       </div>
 
-      <section className="admin-card">
-
-        <div className="admin-toolbar">
-
-          <div className="admin-search">
-
-            <Search size={18} />
-
-            <input
-              placeholder="Buscar rol..."
-              value={busqueda}
-              onChange={(evento) =>
-                setBusqueda(
-                  evento.target.value
-                )
-              }
-            />
-
-          </div>
-
+      {cargando ? (
+        <div className="re-vacio">Cargando roles…</div>
+      ) : filtrados.length === 0 ? (
+        <div className="re-vacio">
+          <ShieldCheck size={36} />
+          <strong>{roles.length === 0 ? "Todavía no hay roles" : "No encontramos roles"}</strong>
           <span>
-            {roles.length} rol(es)
+            {roles.length === 0
+              ? "Crea el primero para asignar permisos a tus trabajadores."
+              : "Prueba con otra búsqueda o cambia el filtro."}
           </span>
-
+          {roles.length === 0 && (
+            <button type="button" className="re-boton" onClick={abrirNuevo}>
+              <Plus size={18} /> Crear un rol
+            </button>
+          )}
         </div>
+      ) : (
+        <ul className="re-lista">
+          {filtrados.map((rol) => {
+            const permisos = (rol.permisos || []).filter((id) => porId.has(id));
+            const porcentaje = Math.round((permisos.length / total) * 100);
+            const areas = GRUPOS.filter((grupo) => grupo.ids.some((id) => permisos.includes(id)));
 
-        {cargando ? (
-
-          <div className="admin-loading-box">
-
-            <ShieldCheck
-              size={28}
-            />
-
-            <span>
-              Cargando roles...
-            </span>
-
-          </div>
-
-        ) : filtrados.length === 0 ? (
-
-          <div className="admin-empty admin-empty-column">
-
-            <ShieldCheck
-              size={42}
-            />
-
-            <strong>
-              No existen roles
-            </strong>
-
-            <span>
-              Crea el primer rol operativo.
-            </span>
-
-          </div>
-
-        ) : (
-
-          <div className="admin-table-container">
-
-            <table className="admin-table">
-
-              <thead>
-
-                <tr>
-                  <th>ROL</th>
-                  <th>DESCRIPCIÓN</th>
-                  <th>PERMISOS</th>
-                  <th>ESTADO</th>
-                  <th>ACCIONES</th>
-                </tr>
-
-              </thead>
-
-              <tbody>
-
-                {filtrados.map(
-                  (rol) => (
-
-                    <tr key={rol.id}>
-
-                      <td>
-
-                        <strong>
-                          {rol.nombre}
-                        </strong>
-
-                      </td>
-
-                      <td>
-                        {rol.descripcion ||
-                          "-"}
-                      </td>
-
-                      <td>
-
-                        <span className="admin-permission-count">
-
-                          {(rol.permisos || [])
-                            .length}
-
-                          {" "}
-
-                          permiso(s)
-
-                        </span>
-
-                      </td>
-
-                      <td>
-
-                        <span
-                          className={
-                            rol.estado ===
-                            "ACTIVO"
-                              ? "admin-badge active"
-                              : "admin-badge inactive"
-                          }
-                        >
-                          {rol.estado}
-                        </span>
-
-                      </td>
-
-                      <td>
-
-                        <div className="admin-actions">
-
-                          <button
-                            onClick={() =>
-                              abrirEditar(
-                                rol
-                              )
-                            }
-                            title="Editar rol"
-                          >
-                            <Pencil
-                              size={16}
-                            />
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              cambiarEstado(
-                                rol
-                              )
-                            }
-                            title={
-                              rol.estado ===
-                              "ACTIVO"
-                                ? "Desactivar"
-                                : "Activar"
-                            }
-                          >
-
-                            {rol.estado ===
-                            "ACTIVO" ? (
-
-                              <Power
-                                size={16}
-                              />
-
-                            ) : (
-
-                              <CircleCheck
-                                size={16}
-                              />
-
-                            )}
-
-                          </button>
-
-                        </div>
-
-                      </td>
-
-                    </tr>
-
-                  )
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        )}
-
-      </section>
-
-      <AnimatePresence>
-
-        {mostrarModal && (
-
-          <motion.div
-            className="admin-modal-overlay"
-            initial={{
-              opacity: 0
-            }}
-            animate={{
-              opacity: 1
-            }}
-            exit={{
-              opacity: 0
-            }}
-          >
-
-            <motion.div
-              className="admin-modal admin-modal-wide"
-              initial={{
-                opacity: 0,
-                y: 25,
-                scale: 0.95
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1
-              }}
-            >
-
-              <div className="admin-modal-header">
-
-                <div>
-
-                  <h2>
-                    {rolEditando
-                      ? "Editar rol"
-                      : "Nuevo rol"}
-                  </h2>
-
-                  <p>
-                    Configura permisos para
-                    los trabajadores.
-                  </p>
-
+            return (
+              <li key={rol.id} className="re-rol" data-inactivo={rol.estado !== "ACTIVO"}>
+                <div className="re-rol__cabecera">
+                  <span className="re-rol__icono" aria-hidden="true">
+                    <ShieldCheck size={22} />
+                  </span>
+                  <div className="re-rol__titulo">
+                    <h2>{rol.nombre}</h2>
+                    <p>{rol.descripcion || "Sin descripción"}</p>
+                  </div>
                 </div>
 
-                <button
-                  onClick={cerrarModal}
-                >
-                  <X size={20} />
+                <div className="re-rol__medidor">
+                  <div className="re-rol__medidor-texto">
+                    <strong>
+                      {permisos.length} de {total}
+                    </strong>
+                    <span>permisos</span>
+                    <span className="re-estado" data-estado={rol.estado}>
+                      {rol.estado === "ACTIVO" ? "Activo" : "Inactivo"}
+                    </span>
+                  </div>
+                  <div className="re-barra" aria-hidden="true">
+                    <span style={{ width: `${porcentaje}%` }} />
+                  </div>
+                </div>
+
+                <div className="re-rol__areas">
+                  {areas.length === 0 ? (
+                    <span className="re-etiqueta re-etiqueta--vacia">Sin permisos</span>
+                  ) : (
+                    areas.map((grupo) => (
+                      <span className="re-etiqueta" key={grupo.titulo}>
+                        {grupo.titulo}
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <div className="re-rol__acciones">
+                  <button type="button" className="re-boton re-boton--suave" onClick={() => abrirEditar(rol)}>
+                    <Pencil size={16} />
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="re-boton re-boton--suave re-boton--icono"
+                    onClick={() => cambiarEstado(rol)}
+                    title={rol.estado === "ACTIVO" ? "Desactivar rol" : "Activar rol"}
+                    aria-label={rol.estado === "ACTIVO" ? `Desactivar ${rol.nombre}` : `Activar ${rol.nombre}`}
+                  >
+                    <Power size={17} />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <AnimatePresence>
+        {mostrarModal && (
+          <motion.div
+            className="re-fondo"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={cerrarModal}
+          >
+            <motion.form
+              className="re-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="re-modal-titulo"
+              initial={{ opacity: 0, scale: 0.96, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onSubmit={guardarRol}
+              noValidate
+            >
+              <header className="re-modal__cabecera">
+                <div>
+                  <h2 id="re-modal-titulo">{rolEditando ? "Editar rol" : "Nuevo rol"}</h2>
+                  <p>Elige qué podrán hacer los trabajadores con este rol.</p>
+                </div>
+                <button type="button" className="re-cerrar" onClick={cerrarModal} aria-label="Cerrar" disabled={guardando}>
+                  <X size={18} />
                 </button>
+              </header>
 
-              </div>
+              <div className="re-modal__cuerpo">
+                {!rolEditando && (
+                  <div className="re-plantillas">
+                    <span className="re-etiqueta-campo">
+                      <Sparkles size={15} /> Empezar con una plantilla
+                    </span>
+                    <div className="re-plantillas__lista">
+                      {PLANTILLAS.map((plantilla) => (
+                        <button
+                          key={plantilla.nombre}
+                          type="button"
+                          className="re-chip"
+                          onClick={() => aplicarPlantilla(plantilla)}
+                        >
+                          {plantilla.nombre}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              <form
-                onSubmit={guardarRol}
-              >
-
-                <div className="admin-form-grid">
-
-                  <div className="admin-form-group full">
-
-                    <label>
-                      Nombre *
-                    </label>
-
+                <div className="re-campos">
+                  <label className="re-campo">
+                    <span className="re-etiqueta-campo">
+                      Nombre del rol <b>*</b>
+                    </span>
                     <input
-                      value={
-                        formulario.nombre
-                      }
-                      onChange={(evento) =>
-                        setFormulario(
-                          (anterior) => ({
-                            ...anterior,
-
-                            nombre:
-                              evento.target
-                                .value
-                          })
-                        )
-                      }
-                      required
+                      ref={primerCampo}
+                      value={formulario.nombre}
+                      onChange={(e) => setFormulario({ ...formulario, nombre: limpiarNombre(e.target.value) })}
+                      placeholder="Ej. Vendedor de tarde"
+                      maxLength={MAX_NOMBRE}
+                      autoComplete="off"
+                      autoFocus
+                      aria-invalid={Boolean(formulario.nombre) && Boolean(errorNombre)}
+                      disabled={guardando}
                     />
+                    <small className="re-ayuda" data-error={Boolean(formulario.nombre) && Boolean(errorNombre)}>
+                      {formulario.nombre && errorNombre ? errorNombre : `${formulario.nombre.length}/${MAX_NOMBRE}`}
+                    </small>
+                  </label>
 
-                  </div>
-
-                  <div className="admin-form-group full">
-
-                    <label>
-                      Descripción
-                    </label>
-
-                    <textarea
-                      value={
-                        formulario.descripcion
-                      }
-                      onChange={(evento) =>
-                        setFormulario(
-                          (anterior) => ({
-                            ...anterior,
-
-                            descripcion:
-                              evento.target
-                                .value
-                          })
-                        )
-                      }
+                  <label className="re-campo">
+                    <span className="re-etiqueta-campo">Descripción (opcional)</span>
+                    <input
+                      value={formulario.descripcion}
+                      onChange={(e) => setFormulario({ ...formulario, descripcion: limpiarDescripcion(e.target.value) })}
+                      placeholder="Para qué sirve este rol"
+                      maxLength={MAX_DESCRIPCION}
+                      autoComplete="off"
+                      disabled={guardando}
                     />
+                    <small className="re-ayuda">
+                      {formulario.descripcion.length}/{MAX_DESCRIPCION}
+                    </small>
+                  </label>
+                </div>
 
+                <div className="re-permisos">
+                  <div className="re-permisos__cabecera">
+                    <div>
+                      <span className="re-etiqueta-campo">
+                        Permisos <b>*</b>
+                      </span>
+                      <small className="re-ayuda" data-error={Boolean(errorPermisos)}>
+                        {formulario.permisos.length} de {total} seleccionados
+                      </small>
+                    </div>
+                    <div className="re-permisos__atajos">
+                      <button
+                        type="button"
+                        className="re-chip"
+                        onClick={() => setFormulario({ ...formulario, permisos: PERMISOS_DISPONIBLES.map((p) => p.id) })}
+                        disabled={guardando}
+                      >
+                        Todos
+                      </button>
+                      <button
+                        type="button"
+                        className="re-chip"
+                        onClick={() => setFormulario({ ...formulario, permisos: [] })}
+                        disabled={guardando}
+                      >
+                        Ninguno
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="admin-form-group full">
+                  {GRUPOS.map((grupo) => {
+                    const completos = grupo.ids.every((id) => formulario.permisos.includes(id));
+                    const marcados = grupo.ids.filter((id) => formulario.permisos.includes(id)).length;
 
-                    <label>
-                      Permisos
-                    </label>
+                    return (
+                      <fieldset className="re-grupo" key={grupo.titulo}>
+                        <legend>
+                          <span>{grupo.titulo}</span>
+                          <button
+                            type="button"
+                            className="re-grupo__todo"
+                            onClick={() => alternarGrupo(grupo.ids)}
+                            disabled={guardando}
+                          >
+                            {completos ? "Quitar todos" : `Marcar todos (${marcados}/${grupo.ids.length})`}
+                          </button>
+                        </legend>
 
-                    <details className="role-permission-select">
+                        <div className="re-grupo__opciones">
+                          {grupo.ids.map((id) => {
+                            const permiso = porId.get(id);
+                            if (!permiso) return null;
+                            const activo = formulario.permisos.includes(id);
 
-                      <summary>
-
-                        <div className="role-permission-summary">
-
-                          <div className="role-permission-summary-icon">
-
-                            <ShieldCheck
-                              size={19}
-                            />
-
-                          </div>
-
-                          <div>
-
-                            <strong>
-                              Seleccionar permisos
-                            </strong>
-
-                            <span>
-
-                              {
-                                formulario
-                                  .permisos
-                                  .length === 0
-                                  ? "Ningún permiso seleccionado"
-                                  : `${formulario.permisos.length} permiso(s) seleccionado(s)`
-                              }
-
-                            </span>
-
-                          </div>
-
+                            return (
+                              <label className="re-permiso" data-activo={activo} key={id}>
+                                <input
+                                  type="checkbox"
+                                  checked={activo}
+                                  onChange={() => alternarPermiso(id)}
+                                  disabled={guardando}
+                                />
+                                <span className="re-permiso__marca" aria-hidden="true">
+                                  {activo && <Check size={14} strokeWidth={3} />}
+                                </span>
+                                <span className="re-permiso__nombre">{permiso.nombre}</span>
+                              </label>
+                            );
+                          })}
                         </div>
-
-                        <span className="role-permission-arrow">
-                          ⌄
-                        </span>
-
-                      </summary>
-
-                      <div className="role-permission-dropdown">
-
-                        <div className="role-permission-dropdown-head">
-
-                          <div>
-
-                            <strong>
-                              Permisos del rol
-                            </strong>
-
-                            <span>
-                              Selecciona una o varias funciones
-                            </span>
-
-                          </div>
-
-                          <div className="role-permission-actions">
-
-                            <button
-                              type="button"
-                              onClick={
-                                seleccionarTodos
-                              }
-                            >
-                              Todos
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={
-                                limpiarPermisos
-                              }
-                            >
-                              Limpiar
-                            </button>
-
-                          </div>
-
-                        </div>
-
-                        <div className="role-permission-options">
-
-                          {
-                            PERMISOS_DISPONIBLES.map(
-                              (permiso) => {
-
-                                const seleccionado =
-                                  formulario.permisos
-                                    .includes(
-                                      permiso.id
-                                    );
-
-                                return (
-
-                                  <button
-                                    key={
-                                      permiso.id
-                                    }
-                                    type="button"
-                                    className={
-                                      seleccionado
-                                        ? "role-permission-option selected"
-                                        : "role-permission-option"
-                                    }
-                                    onClick={() =>
-                                      alternarPermiso(
-                                        permiso.id
-                                      )
-                                    }
-                                  >
-
-                                    <span className="role-permission-check">
-
-                                      {
-                                        seleccionado
-                                          ? (
-                                            <CircleCheck
-                                              size={18}
-                                            />
-                                          )
-                                          : (
-                                            <span className="role-permission-dot" />
-                                          )
-                                      }
-
-                                    </span>
-
-                                    <span className="role-permission-name">
-                                      {permiso.nombre}
-                                    </span>
-
-                                  </button>
-
-                                );
-                              }
-                            )
-                          }
-
-                        </div>
-
-                      </div>
-
-                    </details>
-
-                    {
-                      formulario
-                        .permisos
-                        .length > 0 && (
-
-                        <div className="role-permission-chips">
-
-                          {
-                            PERMISOS_DISPONIBLES
-                              .filter(
-                                (permiso) =>
-                                  formulario
-                                    .permisos
-                                    .includes(
-                                      permiso.id
-                                    )
-                              )
-                              .map(
-                                (permiso) => (
-
-                                  <span
-                                    key={
-                                      permiso.id
-                                    }
-                                    className="role-permission-chip"
-                                  >
-
-                                    <ShieldCheck
-                                      size={12}
-                                    />
-
-                                    {
-                                      permiso.nombre
-                                    }
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        alternarPermiso(
-                                          permiso.id
-                                        )
-                                      }
-                                      title="Quitar permiso"
-                                    >
-                                      ×
-                                    </button>
-
-                                  </span>
-
-                                )
-                              )
-                          }
-
-                        </div>
-
-                      )
-                    }
-
-                  </div>
-
+                      </fieldset>
+                    );
+                  })}
                 </div>
 
                 {error && (
-
-                  <div className="admin-message error">
+                  <div className="re-aviso re-aviso--error" role="alert">
                     {error}
                   </div>
-
                 )}
+              </div>
 
-                <div className="admin-modal-footer">
-
-                  <button
-                    type="button"
-                    className="admin-secondary-button"
-                    onClick={cerrarModal}
-                  >
-                    Cancelar
-                  </button>
-
-                  <button
-                    className="admin-primary-button"
-                    disabled={guardando}
-                  >
-
-                    {guardando
-                      ? "Guardando..."
-                      : rolEditando
-                        ? "Guardar cambios"
-                        : "Crear rol"}
-
-                  </button>
-
-                </div>
-
-              </form>
-
-            </motion.div>
-
+              <footer className="re-modal__pie">
+                <button type="button" className="re-boton re-boton--suave" onClick={cerrarModal} disabled={guardando}>
+                  Cancelar
+                </button>
+                <button type="submit" className="re-boton" disabled={guardando || !formularioValido}>
+                  {guardando ? "Guardando…" : rolEditando ? "Guardar cambios" : "Crear rol"}
+                </button>
+              </footer>
+            </motion.form>
           </motion.div>
-
         )}
-
       </AnimatePresence>
-
     </div>
-
   );
 }
 

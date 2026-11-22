@@ -1,0 +1,605 @@
+/* =========================================================
+   PANEL DE LA EMPRESA · sistema visual común
+   Dueño y trabajadores comparten este acabado. Todo se deriva
+   de los colores de la empresa (--admin-*), así cada negocio
+   ve su propia marca en botones, tarjetas, tablas y ventanas.
+========================================================= */
+
+.admin-layout {
+  --ep-primario: var(--admin-primary, #6850ed);
+  --ep-sobre: var(--admin-on-primary, #ffffff);
+  --ep-texto: var(--admin-text, #f4f5fb);
+  --ep-apagado: var(--admin-muted, #a7adbd);
+  --ep-fondo: var(--admin-bg, #0b0d17);
+  --ep-superficie: color-mix(in srgb, var(--ep-texto) 5.5%, transparent);
+  --ep-superficie-alta: color-mix(in srgb, var(--ep-texto) 10%, transparent);
+  --ep-borde: color-mix(in srgb, var(--ep-texto) 13%, transparent);
+  --ep-peligro: #ff7a8a;
+  --ep-ok: #4ade9b;
+  --ep-salida: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ---------- Texto y títulos ---------- */
+
+.admin-layout .module-page-header h1,
+.admin-layout .admin-page-header h1 {
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ep-texto);
+}
+
+.admin-layout .module-page-header p,
+.admin-layout .admin-page-header p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ep-apagado);
+}
+
+/* ---------- Superficies ---------- */
+
+.admin-layout .data-card,
+.admin-layout .admin-card,
+.admin-layout .glass-3d {
+  border: 1px solid var(--ep-borde);
+  border-radius: 20px;
+  background: var(--ep-superficie);
+  box-shadow: none;
+}
+
+.admin-layout .card-title h3,
+.admin-layout .admin-card-header h2 {
+  font-size: 20px;
+  color: var(--ep-texto);
+}
+
+.admin-layout .card-title p,
+.admin-layout .admin-card-header p {
+  font-size: 15px;
+  color: var(--ep-apagado);
+}
+
+/* ---------- Botones ---------- */
+
+.admin-layout .primary-action,
+.admin-layout .admin-primary-button,
+.admin-layout .secondary-action,
+.admin-layout .admin-secondary-button,
+.admin-layout .admin-mini-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 20px;
+
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  transition:
+    transform 160ms var(--ep-salida),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.admin-layout .primary-action,
+.admin-layout .admin-primary-button {
+  background: var(--ep-primario);
+  color: var(--ep-sobre);
+}
+
+.admin-layout .secondary-action,
+.admin-layout .admin-secondary-button,
+.admin-layout .admin-mini-button {
+  border-color: var(--ep-borde);
+  background: var(--ep-superficie);
+  color: var(--ep-texto);
+}
+
+.admin-layout .admin-mini-button {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.admin-layout .primary-action:active:not(:disabled),
+.admin-layout .admin-primary-button:active:not(:disabled),
+.admin-layout .secondary-action:active:not(:disabled),
+.admin-layout .admin-secondary-button:active:not(:disabled),
+.admin-layout .admin-mini-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.admin-layout .primary-action:disabled,
+.admin-layout .admin-primary-button:disabled,
+.admin-layout .secondary-action:disabled,
+.admin-layout .admin-secondary-button:disabled,
+.admin-layout .admin-mini-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .primary-action:hover:not(:disabled),
+  .admin-layout .admin-primary-button:hover:not(:disabled) {
+    box-shadow: 0 14px 30px -14px var(--ep-primario);
+    transform: translateY(-1px);
+  }
+
+  .admin-layout .secondary-action:hover:not(:disabled),
+  .admin-layout .admin-secondary-button:hover:not(:disabled),
+  .admin-layout .admin-mini-button:hover:not(:disabled) {
+    border-color: var(--ep-primario);
+    background: var(--ep-superficie-alta);
+  }
+}
+
+.admin-layout button:focus-visible,
+.admin-layout a:focus-visible,
+.admin-layout input:focus-visible,
+.admin-layout select:focus-visible,
+.admin-layout textarea:focus-visible {
+  outline: 2px solid var(--ep-primario);
+  outline-offset: 2px;
+}
+
+/* ---------- Formularios ---------- */
+
+.admin-layout .field-block span,
+.admin-layout .admin-form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ep-apagado);
+}
+
+.admin-layout .field-block input,
+.admin-layout .field-block select,
+.admin-layout .field-block textarea,
+.admin-layout .admin-form-group input,
+.admin-layout .admin-form-group select,
+.admin-layout .admin-form-group textarea {
+  min-height: 48px;
+  padding: 0 14px;
+
+  border: 1px solid var(--ep-borde);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ep-fondo) 55%, transparent);
+  color: var(--ep-texto);
+  font: inherit;
+  font-size: 16px;
+
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-layout .field-block textarea,
+.admin-layout .admin-form-group textarea {
+  padding: 12px 14px;
+}
+
+.admin-layout .field-block input:focus,
+.admin-layout .field-block select:focus,
+.admin-layout .field-block textarea:focus,
+.admin-layout .admin-form-group input:focus,
+.admin-layout .admin-form-group select:focus,
+.admin-layout .admin-form-group textarea:focus {
+  border-color: var(--ep-primario);
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ep-primario) 24%, transparent);
+}
+
+.admin-layout option {
+  background: var(--ep-fondo);
+  color: var(--ep-texto);
+}
+
+/* ---------- Tablas ---------- */
+
+.admin-layout .modern-table th {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ep-apagado);
+}
+
+.admin-layout .modern-table td {
+  font-size: 15px;
+  color: var(--ep-texto);
+  border-color: var(--ep-borde);
+}
+
+.admin-layout .modern-table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .modern-table tbody tr:hover {
+    background: var(--ep-superficie);
+  }
+}
+
+.admin-layout .table-sub {
+  font-size: 13px;
+  color: var(--ep-apagado);
+}
+
+/* ---------- Estados y avisos ---------- */
+
+.admin-layout .status-pill,
+.admin-layout .tag-pill {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-layout .form-error,
+.admin-layout .admin-message.error {
+  padding: 14px 16px;
+
+  border: 1px solid color-mix(in srgb, var(--ep-peligro) 50%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ep-peligro) 12%, transparent);
+  color: var(--ep-texto);
+  font-size: 15px;
+}
+
+.admin-layout .admin-message.success,
+.admin-layout .success-banner {
+  padding: 14px 16px;
+
+  border: 1px solid color-mix(in srgb, var(--ep-ok) 45%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ep-ok) 12%, transparent);
+  color: var(--ep-texto);
+  font-size: 15px;
+}
+
+.admin-layout .empty-state,
+.admin-layout .admin-empty {
+  font-size: 16px;
+  color: var(--ep-apagado);
+}
+
+/* ---------- Ventanas ---------- */
+
+.admin-layout .admin-modal {
+  border: 1px solid var(--ep-borde);
+  border-radius: 22px;
+  background: var(--ep-fondo);
+  color: var(--ep-texto);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+}
+
+.admin-layout .admin-modal-header h2,
+.admin-layout .admin-modal-header h3 {
+  font-size: 22px;
+}
+
+/* ---------- Menú y cabecera ---------- */
+
+.admin-layout .admin-nav-item {
+  min-height: 48px;
+  font-size: 16px;
+  border-radius: 14px;
+  transition:
+    transform 160ms var(--ep-salida),
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.admin-layout .admin-nav-item:active {
+  transform: scale(0.98);
+}
+
+.admin-layout .admin-nav-item.active {
+  background: var(--ep-primario);
+  color: var(--ep-sobre);
+}
+
+.admin-layout .admin-menu-title {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.admin-layout .admin-logout {
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: transform 160ms var(--ep-salida), background-color 160ms ease;
+}
+
+.admin-layout .admin-logout:active {
+  transform: scale(0.97);
+}
+
+.admin-layout .admin-icon-button {
+  width: 44px;
+  height: 44px;
+  border-color: var(--ep-borde);
+  border-radius: 12px;
+  color: var(--ep-texto);
+}
+
+/* ---------- Barra de desplazamiento ---------- */
+
+.admin-layout * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ep-primario) 55%, transparent) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-layout .primary-action,
+  .admin-layout .admin-primary-button,
+  .admin-layout .secondary-action,
+  .admin-layout .admin-secondary-button,
+  .admin-layout .admin-mini-button,
+  .admin-layout .admin-nav-item,
+  .admin-layout .admin-logout {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* =========================================================
+   ESTRUCTURA · fondo, menú lateral, cabecera y contenido
+========================================================= */
+
+.admin-layout {
+  background:
+    radial-gradient(
+      900px circle at 85% -10%,
+      color-mix(in srgb, var(--ep-primario) 16%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      700px circle at 0% 100%,
+      color-mix(in srgb, var(--admin-secondary, var(--ep-primario)) 12%, transparent),
+      transparent 60%
+    ),
+    var(--ep-fondo);
+}
+
+.admin-layout::before {
+  opacity: 0.04;
+}
+
+/* ---------- Menú lateral ---------- */
+
+.admin-layout .admin-sidebar {
+  background: color-mix(in srgb, var(--ep-fondo) 91%, var(--ep-primario) 9%);
+  border-right: 1px solid var(--ep-borde);
+  box-shadow: none;
+  color: var(--ep-texto);
+}
+
+.admin-layout .admin-brand {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px;
+
+  border: 1px solid var(--ep-borde);
+  border-radius: 18px;
+  background: var(--ep-superficie);
+}
+
+.admin-layout .admin-brand strong {
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: var(--ep-texto);
+}
+
+.admin-layout .admin-brand span {
+  font-size: 13px;
+  color: var(--ep-apagado);
+}
+
+.admin-layout .admin-nav {
+  gap: 4px;
+}
+
+.admin-layout .admin-nav-item {
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+
+  border: 0;
+  color: var(--ep-apagado);
+}
+
+.admin-layout .admin-nav-item svg {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+
+  border-radius: 11px;
+  background: var(--ep-superficie);
+  transition: background-color 160ms ease;
+}
+
+.admin-layout .admin-nav-item span {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .admin-nav-item:hover {
+    transform: translateX(2px);
+    border-color: transparent;
+    background: var(--ep-superficie);
+    color: var(--ep-texto);
+  }
+
+  .admin-layout .admin-nav-item:hover svg {
+    background: var(--ep-superficie-alta);
+  }
+}
+
+.admin-layout .admin-nav-item.active {
+  border: 0;
+  background: var(--ep-primario);
+  color: var(--ep-sobre);
+  box-shadow: 0 14px 28px -16px var(--ep-primario);
+}
+
+.admin-layout .admin-nav-item.active svg {
+  background: color-mix(in srgb, var(--ep-sobre) 20%, transparent);
+}
+
+.admin-layout .admin-menu-title {
+  padding: 14px 10px 6px;
+  color: var(--ep-apagado);
+  opacity: 0.8;
+}
+
+.admin-layout .admin-sidebar-bottom {
+  border-top: 1px solid var(--ep-borde);
+  color: var(--ep-apagado);
+  font-size: 13px;
+}
+
+/* ---------- Cabecera ---------- */
+
+.admin-layout .admin-header {
+  border-bottom: 1px solid var(--ep-borde);
+  background: color-mix(in srgb, var(--ep-fondo) 78%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.admin-layout .admin-header-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ep-apagado);
+}
+
+.admin-layout .admin-user strong {
+  font-size: 15px;
+  color: var(--ep-texto);
+}
+
+.admin-layout .admin-user span {
+  font-size: 13px;
+  color: var(--ep-apagado);
+}
+
+.admin-layout .admin-avatar {
+  width: 42px;
+  height: 42px;
+
+  border: 0;
+  border-radius: 13px;
+  background: var(--ep-primario);
+  color: var(--ep-sobre);
+}
+
+.admin-layout .admin-logout {
+  border: 1px solid var(--ep-borde);
+  background: var(--ep-superficie);
+  color: var(--ep-texto);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .admin-logout:hover {
+    border-color: var(--ep-peligro);
+    background: color-mix(in srgb, var(--ep-peligro) 14%, transparent);
+  }
+}
+
+/* ---------- Contenido ---------- */
+
+.admin-layout .admin-content {
+  width: 100%;
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: clamp(18px, 2.4vw, 36px);
+}
+
+.admin-layout .admin-page-header,
+.admin-layout .module-page-header {
+  margin-bottom: 26px;
+}
+
+/* ---------- Tarjetas de métricas y paneles del dashboard ---------- */
+
+.admin-layout .admin-metric-card,
+.admin-layout .h23-card,
+.admin-layout .h23-kpi {
+  border: 1px solid var(--ep-borde);
+  border-radius: 20px;
+  background: var(--ep-superficie);
+  box-shadow: none;
+  color: var(--ep-texto);
+}
+
+.admin-layout .admin-metric-icon,
+.admin-layout .h23-kpi-icon {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ep-primario) 20%, transparent);
+  color: var(--ep-primario);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .admin-metric-card,
+  .admin-layout .h23-kpi {
+    transition: transform 200ms var(--ep-salida), border-color 200ms ease;
+  }
+
+  .admin-layout .admin-metric-card:hover,
+  .admin-layout .h23-kpi:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--ep-primario) 50%, transparent);
+  }
+}
+
+/* ---------- Filtros y fechas (barra común) con los colores de la empresa ---------- */
+
+.admin-layout .eyebrow {
+  color: var(--ep-primario);
+  letter-spacing: 0.14em;
+}
+
+.admin-layout .advanced-filter-bar {
+  border: 1px solid var(--ep-borde);
+  border-radius: 18px;
+  background: var(--ep-superficie);
+  box-shadow: none;
+}
+
+.admin-layout .advanced-filter-bar select,
+.admin-layout .advanced-filter-bar input,
+.admin-layout .report-date-row input,
+.admin-layout .filter-range-grid input {
+  min-height: 44px;
+  border: 1px solid var(--ep-borde);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ep-fondo) 55%, transparent);
+  color: var(--ep-texto);
+  font-size: 15px;
+}
+
+.admin-layout .advanced-filter-bar select:focus,
+.admin-layout .advanced-filter-bar input:focus,
+.admin-layout .report-date-row input:focus,
+.admin-layout .filter-range-grid input:focus {
+  border-color: var(--ep-primario);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ep-primario) 24%, transparent);
+}
+
+.admin-layout .report-date-row label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ep-apagado);
+}
+
+/* Las ventanas emergentes deben quedar por encima del menú lateral. Antes el contenido
+   principal tenía su propio nivel (z-index: 2) y el menú (50) tapaba el borde de las ventanas
+   anchas en pantallas de laptop. */
+.admin-layout .admin-main {
+  z-index: auto;
+}

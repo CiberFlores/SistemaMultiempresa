@@ -1,0 +1,493 @@
+/* =========================================================
+   DASHBOARD DE LA EMPRESA
+   Reemplaza los colores fijos por los de la empresa (--admin-*).
+   Se escribe con un nivel más de especificidad para ganar al
+   estilo embebido de la página.
+========================================================= */
+
+.admin-layout .h23 {
+  --d-primario: var(--admin-primary, #6850ed);
+  --d-secundario: var(--admin-secondary, #3fd4ff);
+  --d-sobre: var(--admin-on-primary, #ffffff);
+  --d-texto: var(--admin-text, #f4f5fb);
+  --d-apagado: var(--admin-muted, #a7adbd);
+  --d-fondo: var(--admin-bg, #0b0d17);
+  --d-superficie: color-mix(in srgb, var(--d-texto) 5.5%, transparent);
+  --d-superficie-alta: color-mix(in srgb, var(--d-texto) 10%, transparent);
+  --d-borde: color-mix(in srgb, var(--d-texto) 13%, transparent);
+  --d-salida: cubic-bezier(0.23, 1, 0.32, 1);
+
+  color: var(--d-texto);
+}
+
+.admin-layout .h23 :focus-visible {
+  outline: 2px solid var(--d-primario);
+  outline-offset: 2px;
+}
+
+/* ---------- Encabezado ---------- */
+
+.admin-layout .h23-eyebrow {
+  color: var(--d-primario);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+}
+
+.admin-layout .h23-heading {
+  margin-bottom: 20px;
+}
+
+.admin-layout .h23-heading h1 {
+  font-size: clamp(32px, 4.4vw, 48px);
+  letter-spacing: -0.025em;
+}
+
+.admin-layout .h23-heading p,
+.admin-layout .h23-muted {
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-heading p {
+  font-size: 16px;
+}
+
+.admin-layout .h23-refresh {
+  min-height: 46px;
+  padding: 0 20px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 14px;
+  background: var(--d-superficie);
+  color: var(--d-texto);
+  font-size: 15px;
+  font-weight: 700;
+
+  transition: transform 160ms var(--d-salida), border-color 160ms ease, background-color 160ms ease;
+}
+
+.admin-layout .h23-refresh:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .h23-refresh:hover {
+    border-color: var(--d-primario);
+    background: var(--d-superficie-alta);
+  }
+}
+
+/* ---------- Accesos rápidos ---------- */
+
+.admin-layout .h23-atajos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-layout .h23-atajo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 18px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 18px;
+  background: var(--d-superficie);
+  color: var(--d-texto);
+  text-decoration: none;
+
+  transition:
+    transform 180ms var(--d-salida),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-layout .h23-atajo svg {
+  flex: none;
+  box-sizing: content-box;
+  padding: 11px;
+
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--d-primario) 20%, transparent);
+  color: var(--d-primario);
+}
+
+.admin-layout .h23-atajo span {
+  display: grid;
+  min-width: 0;
+}
+
+.admin-layout .h23-atajo strong {
+  font-size: 17px;
+}
+
+.admin-layout .h23-atajo small {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--d-apagado);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-layout .h23-atajo:active {
+  transform: scale(0.98);
+}
+
+.admin-layout .h23-atajo--principal {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--d-primario), color-mix(in srgb, var(--d-primario) 55%, var(--d-secundario)));
+  color: var(--d-sobre);
+  box-shadow: 0 18px 36px -20px var(--d-primario);
+}
+
+.admin-layout .h23-atajo--principal svg {
+  background: color-mix(in srgb, var(--d-sobre) 22%, transparent);
+  color: var(--d-sobre);
+}
+
+.admin-layout .h23-atajo--principal small {
+  color: color-mix(in srgb, var(--d-sobre) 82%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .h23-atajo:hover {
+    transform: translateY(-2px);
+    border-color: var(--d-primario);
+    background: var(--d-superficie-alta);
+  }
+
+  .admin-layout .h23-atajo--principal:hover {
+    background: linear-gradient(135deg, var(--d-primario), color-mix(in srgb, var(--d-primario) 55%, var(--d-secundario)));
+    box-shadow: 0 22px 40px -18px var(--d-primario);
+  }
+}
+
+/* ---------- Filtros ---------- */
+
+.admin-layout .h23-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 16px;
+  background: var(--d-superficie);
+}
+
+.admin-layout .h23-filters label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-filters select {
+  min-height: 42px;
+  padding: 0 14px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--d-fondo) 60%, transparent);
+  color: var(--d-texto);
+  font: inherit;
+  font-size: 15px;
+}
+
+.admin-layout .h23-filters select:focus {
+  border-color: var(--d-primario);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--d-primario) 24%, transparent);
+}
+
+.admin-layout .h23-filters .h23-muted {
+  margin-left: auto;
+  font-size: 13px !important;
+}
+
+/* ---------- Indicadores ---------- */
+
+.admin-layout .h23-metrics {
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.admin-layout .h23-kpi {
+  padding: 22px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 22px;
+  background: var(--d-superficie);
+  color: var(--d-texto);
+
+  transition: transform 200ms var(--d-salida), border-color 200ms ease;
+}
+
+.admin-layout .h23-kpi::before {
+  background: color-mix(in srgb, var(--d-primario) 28%, transparent);
+}
+
+.admin-layout .h23-kpi-top span:first-child {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--d-primario) 20%, transparent);
+  color: var(--d-primario);
+}
+
+.admin-layout .h23-kpi strong {
+  display: block;
+  margin: 18px 0 6px;
+  font-size: clamp(30px, 3vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-layout .h23-kpi small {
+  font-size: 13px;
+  color: var(--d-apagado);
+}
+
+/* La primera tarjeta es la protagonista */
+.admin-layout .h23-metrics > .h23-kpi:first-child {
+  border-color: transparent;
+  background: linear-gradient(145deg, var(--d-primario), color-mix(in srgb, var(--d-primario) 50%, var(--d-secundario)));
+  color: var(--d-sobre);
+  box-shadow: 0 24px 44px -26px var(--d-primario);
+}
+
+.admin-layout .h23-metrics > .h23-kpi:first-child::before {
+  background: color-mix(in srgb, var(--d-sobre) 24%, transparent);
+}
+
+.admin-layout .h23-metrics > .h23-kpi:first-child .h23-kpi-top span:first-child,
+.admin-layout .h23-metrics > .h23-kpi:first-child small {
+  color: color-mix(in srgb, var(--d-sobre) 85%, transparent);
+}
+
+.admin-layout .h23-metrics > .h23-kpi:first-child .h23-kpi-icon {
+  background: color-mix(in srgb, var(--d-sobre) 22%, transparent);
+  color: var(--d-sobre);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-layout .h23-kpi:hover {
+    transform: translateY(-3px);
+  }
+
+  .admin-layout .h23-kpi:not(:first-child):hover {
+    border-color: color-mix(in srgb, var(--d-primario) 55%, transparent);
+  }
+}
+
+/* ---------- Paneles y gráficos ---------- */
+
+.admin-layout .h23-card {
+  padding: 24px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 22px;
+  background: var(--d-superficie);
+  color: var(--d-texto);
+}
+
+.admin-layout .h23-card h2 {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.admin-layout .h23-card p {
+  font-size: 14px;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-card h2 svg {
+  color: var(--d-primario);
+}
+
+.admin-layout .h23-tag {
+  padding: 5px 12px;
+
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--d-primario) 18%, transparent);
+  color: var(--d-primario);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-layout .h23-pair {
+  border-bottom: 1px solid var(--d-borde);
+}
+
+.admin-layout .h23-bar {
+  border-radius: 8px 8px 2px 2px;
+}
+
+.admin-layout .h23-bar.sale {
+  background: linear-gradient(var(--d-primario), color-mix(in srgb, var(--d-primario) 55%, var(--d-fondo)));
+}
+
+.admin-layout .h23-bar.expense {
+  background: linear-gradient(var(--d-secundario), color-mix(in srgb, var(--d-secundario) 55%, var(--d-fondo)));
+}
+
+.admin-layout .h23-day small {
+  font-size: 12px;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-legend {
+  font-size: 13px;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-legend i {
+  background: var(--d-primario);
+}
+
+.admin-layout .h23-legend i.cost {
+  background: var(--d-secundario);
+}
+
+.admin-layout .h23-topitem {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--d-borde);
+}
+
+.admin-layout .h23-topline {
+  font-size: 15px;
+}
+
+.admin-layout .h23-topline span {
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--d-superficie-alta);
+}
+
+.admin-layout .h23-fill {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--d-primario), var(--d-secundario));
+}
+
+.admin-layout .h23-summary > div {
+  padding: 18px;
+
+  border: 1px solid var(--d-borde);
+  border-radius: 18px;
+  background: var(--d-superficie);
+}
+
+.admin-layout .h23-summary span {
+  font-size: 13px;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-summary strong {
+  font-size: 22px;
+  color: var(--d-texto);
+}
+
+.admin-layout .h23-footnote,
+.admin-layout .h23-empty {
+  font-size: 14px;
+  color: var(--d-apagado);
+}
+
+.admin-layout .h23-alert {
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+/* ---------- Bloques que ya existían debajo ---------- */
+
+.admin-layout .h23-existing .admin-metric-card,
+.admin-layout .h23-existing .admin-card {
+  border: 1px solid var(--d-borde);
+  border-radius: 22px;
+  background: var(--d-superficie);
+  color: var(--d-texto);
+}
+
+.admin-layout .admin-progress-icon {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--d-primario) 18%, transparent);
+  color: var(--d-primario);
+}
+
+.admin-layout .progress-ok {
+  background: linear-gradient(90deg, var(--d-primario), var(--d-secundario));
+}
+
+.admin-layout .admin-company-card {
+  border-color: color-mix(in srgb, var(--d-primario) 40%, transparent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--d-primario) 22%, transparent),
+    var(--d-superficie)
+  );
+}
+
+.admin-layout .admin-company-glow {
+  background: color-mix(in srgb, var(--d-primario) 40%, transparent);
+}
+
+.admin-layout .admin-company-icon {
+  background: var(--d-primario);
+  color: var(--d-sobre);
+}
+
+/* ---------- Adaptación ---------- */
+
+@media (max-width: 1080px) {
+  .admin-layout .h23-atajos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-layout .h23-atajos {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-layout .h23-filters .h23-muted {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-layout .h23 *,
+  .admin-layout .h23 *::before,
+  .admin-layout .h23 *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Iconos de los títulos con el color de la empresa (tenían un morado fijo) */
+.admin-layout .h23-card h2 svg,
+.admin-layout .h23-card-header svg {
+  color: var(--d-primario) !important;
+}

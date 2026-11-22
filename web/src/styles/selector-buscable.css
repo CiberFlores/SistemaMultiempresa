@@ -1,0 +1,207 @@
+/* =========================================================
+   SELECTOR CON BUSCADOR
+   Toma los colores del panel donde esté: empresa (--admin-*)
+   o super admin (--sa-*).
+========================================================= */
+
+.sb {
+  --sb-primario: var(--admin-primary, var(--sa-orange, #6850ed));
+  --sb-sobre: var(--admin-on-primary, var(--sa-plum, #ffffff));
+  --sb-texto: var(--admin-text, var(--sa-cream, #f4f5fb));
+  --sb-apagado: var(--admin-muted, var(--sa-muted, #a7adbd));
+  --sb-fondo: var(--admin-bg, var(--sa-bg, #0b0d17));
+  --sb-borde: color-mix(in srgb, var(--sb-texto) 14%, transparent);
+
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sb-etiqueta {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sb-apagado);
+}
+
+.sb-boton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+
+  border: 1px solid var(--sb-borde);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sb-fondo) 55%, transparent);
+  color: var(--sb-texto);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.sb-boton__texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-boton__texto[data-vacio="true"] {
+  color: var(--sb-apagado);
+}
+
+.sb-boton svg {
+  flex: none;
+  color: var(--sb-apagado);
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.sb[data-abierto="true"] .sb-boton svg {
+  transform: rotate(180deg);
+}
+
+.sb-boton:focus-visible,
+.sb[data-abierto="true"] .sb-boton {
+  border-color: var(--sb-primario);
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sb-primario) 24%, transparent);
+}
+
+.sb-boton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sb-boton:hover:not(:disabled) {
+    border-color: var(--sb-primario);
+  }
+}
+
+.sb-ayuda {
+  font-size: 13px;
+  color: var(--sb-apagado);
+}
+
+.sb-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 90;
+
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+
+  border: 1px solid var(--sb-borde);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--sb-fondo) 90%, var(--sb-texto));
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.75);
+
+  animation: sb-entra 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transform-origin: top;
+}
+
+@keyframes sb-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.sb-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+
+  border: 1px solid var(--sb-borde);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sb-fondo) 70%, transparent);
+  color: var(--sb-apagado);
+}
+
+.sb-busqueda:focus-within {
+  border-color: var(--sb-primario);
+}
+
+.sb-busqueda input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sb-texto);
+  font: inherit;
+  font-size: 15px;
+}
+
+.sb-lista {
+  max-height: 250px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.sb-lista li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+
+  border-radius: 10px;
+  color: var(--sb-texto);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.sb-lista li[data-activa="true"] {
+  background: color-mix(in srgb, var(--sb-primario) 18%, transparent);
+}
+
+.sb-lista li[aria-selected="true"] {
+  font-weight: 700;
+}
+
+.sb-lista li[aria-selected="true"] svg {
+  color: var(--sb-primario);
+}
+
+.sb-lista .sb-vacio {
+  color: var(--sb-apagado);
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-panel {
+    animation: none;
+  }
+
+  .sb-boton svg {
+    transition: none;
+  }
+}
+
+/* El anillo de enfoque ya lo dibuja el contenedor; evita el doble borde */
+.sb-busqueda input,
+.sb-busqueda input:focus,
+.sb-busqueda input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+  border: 0;
+}
+
+.sb-busqueda:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sb-primario) 24%, transparent);
+}

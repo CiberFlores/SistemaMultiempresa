@@ -1,2 +1,55 @@
 import { LockKeyhole, MailCheck, ShieldAlert, ShieldCheck } from "lucide-react";
-export default function SeguridadPage(){return <div className="module-page"><div className="module-page-header"><div><span className="eyebrow">CONTROL</span><h1>Seguridad de plataforma</h1><p>Políticas activas para reducir accesos indebidos y errores de configuración.</p></div></div><section className="security-grid"><article className="security-card glass-3d"><ShieldCheck/><h3>Aislamiento multiempresa</h3><p>Todos los registros operativos deben incorporar empresaId y las reglas Firestore validan pertenencia.</p><span className="status-pill active">ACTIVO</span></article><article className="security-card glass-3d"><MailCheck/><h3>Correo verificado</h3><p>El acceso se bloquea hasta que Firebase confirme el enlace enviado al correo del usuario.</p><span className="status-pill active">ACTIVO</span></article><article className="security-card glass-3d"><LockKeyhole/><h3>Contraseña fuerte</h3><p>Mínimo 10 caracteres, mayúscula, minúscula, número, carácter especial y sin espacios.</p><span className="status-pill active">ACTIVO</span></article><article className="security-card glass-3d"><ShieldAlert/><h3>Privilegios</h3><p>SUPER_ADMIN controla plataforma; ADMIN controla una empresa; TRABAJADOR opera según rolId y permisos.</p><span className="status-pill active">ACTIVO</span></article></section><div className="warning-panel">Para producción, la creación y eliminación definitiva de cuentas Authentication debe migrarse a Cloud Functions/Admin SDK. El cliente web no debe custodiar credenciales administrativas.</div></div>}
+
+const POLITICAS = [
+  {
+    icono: ShieldCheck,
+    titulo: "Aislamiento multiempresa",
+    texto:
+      "Cada registro pertenece a una sola empresa y las reglas de acceso validan esa pertenencia en cada consulta."
+  },
+  {
+    icono: MailCheck,
+    titulo: "Correo verificado",
+    texto:
+      "El acceso se bloquea hasta que la persona confirme el enlace que recibe en su correo."
+  },
+  {
+    icono: LockKeyhole,
+    titulo: "Contraseña fuerte",
+    texto:
+      "Mínimo 10 caracteres, con mayúscula, minúscula, número y símbolo, y sin espacios."
+  },
+  {
+    icono: ShieldAlert,
+    titulo: "Privilegios por rol",
+    texto:
+      "El super administrador controla la plataforma, el dueño controla su empresa y cada trabajador opera según sus permisos."
+  }
+];
+
+export default function SeguridadPage() {
+  return (
+    <div className="module-page">
+      <div className="module-page-header">
+        <div>
+          <h1>Seguridad de plataforma</h1>
+          <p>
+            Políticas activas para reducir accesos indebidos y errores de
+            configuración.
+          </p>
+        </div>
+      </div>
+
+      <section className="security-grid">
+        {POLITICAS.map(({ icono: Icono, titulo, texto }) => (
+          <article className="security-card glass-3d" key={titulo}>
+            <Icono />
+            <h3>{titulo}</h3>
+            <p>{texto}</p>
+            <span className="status-pill active">ACTIVO</span>
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}

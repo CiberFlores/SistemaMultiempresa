@@ -1,0 +1,44 @@
+/* =========================================================
+   PANEL DE LA EMPRESA · identidad personalizada
+   Solo actúa cuando la empresa tiene logo y colores propios
+   (data-personalizada="true"). Sin eso, el panel se ve igual
+   que antes.
+========================================================= */
+
+.admin-layout[data-personalizada="true"] {
+  color: var(--admin-text);
+}
+
+/* Logo de la empresa en el menú */
+.admin-layout .admin-brand-empresa {
+  flex: none;
+
+  width: 44px;
+  height: 44px;
+  padding: 5px;
+
+  object-fit: contain;
+
+  background: rgba(255, 249, 240, 0.96);
+  border-radius: 13px;
+}
+
+/* Acciones y sección activa con el color principal de la empresa */
+.admin-layout[data-personalizada="true"] .primary-action {
+  color: var(--admin-on-primary);
+
+  background: var(--admin-primary);
+  border: 0;
+  box-shadow: 0 14px 28px -14px var(--admin-primary);
+}
+
+.admin-layout[data-personalizada="true"] .admin-nav-item.active {
+  color: var(--admin-on-primary);
+
+  background: var(--admin-primary);
+  border-color: transparent;
+}
+
+.admin-layout[data-personalizada="true"] .admin-nav-item.active::after {
+  display: none;
+}

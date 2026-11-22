@@ -1,0 +1,277 @@
+/* =========================================================
+   PRODUCTOS · colores de la empresa y letra más grande
+   Se escribe después de productos-premium.css y con un nivel
+   más de especificidad para ganarle.
+========================================================= */
+
+.admin-layout .pp-pagina {
+  --pt-primario: var(--admin-primary, #6850ed);
+  --pt-sobre: var(--admin-on-primary, #ffffff);
+  --pt-texto: var(--admin-text, #f4f5fb);
+  --pt-apagado: var(--admin-muted, #a7adbd);
+  --pt-fondo: var(--admin-bg, #0b0d17);
+  --pt-superficie: color-mix(in srgb, var(--pt-texto) 5.5%, transparent);
+  --pt-borde: color-mix(in srgb, var(--pt-texto) 13%, transparent);
+}
+
+/* ---------- Cabecera e indicadores ---------- */
+
+.admin-layout .pp-cabecera p {
+  font-size: 16px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-indicadores article {
+  border: 1px solid var(--pt-borde);
+  border-radius: 20px;
+  background: var(--pt-superficie);
+}
+
+.admin-layout .pp-indicadores small {
+  font-size: 14px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-indicadores strong {
+  font-size: 30px;
+  color: var(--pt-texto);
+}
+
+.admin-layout .pp-indicador-icono,
+.admin-layout .pp-indicador-icono.verde,
+.admin-layout .pp-indicador-icono.naranja {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--pt-primario) 20%, transparent);
+  color: var(--pt-primario);
+}
+
+/* ---------- Tabla ---------- */
+
+.admin-layout .product-mini > span {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: var(--pt-superficie);
+  color: var(--pt-primario);
+}
+
+.admin-layout .product-mini strong {
+  font-size: 16px;
+}
+
+.admin-layout .product-mini small {
+  font-size: 13px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .barcode-chip {
+  font-size: 14px;
+  color: var(--pt-texto);
+  background: var(--pt-superficie);
+}
+
+.admin-layout .modern-table code {
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--pt-primario) 16%, transparent);
+  color: var(--pt-texto);
+  font-size: 14px;
+}
+
+.admin-layout .pp-etiqueta-vence {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-layout .pp-etiqueta-vence.no {
+  color: var(--pt-apagado);
+}
+
+/* ---------- Ventana de crear o editar ---------- */
+
+.admin-layout .pp-modal {
+  border: 1px solid var(--pt-borde);
+  background: var(--pt-fondo);
+  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.8);
+  color: var(--pt-texto);
+}
+
+.admin-layout .pp-modal-cabecera {
+  border-bottom: 1px solid var(--pt-borde);
+  background: color-mix(in srgb, var(--pt-primario) 14%, var(--pt-fondo));
+}
+
+.admin-layout .pp-modal-logo {
+  background: var(--pt-primario);
+  color: var(--pt-sobre);
+  box-shadow: none;
+}
+
+.admin-layout .pp-modal-identidad small {
+  font-size: 12px;
+  color: var(--pt-primario);
+}
+
+.admin-layout .pp-modal-identidad p {
+  font-size: 15px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-cerrar {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--pt-borde);
+  background: var(--pt-superficie);
+  color: var(--pt-texto);
+}
+
+.admin-layout .pp-seccion {
+  border: 1px solid var(--pt-borde);
+  border-radius: 20px;
+  background: var(--pt-superficie);
+}
+
+.admin-layout .pp-seccion h3 {
+  font-size: 18px;
+  color: var(--pt-texto);
+}
+
+.admin-layout .pp-seccion h3 > span {
+  color: var(--pt-primario);
+}
+
+.admin-layout .pp-seccion h3 em {
+  border-color: color-mix(in srgb, var(--pt-primario) 40%, transparent);
+  color: var(--pt-primario);
+  font-size: 11px;
+}
+
+.admin-layout .pp-seccion > p {
+  font-size: 14px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-etiqueta {
+  font-size: 14px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-etiqueta b {
+  color: var(--pt-primario);
+}
+
+.admin-layout .pp-campo input,
+.admin-layout .pp-campo select,
+.admin-layout .pp-campo textarea {
+  min-height: 50px;
+  border: 1px solid var(--pt-borde);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--pt-fondo) 55%, transparent);
+  color: var(--pt-texto);
+  font-size: 16px;
+}
+
+.admin-layout .pp-campo select option {
+  background: var(--pt-fondo);
+  color: var(--pt-texto);
+}
+
+.admin-layout .pp-campo input:focus,
+.admin-layout .pp-campo select:focus,
+.admin-layout .pp-campo textarea:focus {
+  border-color: var(--pt-primario);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pt-primario) 24%, transparent);
+}
+
+.admin-layout .pp-campo small {
+  font-size: 13px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-nota {
+  border: 1px solid color-mix(in srgb, var(--pt-primario) 30%, transparent);
+  background: color-mix(in srgb, var(--pt-primario) 10%, transparent);
+  color: var(--pt-texto);
+  font-size: 14px;
+}
+
+.admin-layout .pp-nota svg {
+  color: var(--pt-primario);
+}
+
+.admin-layout .pp-nota.advertencia {
+  border-color: rgba(255, 180, 84, 0.4);
+  background: rgba(255, 180, 84, 0.1);
+}
+
+.admin-layout .pp-nota.advertencia svg {
+  color: #ffb454;
+}
+
+.admin-layout .pp-switch-fila {
+  border: 1px solid var(--pt-borde);
+  background: var(--pt-superficie);
+}
+
+.admin-layout .pp-switch-fila small {
+  font-size: 13px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-switch-fila input:checked + .pp-switch {
+  border-color: var(--pt-primario);
+  background: var(--pt-primario);
+}
+
+.admin-layout .pp-imagen-vista {
+  border: 1px dashed color-mix(in srgb, var(--pt-primario) 50%, transparent);
+  background: var(--pt-superficie);
+}
+
+.admin-layout .pp-imagen-vacia {
+  color: var(--pt-primario);
+}
+
+/* Botones de foto y aviso lateral con los colores de la empresa */
+.admin-layout .pp-subir-foto {
+  border: 1px solid color-mix(in srgb, var(--pt-primario) 45%, transparent);
+  background: color-mix(in srgb, var(--pt-primario) 14%, transparent);
+  color: var(--pt-texto);
+  font-size: 15px;
+}
+
+.admin-layout .pp-ayuda-foto,
+.admin-layout .pp-separador {
+  font-size: 13px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-seguridad {
+  border: 1px solid var(--pt-borde);
+  background: var(--pt-superficie);
+}
+
+.admin-layout .pp-seguridad strong {
+  font-size: 15px;
+  color: var(--pt-texto);
+}
+
+.admin-layout .pp-seguridad span {
+  font-size: 13px;
+  color: var(--pt-apagado);
+}
+
+.admin-layout .pp-modal-pie {
+  border-top: 1px solid var(--pt-borde);
+  background: color-mix(in srgb, var(--pt-fondo) 90%, var(--pt-texto));
+}
+
+.admin-layout .pp-cancelar {
+  min-height: 46px;
+  border: 1px solid var(--pt-borde);
+  background: var(--pt-superficie);
+  color: var(--pt-texto);
+  font-size: 15px;
+}

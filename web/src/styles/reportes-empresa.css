@@ -1,0 +1,209 @@
+/* =========================================================
+   REPORTES — comparte variables con Roles (.re) e Inventario
+========================================================= */
+
+.rp-vivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--re-apagado);
+}
+
+.rp-vivo i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--re-ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--re-ok) 60%, transparent);
+  animation: rp-pulso 2s ease-out infinite;
+}
+
+@keyframes rp-pulso {
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.rp-periodo {
+  display: grid;
+  gap: 12px;
+}
+
+.rp-periodo .re-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rp-tarjetas {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.rp-tarjetas.rp-tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rp-cuadricula {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rp-cuadricula > * {
+  min-width: 0;
+}
+
+/* ---------- Barras ---------- */
+
+.rp-barras header h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.rp-barras header p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.rp-barras ul {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rp-barra__texto {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.rp-barra__texto b {
+  overflow-wrap: anywhere;
+}
+
+.rp-barra__texto em {
+  flex: none;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-barra {
+  display: block;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--re-texto) 9%, transparent);
+}
+
+.rp-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--re-primario), color-mix(in srgb, var(--re-primario) 60%, #ffb454));
+  transition: width 400ms var(--re-salida);
+}
+
+/* ---------- Gráfico de días ---------- */
+
+.rp-dias {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  padding-top: 8px;
+}
+
+.rp-dia {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+
+.rp-dia i {
+  display: block;
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--re-primario);
+  opacity: 0.85;
+  transition: height 400ms var(--re-salida), opacity 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rp-dia:hover i {
+    opacity: 1;
+  }
+}
+
+.rp-eje {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--re-apagado);
+}
+
+.re .inv-pastilla[data-estado="NORMAL"] {
+  background: color-mix(in srgb, var(--re-ok) 16%, transparent);
+  color: var(--re-ok);
+}
+
+@media (max-width: 1100px) {
+  .rp-tarjetas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rp-cuadricula {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .rp-tarjetas,
+  .rp-tarjetas.rp-tres {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .rp-tarjetas .inv-metrica {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .rp-tarjetas .inv-metrica em {
+    display: block;
+  }
+
+  .rp-vivo {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-vivo i {
+    animation: none;
+  }
+
+  .rp-barra i,
+  .rp-dia i {
+    transition: none;
+  }
+}

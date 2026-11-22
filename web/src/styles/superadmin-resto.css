@@ -1,0 +1,570 @@
+/* =========================================================
+   SUPER ADMIN · Módulos, Auditoría, Notificaciones y Mi seguridad
+========================================================= */
+
+/* ---------------------------------------------------------
+   Ventanas de Módulos (familia sa-modal)
+--------------------------------------------------------- */
+
+.sa-layout .sa-modal-overlay {
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  background: rgba(18, 1, 22, 0.7);
+  backdrop-filter: blur(5px);
+}
+
+.sa-layout .sa-modal {
+  padding: 30px;
+
+  overflow-x: hidden;
+
+  background: linear-gradient(160deg, #3a0645, #2c0335);
+  border: 1px solid rgba(255, 249, 240, 0.16);
+  border-radius: 30px;
+  box-shadow: 0 44px 90px -34px rgba(0, 0, 0, 0.9);
+  backdrop-filter: none;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 249, 240, 0.3) transparent;
+}
+
+.sa-layout .sa-modal-header {
+  align-items: center;
+
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid rgba(255, 249, 240, 0.12);
+}
+
+.sa-layout .sa-modal-header h2 {
+  margin: 0 0 4px;
+
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 100, "opsz" 72;
+  font-weight: 600;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  color: #fff9f0;
+}
+
+.sa-layout .sa-modal-header p {
+  font-size: 15px;
+  color: #b9a3bf;
+}
+
+.sa-layout .sa-modal-header button {
+  width: 44px;
+  height: 44px;
+
+  color: #fff9f0;
+
+  background: rgba(255, 249, 240, 0.06);
+  border: 1px solid rgba(255, 249, 240, 0.18);
+  border-radius: 13px;
+
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sa-layout .sa-modal-header button:hover {
+    background: rgba(229, 56, 76, 0.2);
+    border-color: rgba(229, 56, 76, 0.6);
+  }
+}
+
+.sa-layout .sa-modal-header button:active {
+  transform: scale(0.92);
+}
+
+.sa-layout .sa-modal-header button:focus-visible {
+  outline: 2px solid #fe7c01;
+  outline-offset: 2px;
+}
+
+.sa-layout .sa-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+
+  margin-top: 22px;
+  padding-top: 20px;
+
+  border-top: 1px solid rgba(255, 249, 240, 0.1);
+}
+
+.sa-layout .sa-form-grid {
+  gap: 18px;
+}
+
+/* Código del módulo */
+
+.sa-layout .sa-slug,
+.sa-layout .sa-table code {
+  padding: 5px 10px;
+
+  font-size: 13px;
+  color: #ffd2a6;
+
+  background: rgba(254, 124, 1, 0.13);
+  border: 0;
+  border-radius: 9px;
+}
+
+@media (max-width: 760px) {
+  .sa-layout .sa-modal {
+    padding: 22px 18px;
+    border-radius: 26px;
+  }
+
+  .sa-layout .sa-modal-header h2 {
+    font-size: 1.6rem;
+  }
+
+  .sa-layout .sa-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .sa-layout .sa-modal-footer > button {
+    width: 100%;
+  }
+}
+
+/* ---------------------------------------------------------
+   Auditoría
+--------------------------------------------------------- */
+
+.sa-layout .aud-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sa-layout .aud-resumen article {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  padding: 18px 20px;
+
+  background: linear-gradient(150deg, rgba(255, 249, 240, 0.08), rgba(255, 249, 240, 0.03));
+  border: 1px solid rgba(255, 249, 240, 0.12);
+  border-radius: 22px;
+}
+
+.sa-layout .aud-resumen article > span {
+  display: grid;
+  flex: none;
+  place-items: center;
+
+  width: 48px;
+  height: 48px;
+
+  color: #ffa04d;
+
+  background: rgba(254, 124, 1, 0.14);
+  border: 1px solid rgba(254, 124, 1, 0.35);
+  border-radius: 15px;
+}
+
+.sa-layout .aud-resumen small {
+  display: block;
+
+  font-size: 14px;
+  color: #d3c1d8;
+}
+
+.sa-layout .aud-resumen strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-variation-settings: "SOFT" 100, "opsz" 72;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #fff9f0;
+}
+
+.sa-layout .aud-fechas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  gap: 14px;
+}
+
+.sa-layout .aud-fechas label {
+  display: grid;
+  gap: 7px;
+}
+
+.sa-layout .aud-fechas label span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6d8ea;
+}
+
+.sa-layout .aud-fechas input {
+  height: 48px;
+  padding: 0 14px;
+
+  font: inherit;
+  font-size: 15px;
+  color: #fff9f0;
+  color-scheme: dark;
+
+  background: #3a0645;
+  border: 1px solid rgba(255, 249, 240, 0.17);
+  border-radius: 14px;
+  outline: none;
+}
+
+.sa-layout .aud-fechas input:focus {
+  border-color: #fe7c01;
+  box-shadow: 0 0 0 4px rgba(254, 124, 1, 0.18);
+}
+
+.sa-layout .aud-tabla td {
+  vertical-align: top;
+}
+
+.sa-layout .aud-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  min-height: 32px;
+  padding: 0 13px;
+
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  color: #e6d8ea;
+
+  background: rgba(255, 249, 240, 0.08);
+  border: 1px solid rgba(255, 249, 240, 0.18);
+  border-radius: 999px;
+}
+
+.sa-layout .aud-accion::before {
+  content: "";
+
+  width: 8px;
+  height: 8px;
+
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.sa-layout .aud-accion[data-tono="ok"] {
+  color: #7ff0bf;
+  background: rgba(91, 227, 168, 0.1);
+  border-color: rgba(91, 227, 168, 0.3);
+}
+
+.sa-layout .aud-accion[data-tono="aviso"] {
+  color: #ffc27a;
+  background: rgba(254, 124, 1, 0.12);
+  border-color: rgba(254, 124, 1, 0.35);
+}
+
+.sa-layout .aud-accion[data-tono="peligro"] {
+  color: #ff9aa6;
+  background: rgba(255, 122, 138, 0.11);
+  border-color: rgba(255, 122, 138, 0.32);
+}
+
+.sa-layout .aud-accion[data-tono="info"] {
+  color: #e3b3ee;
+  background: rgba(199, 139, 209, 0.13);
+  border-color: rgba(199, 139, 209, 0.35);
+}
+
+.sa-layout .modern-table .aud-detalle {
+  display: block;
+
+  max-width: 46ch;
+
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.sa-layout .aud-persona {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  font-weight: 600;
+  color: #fff9f0;
+}
+
+.sa-layout .aud-persona i {
+  display: grid;
+  flex: none;
+  place-items: center;
+
+  width: 32px;
+  height: 32px;
+
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 700;
+  color: #42054e;
+
+  background: #fe7c01;
+  border-radius: 50%;
+}
+
+.sa-layout .aud-empresa {
+  display: inline-block;
+
+  padding: 5px 12px;
+
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff9f0;
+
+  background: rgba(255, 249, 240, 0.08);
+  border: 1px solid rgba(255, 249, 240, 0.16);
+  border-radius: 10px;
+}
+
+.sa-layout .aud-empresa[data-global="true"] {
+  color: #ffc27a;
+  background: rgba(254, 124, 1, 0.1);
+  border-color: rgba(254, 124, 1, 0.3);
+}
+
+.sa-layout .aud-fecha {
+  display: grid;
+  gap: 2px;
+
+  white-space: nowrap;
+}
+
+.sa-layout .aud-fecha strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff9f0;
+}
+
+.sa-layout .aud-fecha small {
+  font-size: 13px;
+  color: #b9a3bf;
+}
+
+.sa-layout .aud-mas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  padding: 20px;
+
+  border-top: 1px solid rgba(255, 249, 240, 0.1);
+}
+
+.sa-layout .aud-mas span {
+  font-size: 14px;
+  color: #b9a3bf;
+}
+
+@media (max-width: 1100px) {
+  .sa-layout .aud-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .sa-layout .aud-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .sa-layout .aud-resumen article {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    padding: 16px;
+  }
+
+  .sa-layout .aud-resumen small {
+    font-size: 13px;
+  }
+
+  .sa-layout .aud-fechas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------
+   Notificaciones: etiquetas de tipo y prioridad
+--------------------------------------------------------- */
+
+.sa-layout .not-titulo {
+  max-width: 44ch;
+}
+
+.sa-layout .not-titulo .table-sub {
+  display: -webkit-box;
+  overflow: hidden;
+
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.sa-layout .tag-pill {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 32px;
+  padding: 0 13px;
+
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #e6d8ea;
+
+  background: rgba(255, 249, 240, 0.08);
+  border: 1px solid rgba(255, 249, 240, 0.18);
+  border-radius: 999px;
+}
+
+.sa-layout .tag-pill[data-tipo="CRITICA"],
+.sa-layout .tag-pill[data-tipo="SEGURIDAD"] {
+  color: #ff9aa6;
+  background: rgba(255, 122, 138, 0.11);
+  border-color: rgba(255, 122, 138, 0.32);
+}
+
+.sa-layout .tag-pill[data-tipo="ADVERTENCIA"],
+.sa-layout .tag-pill[data-tipo="VENCIMIENTO"],
+.sa-layout .tag-pill[data-tipo="MANTENIMIENTO"] {
+  color: #ffd08a;
+  background: rgba(255, 180, 84, 0.11);
+  border-color: rgba(255, 180, 84, 0.32);
+}
+
+.sa-layout .tag-pill[data-tipo="COMERCIAL"],
+.sa-layout .tag-pill[data-tipo="ACTUALIZACION"] {
+  color: #e3b3ee;
+  background: rgba(199, 139, 209, 0.13);
+  border-color: rgba(199, 139, 209, 0.35);
+}
+
+.sa-layout .tag-pill--prioridad[data-prioridad="URGENTE"] {
+  color: #fff;
+  background: #e5384c;
+  border-color: #e5384c;
+}
+
+.sa-layout .tag-pill--prioridad[data-prioridad="ALTA"] {
+  color: #42054e;
+  background: #fe7c01;
+  border-color: #fe7c01;
+}
+
+.sa-layout .tag-pill--prioridad[data-prioridad="MEDIA"] {
+  color: #ffd08a;
+  background: rgba(255, 180, 84, 0.11);
+  border-color: rgba(255, 180, 84, 0.32);
+}
+
+/* ---------------------------------------------------------
+   Mi seguridad
+--------------------------------------------------------- */
+
+.sa-layout .security-account-grid {
+  gap: 22px;
+}
+
+.sa-layout .security-account-card {
+  padding: 26px;
+
+  border-radius: 26px;
+}
+
+.sa-layout .security-facts {
+  gap: 12px;
+}
+
+.sa-layout .security-facts > div {
+  grid-template-columns: 44px 1fr auto;
+  gap: 14px;
+
+  padding: 14px 16px;
+
+  background: rgba(255, 249, 240, 0.055);
+  border: 1px solid rgba(255, 249, 240, 0.11);
+  border-radius: 18px;
+}
+
+.sa-layout .security-facts svg {
+  box-sizing: content-box;
+
+  width: 20px;
+  height: 20px;
+  padding: 11px;
+
+  color: #ffa04d;
+
+  background: rgba(254, 124, 1, 0.14);
+  border-radius: 13px;
+}
+
+.sa-layout .security-facts span {
+  font-size: 14px;
+  color: #b9a3bf;
+}
+
+.sa-layout .security-facts strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff9f0;
+  overflow-wrap: anywhere;
+}
+
+.sa-layout .good-text {
+  color: #7ff0bf !important;
+}
+
+.sa-layout .password-strength {
+  padding: 16px;
+
+  background: rgba(255, 249, 240, 0.05);
+  border: 1px solid rgba(255, 249, 240, 0.12);
+  border-radius: 18px;
+}
+
+.sa-layout .password-strength-head {
+  font-size: 14px;
+  color: #e6d8ea;
+}
+
+.sa-layout .password-meter {
+  height: 7px;
+
+  background: rgba(255, 249, 240, 0.12);
+}
+
+.sa-layout .password-rules span {
+  font-size: 13px;
+}
+
+.sa-layout .password-rules .ok {
+  color: #7ff0bf;
+}
+
+.sa-layout .password-rules .pending {
+  color: #b9a3bf;
+}
+
+.sa-layout .security-account-card > .card-title {
+  padding: 0;
+}

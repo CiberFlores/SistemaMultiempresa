@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..700,100&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 :root {
   font-family:
@@ -137,22 +137,17 @@ img {
 }
 
 ::-webkit-scrollbar-track {
-  background: #080a12;
+  background: rgba(20, 1, 25, 0.55);
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: 20px;
 
-  background:
-    linear-gradient(
-      180deg,
-      #5744bd,
-      #7357ff
-    );
+  background: rgba(254, 124, 1, 0.78);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #836cff;
+  background: #fe7c01;
 }
 
 /* Inputs autofill Chrome */

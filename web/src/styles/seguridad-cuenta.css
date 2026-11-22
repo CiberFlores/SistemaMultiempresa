@@ -1,0 +1,201 @@
+/* =========================================================
+   MI SEGURIDAD — comparte variables con Roles (.re)
+========================================================= */
+
+.sg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.sg-grid > * {
+  min-width: 0;
+}
+
+.sg-datos {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sg-datos li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+}
+
+.sg-datos li > svg {
+  flex: none;
+  color: var(--re-primario);
+}
+
+.sg-datos span {
+  display: grid;
+  min-width: 0;
+}
+
+.sg-datos small {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.sg-datos strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Campo de contraseña ---------- */
+
+.sg-clave {
+  position: relative;
+  display: block;
+}
+
+.sg-clave input {
+  width: 100%;
+  padding-right: 54px;
+}
+
+.sg-clave button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--re-apagado);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.sg-clave button:focus-visible {
+  outline: 2px solid var(--re-primario);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sg-clave button:hover {
+    background: var(--re-superficie-alta);
+    color: var(--re-texto);
+  }
+}
+
+/* ---------- Fuerza de la contraseña ---------- */
+
+.sg-fuerza {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+}
+
+.sg-fuerza__cabecera {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.sg-fuerza__cabecera span {
+  color: var(--re-apagado);
+}
+
+.sg-fuerza__barra {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--re-texto) 10%, transparent);
+}
+
+.sg-fuerza__barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--re-peligro);
+  transition: width 300ms var(--re-salida), background-color 300ms ease;
+}
+
+.sg-fuerza[data-nivel="media"] .sg-fuerza__barra i {
+  background: #ffb454;
+}
+
+.sg-fuerza[data-nivel="alta"] .sg-fuerza__barra i {
+  background: var(--re-ok);
+}
+
+.sg-fuerza ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sg-fuerza li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+.sg-fuerza li[data-ok="true"] {
+  color: var(--re-ok);
+}
+
+.sg-enviar {
+  justify-self: start;
+  min-height: 54px;
+}
+
+@media (max-width: 1000px) {
+  .sg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .sg-fuerza ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sg-enviar {
+    justify-self: stretch;
+  }
+
+  .co-iguales {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-fuerza__barra i {
+    transition: none;
+  }
+}
+
+.sg-clave input::-ms-reveal,
+.sg-clave input::-ms-clear {
+  display: none;
+}

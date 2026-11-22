@@ -1,455 +1,314 @@
-import {
-  useEffect,
-  useState
-} from "react";
-
-import {
-  Building2,
-  Save
-} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Lock, RotateCcw, Save } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
-
+import usePersonalizacionEmpresa from "../../hooks/usePersonalizacionEmpresa";
+import IdentidadVisualEditor from "../../components/empresa/IdentidadVisualEditor";
+import VistaPreviaPanel from "../../components/empresa/VistaPreviaPanel";
 import {
-  guardarConfiguracionEmpresa,
-  guardarDatosEmpresa,
   obtenerConfiguracionEmpresa,
   obtenerEmpresa
 } from "../../services/configuracionEmpresaService";
+import {
+  guardarIdentidadPropia,
+  quitarLogoEmpresa,
+  subirLogoEmpresa
+} from "../../services/brandingEmpresaService";
+import { IDENTIDAD_BASE, variablesPanel } from "../../utils/identidadEmpresa";
+import { sonidoExito } from "../../utils/sonidos";
 
-function ConfiguracionEmpresaPage() {
+import "../../styles/roles-empresa.css";
+import "../../styles/configuracion-empresa.css";
+
+const vacio = "—";
+
+const CLAVES_TEMA = Object.keys(variablesPanel(IDENTIDAD_BASE));
+
+// Foto de los colores que el panel tiene en este momento
+function tomarColores(raiz) {
+  return Object.fromEntries(CLAVES_TEMA.map((nombre) => [nombre, raiz.style.getPropertyValue(nombre)]));
+}
+
+// Devuelve el panel a los colores que tenía antes de empezar a probar
+function devolverColores(raiz, colores) {
+  CLAVES_TEMA.forEach((nombre) => {
+    if (colores[nombre]) raiz.style.setProperty(nombre, colores[nombre]);
+    else raiz.style.removeProperty(nombre);
+  });
+}
+
+export default function ConfiguracionEmpresaPage() {
   const { usuario } = useAuth();
+  const { identidad: guardada } = usePersonalizacionEmpresa();
 
-  const [cargando, setCargando] =
-    useState(true);
+  const [empresa, setEmpresa] = useState(null);
+  const [configuracion, setConfiguracion] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [guardando, setGuardando] = useState(false);
 
-  const [guardando, setGuardando] =
-    useState(false);
-
-  const [mensaje, setMensaje] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
-
-  const [empresa, setEmpresa] =
-    useState({
-      nombreComercial: "",
-      razonSocial: "",
-      rubro: "",
-      nit: "",
-      telefono: "",
-      correo: "",
-      direccion: "",
-      ciudad: "",
-      pais: ""
-    });
-
-  const [configuracion, setConfiguracion] =
-    useState({
-      monedaCodigo: "BOB",
-      simboloMoneda: "Bs",
-      reglasOperacion: ""
-    });
+  // Cambios sin guardar (null = sin cambios)
+  const [borrador, setBorrador] = useState(null);
+  const [logoArchivo, setLogoArchivo] = useState(null);
+  const [logoQuitado, setLogoQuitado] = useState(false);
 
   useEffect(() => {
-    const cargar = async () => {
-      if (!usuario?.empresaId) {
-        setError(
-          "Este usuario no tiene una empresa asignada."
-        );
+    if (!usuario?.empresaId) return undefined;
 
-        setCargando(false);
+    let activo = true;
 
-        return;
-      }
-
-      try {
-        const [
-          datosEmpresa,
-          datosConfiguracion
-        ] = await Promise.all([
-          obtenerEmpresa(
-            usuario.empresaId
-          ),
-
-          obtenerConfiguracionEmpresa(
-            usuario.empresaId
-          )
-        ]);
-
-        setEmpresa({
-          nombreComercial:
-            datosEmpresa.nombreComercial || "",
-
-          razonSocial:
-            datosEmpresa.razonSocial || "",
-
-          rubro:
-            datosEmpresa.rubro || "",
-
-          nit:
-            datosEmpresa.nit || "",
-
-          telefono:
-            datosEmpresa.telefono || "",
-
-          correo:
-            datosEmpresa.correo || "",
-
-          direccion:
-            datosEmpresa.direccion || "",
-
-          ciudad:
-            datosEmpresa.ciudad || "",
-
-          pais:
-            datosEmpresa.pais || ""
-        });
-
-        if (datosConfiguracion) {
-          setConfiguracion({
-            monedaCodigo:
-              datosConfiguracion.monedaCodigo
-              || "BOB",
-
-            simboloMoneda:
-              datosConfiguracion.simboloMoneda
-              || "Bs",
-
-            reglasOperacion:
-              datosConfiguracion.reglasOperacion
-              || ""
-          });
-        }
-      } catch (error) {
-        console.error(error);
-
-        setError(
-          "No se pudo cargar la configuración."
-        );
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    cargar();
-  }, [usuario]);
-
-  const cambiarEmpresa = (e) => {
-    const {
-      name,
-      value
-    } = e.target;
-
-    setEmpresa((anterior) => ({
-      ...anterior,
-      [name]: value
-    }));
-  };
-
-  const cambiarConfiguracion = (e) => {
-    const {
-      name,
-      value
-    } = e.target;
-
-    setConfiguracion(
-      (anterior) => ({
-        ...anterior,
-        [name]: value
+    Promise.all([
+      obtenerEmpresa(usuario.empresaId),
+      obtenerConfiguracionEmpresa(usuario.empresaId).catch(() => null)
+    ])
+      .then(([datosEmpresa, datosConfiguracion]) => {
+        if (!activo) return;
+        setEmpresa(datosEmpresa || {});
+        setConfiguracion(datosConfiguracion || {});
       })
-    );
+      .catch((fallo) => {
+        console.error(fallo);
+        if (activo) setError("No se pudo cargar la información de la empresa.");
+      })
+      .finally(() => {
+        if (activo) setCargando(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, [usuario?.empresaId]);
+
+  useEffect(() => {
+    if (!aviso) return undefined;
+    const temporizador = setTimeout(() => setAviso(""), 4500);
+    return () => clearTimeout(temporizador);
+  }, [aviso]);
+
+  // Identidad guardada, completa
+  const identidadBase = useMemo(
+    () => ({
+      ...IDENTIDAD_BASE,
+      ...(guardada || {}),
+      nombreVisual: guardada?.nombreVisual || empresa?.nombreComercial || "",
+      logoUrl: guardada?.logoUrl || empresa?.logoUrl || ""
+    }),
+    [guardada, empresa]
+  );
+
+  const identidad = borrador || identidadBase;
+  const hayCambios = borrador !== null;
+
+  // Colores que tenía el panel antes de empezar a probar (null = no se está probando nada)
+  const coloresOriginales = useRef(null);
+
+  // Los colores se ven al instante en TODO el panel (menú, botones, tarjetas)
+  useEffect(() => {
+    const raiz = document.querySelector(".admin-layout");
+    if (!raiz) return;
+
+    if (borrador) {
+      if (!coloresOriginales.current) {
+        coloresOriginales.current = tomarColores(raiz);
+      }
+
+      Object.entries(variablesPanel(borrador)).forEach(([nombre, valor]) =>
+        raiz.style.setProperty(nombre, valor)
+      );
+    } else if (coloresOriginales.current) {
+      devolverColores(raiz, coloresOriginales.current);
+      coloresOriginales.current = null;
+    }
+  }, [borrador]);
+
+  // Al salir de la página sin guardar, el panel vuelve a sus colores guardados
+  useEffect(
+    () => () => {
+      const raiz = document.querySelector(".admin-layout");
+
+      if (raiz && coloresOriginales.current) {
+        devolverColores(raiz, coloresOriginales.current);
+        coloresOriginales.current = null;
+      }
+    },
+    []
+  );
+
+  const cambiar = (parcial) => {
+    setBorrador((previo) => ({ ...(previo || identidadBase), ...parcial }));
   };
 
-  const guardar = async (e) => {
-    e.preventDefault();
-
-    setMensaje("");
+  const descartar = () => {
+    setBorrador(null);
+    setLogoArchivo(null);
+    setLogoQuitado(false);
     setError("");
+  };
+
+  const guardar = async () => {
+    if (!hayCambios || guardando) return;
 
     try {
       setGuardando(true);
+      setError("");
 
-      await Promise.all([
-        guardarDatosEmpresa(
-          usuario.empresaId,
-          empresa
-        ),
+      let logoUrl = identidad.logoUrl || "";
 
-        guardarConfiguracionEmpresa(
-          usuario.empresaId,
-          configuracion
-        )
-      ]);
+      if (logoArchivo) {
+        logoUrl = await subirLogoEmpresa(usuario.empresaId, logoArchivo.blob, logoArchivo.extension);
+      } else if (logoQuitado) {
+        await quitarLogoEmpresa(usuario.empresaId);
+        logoUrl = "";
+      } else if (logoUrl.startsWith("blob:")) {
+        logoUrl = identidadBase.logoUrl;
+      }
 
-      setMensaje(
-        "Configuración guardada correctamente."
-      );
-    } catch (error) {
-      console.error(error);
+      await guardarIdentidadPropia(usuario.empresaId, { ...identidad, logoUrl });
 
+      coloresOriginales.current = null;
+      setBorrador(null);
+      setLogoArchivo(null);
+      setLogoQuitado(false);
+      setAviso("Listo: los colores y el logo de tu empresa quedaron guardados.");
+      sonidoExito();
+    } catch (fallo) {
+      console.error(fallo);
       setError(
-        "No se pudo guardar la configuración."
+        fallo?.code === "permission-denied"
+          ? "No tienes permiso para cambiar la imagen de la empresa."
+          : fallo.message || "No se pudieron guardar los cambios."
       );
     } finally {
       setGuardando(false);
     }
   };
 
-  if (cargando) {
-    return (
-      <div className="admin-empty">
-        Cargando configuración...
-      </div>
-    );
-  }
+  const datos = [
+    ["Nombre comercial", empresa?.nombreComercial],
+    ["Razón social", empresa?.razonSocial],
+    ["Rubro", empresa?.rubro],
+    ["NIT", empresa?.nit],
+    ["Teléfono", empresa?.telefono],
+    ["Correo", empresa?.correo],
+    ["Dirección", empresa?.direccion],
+    ["Ciudad", empresa?.ciudad],
+    ["País", empresa?.pais]
+  ];
+
+  const moneda = configuracion?.monedaCodigo
+    ? `${configuracion.monedaCodigo}${configuracion.simboloMoneda ? ` (${configuracion.simboloMoneda})` : ""}`
+    : "";
 
   return (
-    <div>
-      <div className="admin-page-header">
+    <div className="re cf">
+      <header className="re-cabecera">
         <div>
-          <h1>
-            Configuración de empresa
-          </h1>
+          <h1>Configuración</h1>
+          <p>Cambia el logo y los colores de tu empresa. Se ven al instante en todo el panel.</p>
+        </div>
+      </header>
 
-          <p>
-            Administra la información comercial
-            y las reglas de tu negocio.
-          </p>
+      {aviso && (
+        <div className="re-aviso re-aviso--ok" role="status">
+          <Check size={18} />
+          {aviso}
+        </div>
+      )}
+
+      {error && (
+        <div className="re-aviso re-aviso--error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <section className="cf-identidad" aria-label="Identidad visual">
+        <div className="cf-editor">
+          <IdentidadVisualEditor
+            valor={identidad}
+            onChange={cambiar}
+            rubro={empresa?.rubro}
+            nombre={empresa?.nombreComercial}
+            ocultarNombre
+            ocultarTipografia
+            alLogo={(resultado) => {
+              setLogoArchivo(resultado);
+              setLogoQuitado(false);
+              cambiar({ logoUrl: resultado.vistaPrevia });
+            }}
+            alQuitarLogo={() => {
+              setLogoArchivo(null);
+              setLogoQuitado(true);
+              cambiar({ logoUrl: "" });
+            }}
+          />
         </div>
 
-        <div className="admin-page-icon">
-          <Building2 size={22} />
+        <div className="cf-vista">
+          <VistaPreviaPanel
+            identidad={identidad}
+            nombre={empresa?.nombreComercial}
+            rubro={empresa?.rubro}
+          />
+        </div>
+      </section>
+
+      <div className="cf-barra" data-visible={hayCambios}>
+        <p>
+          {hayCambios
+            ? "Tienes cambios sin guardar. Así se ve tu panel ahora mismo."
+            : "Cambia un color o el logo y verás el resultado al instante."}
+        </p>
+        <div className="cf-barra__botones">
+          <button
+            type="button"
+            className="re-boton re-boton--suave"
+            onClick={descartar}
+            disabled={!hayCambios || guardando}
+          >
+            <RotateCcw size={16} />
+            Descartar
+          </button>
+          <button type="button" className="re-boton" onClick={guardar} disabled={!hayCambios || guardando}>
+            <Save size={17} />
+            {guardando ? "Guardando…" : "Guardar cambios"}
+          </button>
         </div>
       </div>
 
-      <form onSubmit={guardar}>
-        <section className="admin-card">
-          <div className="admin-card-header">
+      <section className="cf-info" aria-label="Información de la empresa">
+        <header className="cf-info__cabecera">
+          <div>
+            <h2>Información de la empresa</h2>
+            <p>Estos datos los administra Arca Nova. Si necesitas cambiar alguno, comunícate con soporte.</p>
+          </div>
+          <span className="cf-candado">
+            <Lock size={15} aria-hidden="true" />
+            Solo lectura
+          </span>
+        </header>
+
+        {cargando ? (
+          <p className="re-ayuda">Cargando información…</p>
+        ) : (
+          <dl className="cf-datos">
+            {datos.map(([titulo, valor]) => (
+              <div key={titulo}>
+                <dt>{titulo}</dt>
+                <dd>{valor || vacio}</dd>
+              </div>
+            ))}
             <div>
-              <h2>
-                Información comercial
-              </h2>
-
-              <p>
-                Datos visibles y administrativos
-                de la empresa.
-              </p>
+              <dt>Moneda</dt>
+              <dd>{moneda || vacio}</dd>
             </div>
-          </div>
-
-          <div className="admin-form-grid">
-            <div className="admin-form-group">
-              <label>
-                Nombre comercial
-              </label>
-
-              <input
-                name="nombreComercial"
-                value={
-                  empresa.nombreComercial
-                }
-                onChange={cambiarEmpresa}
-                required
-              />
+            <div className="cf-datos__ancho">
+              <dt>Reglas operativas</dt>
+              <dd>{configuracion?.reglasOperacion || vacio}</dd>
             </div>
-
-            <div className="admin-form-group">
-              <label>
-                Razón social
-              </label>
-
-              <input
-                name="razonSocial"
-                value={
-                  empresa.razonSocial
-                }
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group">
-              <label>Rubro</label>
-
-              <input
-                name="rubro"
-                value={empresa.rubro}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group">
-              <label>NIT</label>
-
-              <input
-                name="nit"
-                value={empresa.nit}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group">
-              <label>Teléfono</label>
-
-              <input
-                name="telefono"
-                value={empresa.telefono}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group">
-              <label>Correo</label>
-
-              <input
-                type="email"
-                name="correo"
-                value={empresa.correo}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group full">
-              <label>Dirección</label>
-
-              <input
-                name="direccion"
-                value={empresa.direccion}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group">
-              <label>Ciudad</label>
-
-              <input
-                name="ciudad"
-                value={empresa.ciudad}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-
-            <div className="admin-form-group">
-              <label>País</label>
-
-              <input
-                name="pais"
-                value={empresa.pais}
-                onChange={cambiarEmpresa}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="admin-card">
-          <div className="admin-card-header">
-            <div>
-              <h2>
-                Moneda y reglas
-              </h2>
-
-              <p>
-                Define la configuración operativa
-                principal.
-              </p>
-            </div>
-          </div>
-
-          <div className="admin-form-grid">
-            <div className="admin-form-group">
-              <label>
-                Moneda
-              </label>
-
-              <select
-                name="monedaCodigo"
-                value={
-                  configuracion.monedaCodigo
-                }
-                onChange={
-                  cambiarConfiguracion
-                }
-              >
-                <option value="BOB">
-                  Boliviano (BOB)
-                </option>
-
-                <option value="USD">
-                  Dólar estadounidense (USD)
-                </option>
-
-                <option value="EUR">
-                  Euro (EUR)
-                </option>
-              </select>
-            </div>
-
-            <div className="admin-form-group">
-              <label>
-                Símbolo
-              </label>
-
-              <input
-                name="simboloMoneda"
-                value={
-                  configuracion.simboloMoneda
-                }
-                onChange={
-                  cambiarConfiguracion
-                }
-                maxLength={10}
-              />
-            </div>
-
-            <div className="admin-form-group full">
-              <label>
-                Reglas operativas
-              </label>
-
-              <textarea
-                name="reglasOperacion"
-                value={
-                  configuracion.reglasOperacion
-                }
-                onChange={
-                  cambiarConfiguracion
-                }
-                placeholder="Describe reglas internas o condiciones operativas del negocio..."
-                rows={5}
-              />
-            </div>
-          </div>
-        </section>
-
-        {mensaje && (
-          <div className="admin-message success">
-            {mensaje}
-          </div>
+          </dl>
         )}
-
-        {error && (
-          <div className="admin-message error">
-            {error}
-          </div>
-        )}
-
-        <div className="admin-form-actions">
-          <button
-            type="submit"
-            className="admin-primary-button"
-            disabled={guardando}
-          >
-            <Save size={18} />
-
-            {guardando
-              ? "Guardando..."
-              : "Guardar configuración"}
-          </button>
-        </div>
-      </form>
+      </section>
     </div>
   );
 }
-
-export default ConfiguracionEmpresaPage;

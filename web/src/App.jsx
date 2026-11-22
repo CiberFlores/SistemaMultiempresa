@@ -14,6 +14,10 @@ import MobileInstallButton from "./components/admin-movil/MobileInstallButton";
 
 import useAuth from "./hooks/useAuth";
 
+import useMarcaEmpresa from "./hooks/useMarcaEmpresa";
+
+import { aplicarMarcaApp } from "./utils/appMovilMarca";
+
 
 // ==========================================
 // A. REGISTRAR MULTIEMPRESA GO
@@ -103,6 +107,21 @@ function AplicacionActual() {
 
     Boolean(usuario?.empresaId);
 
+
+  // La app se instala con el nombre, el icono y los colores de la empresa
+  const marca = useMarcaEmpresa();
+
+  useEffect(() => {
+    if (!esAdministrador || !marca.listo) return;
+
+    aplicarMarcaApp({
+      nombre: marca.nombre,
+      logoUrl: marca.logoUrl,
+      primario: marca.tema.primario,
+      sobre: marca.tema.sobrePrimario,
+      fondo: marca.tema.fondo
+    }).catch(console.warn);
+  }, [esAdministrador, marca.listo, marca.nombre, marca.logoUrl, marca.tema.primario, marca.tema.sobrePrimario, marca.tema.fondo]);
 
   // ========================================
   // E. COMPROBAR SI ESTA INSTALADA

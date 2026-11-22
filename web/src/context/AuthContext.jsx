@@ -1,8 +1,18 @@
 import { createContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../services/firebase/firebaseConfig";
-import { cerrarSesion as firebaseCerrarSesion } from "../services/firebase/authService";
+import {
+  cerrarSesion as firebaseCerrarSesion,
+  empresaSuspendida,
+  recordarEmpresaBloqueada
+} from "../services/firebase/authService";
+
+// Saca a la persona; la pantalla de inicio la lleva a la pantalla de cuenta bloqueada
+async function expulsarPorEmpresaSuspendida(nombre) {
+  recordarEmpresaBloqueada(nombre);
+  await signOut(auth);
+}
 
 export const AuthContext = createContext(null);
 
@@ -20,6 +30,8 @@ function AuthProvider({ children }) {
         if (!documento.exists()) { setUsuario(null); await signOut(auth); return; }
         const datos = documento.data();
         if (datos.estado !== true) { setUsuario(null); await signOut(auth); return; }
+        const bloqueo = datos.tipoUsuario !== "SUPER_ADMIN" ? await empresaSuspendida(datos.empresaId) : null;
+        if (bloqueo) { setUsuario(null); await expulsarPorEmpresaSuspendida(bloqueo.nombre); return; }
         setUsuario({ uid: firebaseUser.uid, email: firebaseUser.email, emailVerified: firebaseUser.emailVerified, ...datos });
       } catch (error) {
         console.error("Error cargando usuario:", error);
@@ -28,6 +40,25 @@ function AuthProvider({ children }) {
     });
     return () => unsubscribe();
   }, []);
+
+  // Si el administrador suspende la empresa mientras alguien trabaja, se le avisa y sale al instante
+  const empresaId = usuario?.tipoUsuario === "SUPER_ADMIN" ? null : usuario?.empresaId;
+
+  useEffect(() => {
+    if (!empresaId) return undefined;
+
+    return onSnapshot(
+      doc(db, "empresas", empresaId),
+      (documento) => {
+        if (documento.exists() && documento.data().estado === "SUSPENDIDA") {
+          const d = documento.data();
+          setUsuario(null);
+          expulsarPorEmpresaSuspendida(d.nombreComercial || d.nombre || d.razonSocial || "");
+        }
+      },
+      () => {}
+    );
+  }, [empresaId]);
 
   const cerrarSesion = async () => { await firebaseCerrarSesion(); setUsuario(null); };
 

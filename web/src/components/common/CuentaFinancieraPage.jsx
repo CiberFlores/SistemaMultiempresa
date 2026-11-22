@@ -1,1445 +1,629 @@
-import { useEffect, useMemo, useState } from "react";
-
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-
-import {
-  HandCoins,
-  X,
-  Wallet,
-  Building2,
-  CheckCircle2,
-  AlertCircle,
-  CreditCard
-} from "lucide-react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { Check, ChevronDown, CircleCheck, HandCoins, Info, Search, Users, Wallet, X } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
+import { db } from "../../services/firebase/firebaseConfig";
+import { registrarPagoCuenta, suscribirCuentas } from "../../services/financeService";
+import { obtenerSaldoCaja, suscribirCajas } from "../../services/cajaService";
+import { suscribirSucursales } from "../../services/sucursalService";
+import { sonidoCaja, sonidoClick, sonidoError } from "../../utils/sonidos";
 
-import AdvancedFilterBar from "../filters/AdvancedFilterBar";
+import "../../styles/roles-empresa.css";
+import "../../styles/trabajadores-empresa.css";
+import "../../styles/inventario-empresa.css";
+import "../../styles/compras-empresa.css";
+import "../../styles/cajas-empresa.css";
 
-import {
-  registrarPagoCuenta,
-  suscribirCuentas
-} from "../../services/financeService";
-
-import {
-  suscribirCajas
-} from "../../services/cajaService";
-
-import {
-  suscribirSucursales
-} from "../../services/sucursalService";
-
-
-// ==========================================
-// FORMATEAR DINERO
-// ==========================================
-
-const formatoDinero = (valor) => {
-  return Number(valor || 0).toFixed(2);
+const METODOS = {
+  EFECTIVO: "Efectivo",
+  QR: "QR",
+  TRANSFERENCIA: "Transferencia",
+  TARJETA: "Tarjeta"
 };
 
+const FILTROS = [
+  ["TODAS", "Todas"],
+  ["PENDIENTE", "Sin pagar"],
+  ["PARCIAL", "Pago parcial"],
+  ["PAGADA", "Pagadas"]
+];
 
-// ==========================================
-// COMPONENTE PRINCIPAL
-// ==========================================
+const ETIQUETA_ESTADO = { PENDIENTE: "Sin pagar", PARCIAL: "Pago parcial", PAGADA: "Pagada" };
+
+const normalizar = (valor) =>
+  String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+
+const dinero = (valor) => {
+  const n = Number(valor || 0);
+  return `${n < 0 ? "−" : ""}Bs ${Math.abs(n).toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const fechaDe = (valor) => {
+  const fecha = valor?.toDate?.() || null;
+  return fecha && !Number.isNaN(fecha.getTime()) ? fecha : null;
+};
+
+const corto = (texto) => (texto ? `#${String(texto).slice(0, 6)}` : "");
+
+const sinSignos = (e) => {
+  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+};
+
+const leer = (nombre, empresaId) =>
+  getDocs(query(collection(db, nombre), where("empresaId", "==", empresaId))).then((r) =>
+    r.docs.map((d) => ({ id: d.id, ...d.data() }))
+  );
 
 export default function CuentaFinancieraPage({ tipo }) {
-
   const { usuario } = useAuth();
+  const empresaId = usuario?.empresaId;
+  const esCobrar = tipo === "COBRAR";
 
-  const isCobrar = tipo === "COBRAR";
-
-  // ========================================
-  // DATOS DE FIREBASE
-  // ========================================
-
-  const [rows, setRows] = useState([]);
-
+  const [cuentas, setCuentas] = useState([]);
   const [cajas, setCajas] = useState([]);
-
   const [sucursales, setSucursales] = useState([]);
+  const [nombres, setNombres] = useState({ clientes: new Map(), ventas: new Map(), proveedores: new Map() });
+  const [cargando, setCargando] = useState(true);
 
-  const [errorCajas, setErrorCajas] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [filtro, setFiltro] = useState("TODAS");
 
-  // ========================================
-  // FILTROS
-  // ========================================
-
-  const [q, setQ] = useState("");
-
-  const [status, setStatus] = useState("TODOS");
-
-  // ========================================
-  // FORMULARIO DE PAGO
-  // ========================================
-
-  const [selected, setSelected] = useState(null);
-
+  const [elegida, setElegida] = useState(null);
   const [monto, setMonto] = useState("");
-
   const [metodo, setMetodo] = useState("EFECTIVO");
-
   const [sucursalId, setSucursalId] = useState("");
-
   const [cajaId, setCajaId] = useState("");
-
-  const [obs, setObs] = useState("");
-
+  const [nota, setNota] = useState("");
+  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
-
-  const [saving, setSaving] = useState(false);
-
-
-  // ========================================
-  // CONSULTAR CUENTAS
-  // ========================================
+  const [aviso, setAviso] = useState("");
+  const [saldoCaja, setSaldoCaja] = useState(null);
 
   useEffect(() => {
+    if (!empresaId) return undefined;
 
-    if (!usuario?.empresaId) {
-      setRows([]);
-      return;
-    }
+    setCargando(true);
 
-    const cancelar = suscribirCuentas(
+    const cancelarCuentas = suscribirCuentas(
       tipo,
-      usuario.empresaId,
-      setRows,
-      console.error
+      empresaId,
+      (datos) => {
+        setCuentas(datos);
+        setCargando(false);
+      },
+      (e) => {
+        console.error(e);
+        setCargando(false);
+      }
+    );
+
+    const cancelarCajas = suscribirCajas(empresaId, setCajas, console.error);
+    const cancelarSucursales = suscribirSucursales(empresaId, setSucursales, console.error);
+
+    // Los nombres de clientes y proveedores se leen aparte; si algo falla, se muestran sin nombre
+    const nombreDe = (promesa) => promesa.catch(() => []);
+
+    Promise.all(
+      esCobrar
+        ? [nombreDe(leer("clientes", empresaId)), nombreDe(leer("ventas", empresaId)), Promise.resolve([])]
+        : [Promise.resolve([]), Promise.resolve([]), nombreDe(leer("proveedores", empresaId))]
+    ).then(([clientes, ventas, proveedores]) =>
+      setNombres({
+        clientes: new Map(clientes.map((c) => [c.id, c])),
+        ventas: new Map(ventas.map((v) => [v.id, v])),
+        proveedores: new Map(proveedores.map((p) => [p.id, p]))
+      })
     );
 
     return () => {
-      cancelar();
+      cancelarCuentas?.();
+      cancelarCajas?.();
+      cancelarSucursales?.();
     };
+  }, [tipo, empresaId, esCobrar]);
 
-  }, [tipo, usuario?.empresaId]);
-
-
-  // ========================================
-  // CONSULTAR CAJAS Y SUCURSALES
-  // ========================================
-
-  useEffect(() => {
-
-    if (!usuario?.empresaId) {
-      setCajas([]);
-      setSucursales([]);
-      return;
-    }
-
-    setErrorCajas("");
-
-    const cancelarCajas = suscribirCajas(
-
-      usuario.empresaId,
-
-      setCajas,
-
-      (err) => {
-        console.error(err);
-
-        setErrorCajas(
-          "No se pudieron cargar las cajas. Revisa los permisos."
-        );
-      }
-
-    );
-
-    const cancelarSucursales = suscribirSucursales(
-
-      usuario.empresaId,
-
-      setSucursales,
-
-      (err) => {
-        console.error(err);
-
-        setErrorCajas(
-          "No se pudieron cargar las sucursales."
-        );
-      }
-
-    );
-
-    return () => {
-
-      cancelarCajas();
-
-      cancelarSucursales();
-
-    };
-
-  }, [usuario?.empresaId]);
-
-
-  // ========================================
-  // FILTRAR CUENTAS
-  // ========================================
-
-  const cuentasFiltradas = useMemo(() => {
-
-    return rows.filter((cuenta) => {
-
-      const texto = q.toLowerCase().trim();
-
-      const coincideBusqueda =
-        !texto ||
-        JSON.stringify(cuenta)
-          .toLowerCase()
-          .includes(texto);
-
-      const coincideEstado =
-        status === "TODOS" ||
-        cuenta.estadoCuenta === status;
-
-      return coincideBusqueda && coincideEstado;
-
-    });
-
-  }, [rows, q, status]);
-
-
-  // ========================================
-  // OBTENER NOMBRE DE SUCURSAL
-  // ========================================
-
-  const nombreSucursal = (id) => {
-
-    const sucursal = sucursales.find(
-      (s) => s.id === id
-    );
-
-    return sucursal?.nombre || "Sucursal";
-  };
-
-
-  // ========================================
-  // SUCURSALES DISPONIBLES
-  // ========================================
-
-  const sucursalesDisponibles = useMemo(() => {
-
-    return sucursales.filter((sucursal) => {
-
-      const estaActiva =
-        sucursal.estado === "ACTIVA";
-
-      if (!estaActiva) return false;
-
-      // SI LA CUENTA PERTENECE A UNA
-      // SUCURSAL, NO PERMITIR OTRA.
-
-      if (
-        selected?.sucursalId &&
-        selected.sucursalId !== sucursal.id
-      ) {
-        return false;
-      }
-
-      return true;
-
-    });
-
-  }, [sucursales, selected]);
-
-
-  // ========================================
-  // CAJAS ABIERTAS DE LA SUCURSAL
-  // ========================================
-
-  const cajasDisponibles = useMemo(() => {
-
-    if (!sucursalId) {
-      return [];
-    }
-
-    return cajas.filter((caja) => {
-
+  const quien = (cuenta) => {
+    if (esCobrar) {
       return (
-        caja.estado === "ABIERTA" &&
-        caja.sucursalId === sucursalId
+        cuenta.clienteNombre ||
+        nombres.clientes.get(cuenta.clienteId)?.nombre ||
+        nombres.ventas.get(cuenta.ventaId)?.clienteNombre ||
+        "Cliente sin nombre"
       );
-
-    });
-
-  }, [cajas, sucursalId]);
-
-
-  // ========================================
-  // ABRIR FORMULARIO
-  // ========================================
-
-  const abrirPago = (cuenta) => {
-
-    setSelected(cuenta);
-
-    setMonto("");
-
-    setMetodo("EFECTIVO");
-
-    setSucursalId(cuenta.sucursalId || "");
-
-    setCajaId("");
-
-    setObs("");
-
-    setError("");
-
+    }
+    return cuenta.proveedorNombre || nombres.proveedores.get(cuenta.proveedorId)?.nombre || "Proveedor";
   };
 
-
-  // ========================================
-  // CERRAR FORMULARIO
-  // ========================================
-
-  const cerrarPago = () => {
-
-    if (saving) return;
-
-    setSelected(null);
-
-    setMonto("");
-
-    setMetodo("EFECTIVO");
-
-    setSucursalId("");
-
-    setCajaId("");
-
-    setObs("");
-
-    setError("");
-
+  const referencia = (cuenta) => {
+    if (cuenta.referencia && String(cuenta.referencia).length < 20) return cuenta.referencia;
+    if (cuenta.ventaId) return `Venta ${corto(cuenta.ventaId)}`;
+    if (cuenta.compraId) return `Compra ${corto(cuenta.compraId)}`;
+    return "—";
   };
 
+  const nombreSucursal = (id) => sucursales.find((s) => s.id === id)?.nombre || "";
+  const estadoDe = (c) => c.estadoCuenta || "PENDIENTE";
 
-  // ========================================
-  // CAMBIAR MÉTODO DE PAGO
-  // ========================================
+  const pendientes = cuentas.filter((c) => estadoDe(c) !== "PAGADA");
+  const totalSaldo = pendientes.reduce((suma, c) => suma + Number(c.saldo || 0), 0);
+  const saldadas = cuentas.length - pendientes.length;
 
-  const cambiarMetodo = (valor) => {
+  const visibles = cuentas.filter((c) => {
+    if (filtro !== "TODAS" && estadoDe(c) !== filtro) return false;
+    const texto = normalizar(busqueda);
+    return !texto || normalizar(quien(c)).includes(texto) || normalizar(referencia(c)).includes(texto);
+  });
 
-    setMetodo(valor);
+  const cajasAbiertas = cajas.filter((c) => c.estado === "ABIERTA");
+  const sucursalesConCaja = sucursales.filter(
+    (s) => cajasAbiertas.some((c) => c.sucursalId === s.id) && (!elegida?.sucursalId || elegida.sucursalId === s.id)
+  );
+  const sucursalEfectiva = sucursalId || (sucursalesConCaja.length === 1 ? sucursalesConCaja[0].id : "");
+  const cajasSucursal = cajasAbiertas.filter((c) => c.sucursalId === sucursalEfectiva);
+  const cajaEfectiva = cajaId || (cajasSucursal.length === 1 ? cajasSucursal[0].id : "");
+  const cajaElegida = cajasAbiertas.find((c) => c.id === cajaEfectiva) || null;
 
-    // LAS CAJAS SOLO SE USAN
-    // PARA PAGOS EN EFECTIVO.
+  const esEfectivo = metodo === "EFECTIVO";
+  const saldoPendiente = Number(elegida?.saldo || 0);
+  const montoNumero = Number(monto);
+  const despues = Math.max(0, saldoPendiente - (Number.isFinite(montoNumero) ? montoNumero : 0));
 
-    if (valor !== "EFECTIVO") {
-      setCajaId("");
+  // Para pagar a un proveedor en efectivo, la caja debe tener ese dinero
+  useEffect(() => {
+    let activo = true;
+
+    if (!elegida || esCobrar || !esEfectivo || !cajaElegida) {
+      return undefined;
     }
 
-  };
+    obtenerSaldoCaja(cajaElegida)
+      .then((saldo) => activo && setSaldoCaja(saldo))
+      .catch(() => activo && setSaldoCaja(null));
 
+    return () => {
+      activo = false;
+    };
+  }, [elegida, esCobrar, esEfectivo, cajaElegida]);
 
-  // ========================================
-  // CAMBIAR SUCURSAL
-  // ========================================
+  const superaCaja = !esCobrar && esEfectivo && cajaElegida && saldoCaja !== null && montoNumero > saldoCaja;
 
-  const cambiarSucursal = (valor) => {
-
-    setSucursalId(valor);
-
-    // LIMPIAR LA CAJA CUANDO
-    // CAMBIA LA SUCURSAL.
-
+  function abrirPago(cuenta) {
+    setElegida(cuenta);
+    setMonto("");
+    setMetodo("EFECTIVO");
+    setSucursalId(cuenta.sucursalId || "");
     setCajaId("");
+    setNota("");
+    setError("");
+    setSaldoCaja(null);
+    setAviso("");
+    sonidoClick();
+  }
 
-  };
+  async function pagar(evento) {
+    evento.preventDefault();
+    if (guardando || !elegida) return;
 
+    const fallar = (texto) => {
+      setError(texto);
+      sonidoError();
+    };
 
-  // ========================================
-  // REGISTRAR PAGO
-  // ========================================
+    if (monto === "" || !Number.isFinite(montoNumero) || montoNumero <= 0) return fallar("Escribe cuánto se paga.");
+    if (Math.round(montoNumero * 100) / 100 !== montoNumero) return fallar("El monto admite hasta dos decimales.");
+    if (montoNumero > saldoPendiente) return fallar(`No puede ser más de lo que falta: ${dinero(saldoPendiente)}.`);
 
-  const registrarPago = async (e) => {
+    if (esEfectivo) {
+      if (!sucursalEfectiva) return fallar("Elige la sucursal.");
+      if (!cajaEfectiva) return fallar("Elige la caja abierta donde entra o sale el dinero.");
+      if (superaCaja) return fallar(`En la caja solo hay ${dinero(saldoCaja)}. Paga con otro método o abre más dinero en caja.`);
+    }
 
-    e.preventDefault();
-
-    if (!selected || saving) return;
+    setGuardando(true);
+    setError("");
 
     try {
-
-      setSaving(true);
-
-      setError("");
-
-      const montoNumero = Number(monto);
-
-      const saldoPendiente = Number(
-        selected.saldo || 0
-      );
-
-      // VALIDAR MONTO
-
-      if (
-        !Number.isFinite(montoNumero) ||
-        montoNumero <= 0
-      ) {
-        throw new Error(
-          "Ingresa un monto válido mayor a cero."
-        );
-      }
-
-      if (montoNumero > saldoPendiente) {
-
-        throw new Error(
-          "El monto no puede superar el saldo pendiente."
-        );
-
-      }
-
-      // ====================================
-      // VALIDAR PAGO EN EFECTIVO
-      // ====================================
-
-      if (metodo === "EFECTIVO") {
-
-        if (!sucursalId) {
-
-          throw new Error(
-            "Debes seleccionar una sucursal."
-          );
-
-        }
-
-        if (!cajaId) {
-
-          throw new Error(
-            "Debes seleccionar una caja abierta."
-          );
-
-        }
-
-        const cajaSeleccionada = cajasDisponibles.find(
-          (caja) => caja.id === cajaId
-        );
-
-        if (!cajaSeleccionada) {
-
-          throw new Error(
-            "La caja seleccionada no está disponible."
-          );
-
-        }
-
-      }
-
-      // ====================================
-      // GUARDAR PAGO EN FIREBASE
-      // ====================================
-
       await registrarPagoCuenta({
-
         tipo,
-
-        cuentaId: selected.id,
-
-        empresaId: usuario.empresaId,
-
+        cuentaId: elegida.id,
+        empresaId,
         monto: montoNumero,
-
         metodoPago: metodo,
-
-        observacion: obs,
-
+        observacion: nota,
         usuarioId: usuario.uid,
-
-        // SOLO ENVIAMOS CAJA
-        // CUANDO EL PAGO ES EFECTIVO.
-
-        cajaId: metodo === "EFECTIVO"
-          ? cajaId
-          : ""
-
+        cajaId: esEfectivo ? cajaEfectiva : ""
       });
 
-      cerrarFormularioDespuesDeGuardar();
-
-    } catch (err) {
-
-      console.error(err);
-
-      setError(
-        err.message || "No se pudo registrar el pago."
+      sonidoCaja();
+      setAviso(
+        montoNumero === saldoPendiente
+          ? `Listo: la cuenta de ${quien(elegida)} quedó saldada.`
+          : `${esCobrar ? "Cobro" : "Pago"} registrado. Aún faltan ${dinero(saldoPendiente - montoNumero)}.`
       );
-
+      setElegida(null);
+    } catch (e) {
+      console.error(e);
+      fallar(e.message || "No pudimos registrar el movimiento. Inténtalo otra vez.");
     } finally {
-
-      setSaving(false);
-
+      setGuardando(false);
     }
+  }
 
-  };
-
-
-  // ========================================
-  // LIMPIAR FORMULARIO AL GUARDAR
-  // ========================================
-
-  const cerrarFormularioDespuesDeGuardar = () => {
-
-    setSelected(null);
-
-    setMonto("");
-
-    setMetodo("EFECTIVO");
-
-    setSucursalId("");
-
-    setCajaId("");
-
-    setObs("");
-
-    setError("");
-
-  };
-
-
-  // ========================================
-  // DATOS DE LA CUENTA SELECCIONADA
-  // ========================================
-
-  const saldoActual = Number(
-    selected?.saldo || 0
-  );
-
-  const montoIngresado = Number(monto || 0);
-
-  const saldoDespuesDelPago = Math.max(
-    0,
-    saldoActual - montoIngresado
-  );
-
-
-  // ========================================
-  // INTERFAZ PRINCIPAL
-  // ========================================
+  const verbo = esCobrar ? "cobro" : "pago";
 
   return (
-
-    <div className="module-page">
-
-      {/* ================================= */}
-      {/* ENCABEZADO */}
-      {/* ================================= */}
-
-      <div className="module-page-header">
-
+    <div className="re inv">
+      <header className="re-cabecera">
         <div>
-
-          <span className="eyebrow">
-            FINANZAS
-          </span>
-
-          <h1>
-            {isCobrar
-              ? "Cuentas por cobrar"
-              : "Cuentas por pagar"}
-          </h1>
-
+          <h1>{esCobrar ? "Cuentas por cobrar" : "Cuentas por pagar"}</h1>
           <p>
-            {isCobrar
-              ? "Ventas a crédito, saldos de clientes y pagos recibidos."
-              : "Obligaciones con proveedores y pagos realizados."}
+            {esCobrar
+              ? "Lo que tus clientes te deben por ventas a crédito. Registra cada cobro cuando te paguen."
+              : "Lo que debes a tus proveedores por compras a crédito. Registra cada pago cuando lo hagas."}
           </p>
-
         </div>
-
-      </div>
-
-
-      {/* ================================= */}
-      {/* FILTROS */}
-      {/* ================================= */}
-
-      <AdvancedFilterBar
-
-        search={q}
-
-        onSearch={setQ}
-
-        filters={[
-
-          {
-
-            key: "estado",
-
-            label: "Todos los estados",
-
-            value: status,
-
-            onChange: setStatus,
-
-            options: [
-
-              {
-                value: "PENDIENTE",
-                label: "Pendiente"
-              },
-
-              {
-                value: "PARCIAL",
-                label: "Parcial"
-              },
-
-              {
-                value: "PAGADA",
-                label: "Pagada"
-              }
-
-            ]
-
-          }
-
-        ]}
-
-        onClear={() => {
-
-          setQ("");
-
-          setStatus("TODOS");
-
-        }}
-
-      />
-
-
-      {/* ================================= */}
-      {/* TABLA */}
-      {/* ================================= */}
-
-      <section className="data-card glass-3d">
-
-        <div className="table-scroll">
-
-          <table className="modern-table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  {isCobrar ? "CLIENTE" : "PROVEEDOR"}
-                </th>
-
-                <th>REFERENCIA</th>
-
-                <th>TOTAL</th>
-
-                <th>SALDO</th>
-
-                <th>ESTADO</th>
-
-                <th>ACCIÓN</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {cuentasFiltradas.map((cuenta) => (
-
-                <tr key={cuenta.id}>
-
-                  <td>
-
-                    {isCobrar
-                      ? (
-                          cuenta.clienteNombre ||
-                          cuenta.clienteId ||
-                          "-"
-                        )
-                      : (
-                          cuenta.proveedorNombre ||
-                          cuenta.proveedorId ||
-                          "-"
-                        )}
-
-                  </td>
-
-                  <td>
-
-                    {cuenta.referencia ||
-                      cuenta.ventaId ||
-                      cuenta.compraId ||
-                      "-"}
-
-                  </td>
-
-                  <td>
-
-                    Bs {formatoDinero(cuenta.total)}
-
-                  </td>
-
-                  <td>
-
-                    <strong>
-
-                      Bs {formatoDinero(cuenta.saldo)}
-
-                    </strong>
-
-                  </td>
-
-                  <td>
-
-                    <span
-                      className={`
-                        status-pill
-                        ${
-                          cuenta.estadoCuenta === "PAGADA"
-                            ? "active"
-                            : cuenta.estadoCuenta === "PARCIAL"
-                              ? "warning"
-                              : "inactive"
-                        }
-                      `}
-                    >
-
-                      {cuenta.estadoCuenta || "PENDIENTE"}
-
-                    </span>
-
-                  </td>
-
-                  <td>
-
-                    {cuenta.estadoCuenta !== "PAGADA" && (
-
-                      <button
-
-                        className="primary-action mini"
-
-                        onClick={() => abrirPago(cuenta)}
-
-                      >
-
-                        <HandCoins size={15} />
-
-                        Registrar pago
-
-                      </button>
-
-                    )}
-
-                  </td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
-
-
-          {/* SIN REGISTROS */}
-
-          {!cuentasFiltradas.length && (
-
-            <div className="empty-state">
-
-              Sin cuentas con esos filtros.
-
-            </div>
-
-          )}
-
-        </div>
-
+      </header>
+
+      <section className="inv-metricas inv-metricas--tres co-metricas" aria-label="Resumen">
+        <article className="inv-metrica" data-tono={totalSaldo > 0 ? "alerta" : undefined}>
+          <span className="inv-metrica__icono" aria-hidden="true">
+            <Wallet size={22} />
+          </span>
+          <div>
+            <small>{esCobrar ? "Te deben" : "Debes"}</small>
+            <strong>{dinero(totalSaldo)}</strong>
+            <em>en total</em>
+          </div>
+        </article>
+        <article className="inv-metrica">
+          <span className="inv-metrica__icono" aria-hidden="true">
+            <Users size={22} />
+          </span>
+          <div>
+            <small>Cuentas abiertas</small>
+            <strong>{pendientes.length}</strong>
+            <em>{esCobrar ? "clientes por cobrar" : "proveedores por pagar"}</em>
+          </div>
+        </article>
+        <article className="inv-metrica">
+          <span className="inv-metrica__icono" aria-hidden="true">
+            <CircleCheck size={22} />
+          </span>
+          <div>
+            <small>{esCobrar ? "Ya cobradas" : "Ya pagadas"}</small>
+            <strong>{saldadas}</strong>
+            <em>saldadas</em>
+          </div>
+        </article>
       </section>
 
+      <div className="re-herramientas">
+        <label className="re-busqueda">
+          <Search size={19} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder={esCobrar ? "Buscar cliente…" : "Buscar proveedor…"}
+            aria-label="Buscar cuentas"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
 
-      {/* ================================= */}
-      {/* MODAL DE REGISTRAR PAGO */}
-      {/* ================================= */}
+        <div className="re-filtros" role="radiogroup" aria-label="Estado">
+          {FILTROS.map(([valor, texto]) => (
+            <button
+              key={valor}
+              type="button"
+              role="radio"
+              aria-checked={filtro === valor}
+              className="re-chip"
+              data-activo={filtro === valor}
+              onClick={() => setFiltro(valor)}
+            >
+              {texto}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {aviso && (
+        <div className="re-aviso re-aviso--ok" role="status">
+          <Check size={18} />
+          <span>{aviso}</span>
+        </div>
+      )}
+
+      {cargando ? (
+        <div className="re-vacio">Cargando cuentas…</div>
+      ) : visibles.length === 0 ? (
+        <div className="re-vacio">
+          <HandCoins size={34} />
+          <strong>{cuentas.length === 0 ? "No hay cuentas por el momento" : "No encontramos cuentas"}</strong>
+          <span>
+            {cuentas.length === 0
+              ? esCobrar
+                ? "Aquí aparecerán las ventas que dejes a crédito."
+                : "Aquí aparecerán las compras que hagas a crédito. Elige «A crédito» al registrar una compra."
+              : "Prueba con otra búsqueda o cambia el filtro."}
+          </span>
+        </div>
+      ) : (
+        <section className="inv-bloque">
+          <div className="inv-tabla-caja">
+            <table className="inv-tabla">
+              <thead>
+                <tr>
+                  <th>{esCobrar ? "Cliente" : "Proveedor"}</th>
+                  <th>De qué</th>
+                  <th>Fecha</th>
+                  <th className="inv-der">Total</th>
+                  <th className="inv-der">Falta</th>
+                  <th>Estado</th>
+                  <th className="inv-der">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibles.map((cuenta) => {
+                  const estado = estadoDe(cuenta);
+                  const fecha = fechaDe(cuenta.fechaRegistro);
+
+                  return (
+                    <tr key={cuenta.id}>
+                      <td data-label={esCobrar ? "Cliente" : "Proveedor"}>
+                        <strong>{quien(cuenta)}</strong>
+                      </td>
+                      <td data-label="De qué">{referencia(cuenta)}</td>
+                      <td data-label="Fecha">{fecha ? fecha.toLocaleDateString("es-BO", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</td>
+                      <td data-label="Total" className="inv-der">
+                        {dinero(cuenta.total)}
+                      </td>
+                      <td data-label="Falta" className="inv-der">
+                        <strong data-bajo={estado !== "PAGADA" ? "true" : undefined}>{dinero(cuenta.saldo)}</strong>
+                      </td>
+                      <td data-label="Estado">
+                        <span className="inv-pastilla" data-estado={estado === "PAGADA" ? "VIGENTE" : estado === "PARCIAL" ? "POR_VENCER" : "VENCIDO"}>
+                          {ETIQUETA_ESTADO[estado] || estado}
+                        </span>
+                      </td>
+                      <td data-label="Acción" className="inv-der">
+                        {estado !== "PAGADA" ? (
+                          <button type="button" className="re-boton re-boton--chico" onClick={() => abrirPago(cuenta)}>
+                            <HandCoins size={15} />
+                            {esCobrar ? "Registrar cobro" : "Registrar pago"}
+                          </button>
+                        ) : (
+                          <span className="inv-sin">Saldada</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <AnimatePresence>
-
-        {selected && (
-
-          <motion.div
-
-            className="modal-backdrop"
-
-            initial={{ opacity: 0 }}
-
-            animate={{ opacity: 1 }}
-
-            exit={{ opacity: 0 }}
-
-            onMouseDown={cerrarPago}
-
-          >
-
-            <motion.div
-
-              className="modal-card glass-3d"
-
-              initial={{
-                opacity: 0,
-                scale: 0.95,
-                y: 20
-              }}
-
-              animate={{
-                opacity: 1,
-                scale: 1,
-                y: 0
-              }}
-
-              exit={{
-                opacity: 0,
-                scale: 0.95,
-                y: 20
-              }}
-
+        {elegida && (
+          <motion.div className="re-fondo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={() => !guardando && setElegida(null)}>
+            <motion.form
+              className="re-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cf-titulo"
+              initial={{ opacity: 0, scale: 0.96, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
               onMouseDown={(e) => e.stopPropagation()}
-
-              style={{
-                maxWidth: "720px",
-                width: "calc(100% - 32px)",
-                maxHeight: "90vh",
-                overflowY: "auto"
-              }}
-
+              onSubmit={pagar}
+              noValidate
             >
-
-              {/* ENCABEZADO */}
-
-              <div className="modal-head">
-
+              <header className="re-modal__cabecera">
                 <div>
-
-                  <span className="eyebrow">
-                    GESTIÓN FINANCIERA
-                  </span>
-
-                  <h2>
-
-                    {isCobrar
-                      ? "Registrar cobro"
-                      : "Registrar pago"}
-
-                  </h2>
-
-                  <p style={{
-                    marginTop: "8px",
-                    color: "#9696b5",
-                    fontSize: "13px"
-                  }}>
-
-                    {isCobrar
-                      ? "Registra el dinero recibido de tu cliente."
-                      : "Registra el pago realizado a tu proveedor."}
-
+                  <h2 id="cf-titulo">{esCobrar ? "Registrar cobro" : "Registrar pago"}</h2>
+                  <p>
+                    {esCobrar ? "Dinero recibido de" : "Dinero entregado a"} <b>{quien(elegida)}</b>
                   </p>
-
                 </div>
-
-                <button
-                  type="button"
-                  onClick={cerrarPago}
-                  disabled={saving}
-                >
-
+                <button type="button" className="re-cerrar" onClick={() => setElegida(null)} aria-label="Cerrar" disabled={guardando}>
                   <X size={18} />
-
                 </button>
+              </header>
 
-              </div>
-
-
-              {/* ================================= */}
-              {/* RESUMEN DE DEUDA */}
-              {/* ================================= */}
-
-              <div
-
-                style={{
-
-                  display: "grid",
-
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(170px, 1fr))",
-
-                  gap: "12px",
-
-                  marginBottom: "24px"
-
-                }}
-
-              >
-
-                <div
-
-                  style={{
-
-                    padding: "18px",
-
-                    borderRadius: "14px",
-
-                    background: "rgba(130, 90, 255, 0.08)",
-
-                    border:
-                      "1px solid rgba(150, 110, 255, 0.18)"
-
-                  }}
-
-                >
-
-                  <span
-
-                    style={{
-
-                      display: "block",
-
-                      color: "#9999b8",
-
-                      fontSize: "12px",
-
-                      marginBottom: "8px"
-
-                    }}
-
-                  >
-
-                    Saldo pendiente
-
-                  </span>
-
-                  <strong
-
-                    style={{
-
-                      fontSize: "23px",
-
-                      color: "#ffffff"
-
-                    }}
-
-                  >
-
-                    Bs {formatoDinero(saldoActual)}
-
-                  </strong>
-
+              <div className="re-modal__cuerpo">
+                <div className="co-detalle-resumen">
+                  <div>
+                    <small>Falta {esCobrar ? "cobrar" : "pagar"}</small>
+                    <strong>{dinero(saldoPendiente)}</strong>
+                  </div>
+                  <div>
+                    <small>Después quedará</small>
+                    <strong className={despues === 0 ? "cj-entra" : undefined}>{dinero(despues)}</strong>
+                  </div>
                 </div>
 
-
-                <div
-
-                  style={{
-
-                    padding: "18px",
-
-                    borderRadius: "14px",
-
-                    background: "rgba(60, 190, 160, 0.06)",
-
-                    border:
-                      "1px solid rgba(60, 190, 160, 0.18)"
-
-                  }}
-
-                >
-
-                  <span
-
-                    style={{
-
-                      display: "block",
-
-                      color: "#9999b8",
-
-                      fontSize: "12px",
-
-                      marginBottom: "8px"
-
-                    }}
-
-                  >
-
-                    Saldo después del pago
-
+                <label className="re-campo">
+                  <span className="re-etiqueta-campo">
+                    ¿Cuánto {esCobrar ? "te pagan" : "pagas"}? (Bs) <b>*</b>
                   </span>
-
-                  <strong
-
-                    style={{
-
-                      fontSize: "23px",
-
-                      color: "#54e3c3"
-
-                    }}
-
-                  >
-
-                    Bs {formatoDinero(saldoDespuesDelPago)}
-
-                  </strong>
-
-                </div>
-
-              </div>
-
-
-              {/* ================================= */}
-              {/* FORMULARIO */}
-              {/* ================================= */}
-
-              <form
-
-                className="smart-form"
-
-                onSubmit={registrarPago}
-
-              >
-
-                {/* MONTO */}
-
-                <label className="field-block">
-
-                  <span>
-                    Monto a pagar *
-                  </span>
-
                   <input
-
                     type="number"
-
-                    min="0.01"
-
+                    inputMode="decimal"
+                    min="0"
                     step="0.01"
-
-                    max={saldoActual}
-
                     value={monto}
-
-                    required
-
+                    onKeyDown={sinSignos}
+                    onChange={(e) => {
+                      setMonto(e.target.value);
+                      setError("");
+                    }}
                     placeholder="0.00"
-
-                    onChange={(e) =>
-                      setMonto(e.target.value)
-                    }
-
+                    autoFocus
                   />
-
-                </label>
-
-
-                {/* MÉTODO */}
-
-                <label className="field-block">
-
-                  <span>
-                    Método de pago *
+                  <span className="co-atajos">
+                    <button
+                      type="button"
+                      className="re-chip"
+                      onClick={() => {
+                        setMonto(String(saldoPendiente));
+                        sonidoClick();
+                      }}
+                    >
+                      Todo: {dinero(saldoPendiente)}
+                    </button>
                   </span>
-
-                  <select
-
-                    value={metodo}
-
-                    onChange={(e) =>
-                      cambiarMetodo(e.target.value)
-                    }
-
-                  >
-
-                    <option value="EFECTIVO">
-                      Efectivo
-                    </option>
-
-                    <option value="QR">
-                      QR
-                    </option>
-
-                    <option value="TRANSFERENCIA">
-                      Transferencia
-                    </option>
-
-                    <option value="TARJETA">
-                      Tarjeta
-                    </option>
-
-                  </select>
-
                 </label>
 
-
-                {/* ================================= */}
-                {/* SUCURSAL Y CAJA */}
-                {/* ================================= */}
-
-                {metodo === "EFECTIVO" && (
-
-                  <>
-
-                    {/* SUCURSAL */}
-
-                    <label className="field-block">
-
-                      <span>
-
-                        <Building2
-                          size={15}
-                          style={{
-                            marginRight: "6px",
-                            verticalAlign: "middle"
-                          }}
-                        />
-
-                        Sucursal *
-
-                      </span>
-
-                      <select
-
-                        value={sucursalId}
-
-                        required
-
-                        onChange={(e) =>
-                          cambiarSucursal(e.target.value)
-                        }
-
+                <div className="re-campo">
+                  <span className="re-etiqueta-campo">¿Cómo {esCobrar ? "te pagaron" : "pagas"}?</span>
+                  <div className="co-pagos" role="radiogroup" aria-label="Forma de pago">
+                    {Object.entries(METODOS).map(([valor, texto]) => (
+                      <button
+                        key={valor}
+                        type="button"
+                        role="radio"
+                        aria-checked={metodo === valor}
+                        className="co-pago"
+                        data-activo={metodo === valor}
+                        onClick={() => {
+                          setMetodo(valor);
+                          setCajaId("");
+                          sonidoClick();
+                        }}
                       >
+                        <span>{texto}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                        <option value="">
-                          Seleccionar sucursal
-                        </option>
-
-                        {sucursalesDisponibles.map(
-                          (sucursal) => (
-
-                            <option
-                              key={sucursal.id}
-                              value={sucursal.id}
+                {esEfectivo &&
+                  (cajasAbiertas.length === 0 ? (
+                    <div className="re-aviso re-aviso--error" role="status">
+                      <Info size={18} />
+                      <span>
+                        No hay una caja abierta. <Link to="/ventas/cajas">Abre la caja</Link> o usa otro método.
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      {!elegida.sucursalId && sucursalesConCaja.length > 1 && (
+                        <label className="re-campo">
+                          <span className="re-etiqueta-campo">
+                            Sucursal <b>*</b>
+                          </span>
+                          <span className="tr-selector tr-selector--formulario">
+                            <select
+                              value={sucursalId}
+                              onChange={(e) => {
+                                setSucursalId(e.target.value);
+                                setCajaId("");
+                              }}
                             >
-
-                              {sucursal.nombre}
-
-                            </option>
-
-                          )
-                        )}
-
-                      </select>
-
-                    </label>
-
-
-                    {/* CAJA */}
-
-                    <label className="field-block">
-
-                      <span>
-
-                        <Wallet
-                          size={15}
-                          style={{
-                            marginRight: "6px",
-                            verticalAlign: "middle"
-                          }}
-                        />
-
-                        Caja abierta *
-
-                      </span>
-
-                      <select
-
-                        value={cajaId}
-
-                        required
-
-                        disabled={!sucursalId}
-
-                        onChange={(e) =>
-                          setCajaId(e.target.value)
-                        }
-
-                      >
-
-                        <option value="">
-                          Seleccionar caja
-                        </option>
-
-                        {cajasDisponibles.map((caja) => (
-
-                          <option
-                            key={caja.id}
-                            value={caja.id}
-                          >
-
-                            {caja.nombre} - {nombreSucursal(caja.sucursalId)}
-
-                          </option>
-
-                        ))}
-
-                      </select>
-
-                    </label>
-
-
-                    {/* MENSAJE SIN CAJA */}
-
-                    {sucursalId &&
-                      cajasDisponibles.length === 0 && (
-
-                        <div
-
-                          className="field-span-2"
-
-                          style={{
-
-                            display: "flex",
-
-                            alignItems: "center",
-
-                            gap: "10px",
-
-                            padding: "14px",
-
-                            borderRadius: "12px",
-
-                            background:
-                              "rgba(255, 180, 60, 0.08)",
-
-                            border:
-                              "1px solid rgba(255, 180, 60, 0.20)",
-
-                            color: "#ffc978",
-
-                            fontSize: "13px"
-
-                          }}
-
-                        >
-
-                          <AlertCircle size={18} />
-
-                          No hay cajas abiertas en esta sucursal.
-                          Primero debes abrir una caja.
-
-                        </div>
-
+                              <option value="">Elige la sucursal</option>
+                              {sucursalesConCaja.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.nombre}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={17} aria-hidden="true" />
+                          </span>
+                        </label>
                       )}
 
-                  </>
+                      {sucursalEfectiva && cajasSucursal.length === 0 && (
+                        <div className="re-aviso re-aviso--error" role="status">
+                          <Info size={18} />
+                          <span>
+                            {nombreSucursal(sucursalEfectiva) || "Esa sucursal"} no tiene caja abierta. <Link to="/ventas/cajas">Abre la caja</Link>.
+                          </span>
+                        </div>
+                      )}
 
-                )}
+                      {cajasSucursal.length > 1 && (
+                        <label className="re-campo">
+                          <span className="re-etiqueta-campo">
+                            Caja <b>*</b>
+                          </span>
+                          <span className="tr-selector tr-selector--formulario">
+                            <select value={cajaEfectiva} onChange={(e) => setCajaId(e.target.value)}>
+                              <option value="">Elige la caja</option>
+                              {cajasSucursal.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.nombre}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={17} aria-hidden="true" />
+                          </span>
+                        </label>
+                      )}
 
+                      {cajaElegida && (
+                        <p className="co-nota">
+                          <Check size={16} />
+                          <span>
+                            {esCobrar ? "Entrará en" : "Saldrá de"} <b>{cajaElegida.nombre}</b>
+                            {!esCobrar && saldoCaja !== null ? (
+                              <>
+                                , donde hay <b>{dinero(saldoCaja)}</b>.
+                              </>
+                            ) : (
+                              "."
+                            )}
+                          </span>
+                        </p>
+                      )}
 
-                {/* ================================= */}
-                {/* AVISO SEGÚN MÉTODO */}
-                {/* ================================= */}
-
-                <div
-
-                  className="field-span-2"
-
-                  style={{
-
-                    display: "flex",
-
-                    alignItems: "center",
-
-                    gap: "10px",
-
-                    padding: "13px 15px",
-
-                    borderRadius: "12px",
-
-                    background:
-                      "rgba(110, 90, 255, 0.07)",
-
-                    border:
-                      "1px solid rgba(140, 120, 255, 0.15)",
-
-                    color: "#b6b1d7",
-
-                    fontSize: "13px"
-
-                  }}
-
-                >
-
-                  {metodo === "EFECTIVO" ? (
-
-                    <>
-
-                      <Wallet size={18} />
-
-                      El pago se registrará como movimiento
-                      de efectivo en la caja seleccionada.
-
+                      {superaCaja && (
+                        <div className="re-aviso re-aviso--error" role="status">
+                          Estás pagando más de lo que hay en la caja.
+                        </div>
+                      )}
                     </>
+                  ))}
 
-                  ) : (
-
-                    <>
-
-                      <CreditCard size={18} />
-
-                      El pago se registrará con este método,
-                      sin modificar la caja de efectivo.
-
-                    </>
-
-                  )}
-
-                </div>
-
-
-                {/* OBSERVACIÓN */}
-
-                <label
-                  className="field-block field-span-2"
-                >
-
-                  <span>
-                    Observación
-                  </span>
-
+                <label className="re-campo">
+                  <span className="re-etiqueta-campo">Nota (opcional)</span>
                   <textarea
-
-                    rows="3"
-
-                    value={obs}
-
-                    placeholder="Escribe una observación opcional..."
-
-                    onChange={(e) =>
-                      setObs(e.target.value)
-                    }
-
+                    className="inv-texto"
+                    rows="2"
+                    maxLength={200}
+                    value={nota}
+                    onChange={(e) => setNota(e.target.value)}
+                    placeholder={`Ej. ${verbo} de la primera cuota`}
                   />
-
                 </label>
 
-
-                {/* ================================= */}
-                {/* ERROR */}
-                {/* ================================= */}
-
                 {error && (
-
-                  <div
-                    className="form-error field-span-2"
-                  >
-
-                    <AlertCircle
-                      size={16}
-                      style={{
-                        marginRight: "8px",
-                        verticalAlign: "middle"
-                      }}
-                    />
-
+                  <div className="re-aviso re-aviso--error" role="alert">
                     {error}
-
                   </div>
-
                 )}
+              </div>
 
-
-                {errorCajas && metodo === "EFECTIVO" && (
-
-                  <div
-                    className="form-error field-span-2"
-                  >
-
-                    {errorCajas}
-
-                  </div>
-
-                )}
-
-
-                {/* ================================= */}
-                {/* BOTONES */}
-                {/* ================================= */}
-
-                <div
-                  className="modal-actions field-span-2"
-                >
-
-                  <button
-
-                    type="button"
-
-                    className="secondary-action"
-
-                    onClick={cerrarPago}
-
-                    disabled={saving}
-
-                  >
-
-                    Cancelar
-
-                  </button>
-
-
-                  <button
-
-                    type="submit"
-
-                    className="primary-action"
-
-                    disabled={
-                      saving ||
-                      montoIngresado <= 0 ||
-                      montoIngresado > saldoActual ||
-                      (
-                        metodo === "EFECTIVO" &&
-                        (
-                          !sucursalId ||
-                          !cajaId
-                        )
-                      )
-                    }
-
-                  >
-
-                    {saving ? (
-
-                      "Registrando..."
-
-                    ) : (
-
-                      <>
-
-                        <CheckCircle2 size={17} />
-
-                        Confirmar pago
-
-                      </>
-
-                    )}
-
-                  </button>
-
-                </div>
-
-              </form>
-
-            </motion.div>
-
+              <footer className="re-modal__pie">
+                <button type="button" className="re-boton re-boton--suave" onClick={() => setElegida(null)} disabled={guardando}>
+                  Cancelar
+                </button>
+                <button type="submit" className="re-boton" disabled={guardando}>
+                  {guardando ? "Guardando…" : esCobrar ? "Registrar cobro" : "Registrar pago"}
+                </button>
+              </footer>
+            </motion.form>
           </motion.div>
-
         )}
-
       </AnimatePresence>
-
     </div>
-
   );
-
 }

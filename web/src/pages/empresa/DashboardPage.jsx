@@ -9,6 +9,8 @@ import {
 
 import { motion } from "framer-motion";
 
+import { Link } from "react-router-dom";
+
 import {
   ArrowUpRight,
   BarChart3,
@@ -27,6 +29,8 @@ import {
 } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
+
+import "../../styles/dashboard-empresa.css";
 
 import {
   db
@@ -1331,7 +1335,7 @@ function DashboardPage() {
 
           <span className="h23-eyebrow">
 
-            ANALÍTICA EMPRESARIAL · HU-23
+            ANALÍTICA EMPRESARIAL
 
           </span>
 
@@ -1380,6 +1384,39 @@ function DashboardPage() {
 
       </div>
 
+
+      {mostrarAnalitica && (
+        <nav className="h23-atajos" aria-label="Accesos rápidos">
+          <Link to="/ventas/pos" className="h23-atajo h23-atajo--principal">
+            <ShoppingBag size={22} />
+            <span>
+              <strong>Cobrar</strong>
+              <small>Abrir el punto de venta</small>
+            </span>
+          </Link>
+          <Link to="/ventas" className="h23-atajo">
+            <TrendingUp size={22} />
+            <span>
+              <strong>Ventas</strong>
+              <small>Historial y comprobantes</small>
+            </span>
+          </Link>
+          <Link to="/inventario" className="h23-atajo">
+            <Package size={22} />
+            <span>
+              <strong>Inventario</strong>
+              <small>Existencias y alertas</small>
+            </span>
+          </Link>
+          <Link to="/finanzas/gastos" className="h23-atajo">
+            <Wallet size={22} />
+            <span>
+              <strong>Gastos</strong>
+              <small>Registrar y revisar</small>
+            </span>
+          </Link>
+        </nav>
+      )}
 
       {/* ERROR */}
 
@@ -1542,7 +1579,7 @@ function DashboardPage() {
 
                 >
 
-                  Datos sincronizados con Firebase
+                  Datos al día
 
                 </span>
 

@@ -1,0 +1,236 @@
+/* =========================================================
+   ARCA NOVA · CUENTA BLOQUEADA
+   60 % crema · 30 % ciruela · 10 % naranja (colores del logo)
+========================================================= */
+
+.cb {
+  --cb-cream: #fcf7f5;
+  --cb-plum: #42054e;
+  --cb-plum-900: #2c0335;
+  --cb-orange: #fe7c01;
+  --cb-ink-soft: #6e5574;
+  --cb-line: #e6dce3;
+  --cb-whatsapp: #1f9d55;
+  --cb-ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(20px, 5vw, 56px) 16px;
+
+  background: var(--cb-cream);
+  color: var(--cb-plum);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.cb__columna {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(100%, 620px);
+  animation: cb-entrada 320ms var(--cb-ease) both;
+}
+
+.cb__logo {
+  width: min(240px, 60vw);
+  height: auto;
+  mix-blend-mode: multiply;
+}
+
+.cb__tarjeta {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: clamp(28px, 5vw, 44px) clamp(20px, 5vw, 40px) clamp(24px, 4vw, 32px);
+
+  border: 1px solid var(--cb-line);
+  border-top: 6px solid var(--cb-orange);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 60px -30px color-mix(in srgb, var(--cb-plum) 45%, transparent);
+  text-align: center;
+}
+
+.cb__icono {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+
+  border-radius: 22px;
+  background: var(--cb-plum);
+  color: var(--cb-orange);
+}
+
+.cb__etiqueta {
+  margin: 4px 0 -6px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cb-orange);
+}
+
+.cb h1 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(28px, 6vw, 38px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cb-plum);
+}
+
+.cb__texto {
+  max-width: 46ch;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--cb-ink-soft);
+}
+
+.cb__texto b {
+  color: var(--cb-plum);
+}
+
+/* ---------- Encargados ---------- */
+
+.cb__encargados {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cb__encargados li {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+
+  border: 1px solid var(--cb-line);
+  border-radius: 18px;
+  background: var(--cb-cream);
+  text-align: left;
+}
+
+.cb__persona {
+  display: grid;
+  gap: 2px;
+}
+
+.cb__persona strong {
+  font-size: 18px;
+  color: var(--cb-plum);
+}
+
+.cb__persona span {
+  font-size: 15px;
+  color: var(--cb-ink-soft);
+}
+
+.cb__acciones {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.cb__boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 0 20px;
+
+  border: 2px solid transparent;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+
+  transition: transform 140ms var(--cb-ease), background-color 160ms ease, border-color 160ms ease;
+}
+
+.cb__boton:active {
+  transform: scale(0.97);
+}
+
+.cb__boton:focus-visible,
+.cb__volver:focus-visible {
+  outline: 3px solid var(--cb-orange);
+  outline-offset: 3px;
+}
+
+.cb__boton--whatsapp {
+  background: var(--cb-whatsapp);
+  color: #fff;
+}
+
+.cb__boton--llamar {
+  border-color: var(--cb-plum);
+  background: transparent;
+  color: var(--cb-plum);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cb__boton--whatsapp:hover {
+    background: #178a49;
+  }
+
+  .cb__boton--llamar:hover {
+    background: var(--cb-plum);
+    color: #fff;
+  }
+}
+
+.cb__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  margin-top: 6px;
+  padding: 0 16px;
+
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cb-plum);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+@keyframes cb-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (max-width: 520px) {
+  .cb__acciones {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cb__boton {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb__columna {
+    animation: none;
+  }
+
+  .cb__boton {
+    transition: none;
+  }
+}

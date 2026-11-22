@@ -1,0 +1,529 @@
+/* =========================================================
+   INVENTARIO (existencias y control de vencimientos)
+   Comparte variables y piezas con Roles (.re)
+========================================================= */
+
+.inv-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.re-boton--chico {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+/* ---------- Métricas ---------- */
+
+.inv-metricas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inv-metrica {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 20px;
+  background: var(--re-superficie);
+
+  transition: transform 200ms var(--re-salida), border-color 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .inv-metrica:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--re-primario) 50%, transparent);
+  }
+}
+
+.inv-metrica__icono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--re-primario) 20%, transparent);
+  color: var(--re-primario);
+}
+
+.inv-metrica[data-tono="alerta"] .inv-metrica__icono {
+  background: color-mix(in srgb, #ffb454 20%, transparent);
+  color: #ffb454;
+}
+
+.inv-metrica[data-tono="peligro"] .inv-metrica__icono {
+  background: color-mix(in srgb, var(--re-peligro) 20%, transparent);
+  color: var(--re-peligro);
+}
+
+.inv-metrica div {
+  display: grid;
+  min-width: 0;
+}
+
+.inv-metrica small {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+}
+
+.inv-metrica strong {
+  overflow: hidden;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-metrica em {
+  font-size: 13px;
+  font-style: normal;
+  color: var(--re-apagado);
+}
+
+.inv-guia {
+  align-items: flex-start;
+  border-color: color-mix(in srgb, var(--re-primario) 40%, transparent);
+  background: color-mix(in srgb, var(--re-primario) 10%, transparent);
+  line-height: 1.5;
+}
+
+.inv-guia svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--re-primario);
+}
+
+/* ---------- Bloques ---------- */
+
+.inv-bloque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 22px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 24px;
+  background: var(--re-superficie);
+}
+
+.inv-bloque > * {
+  min-width: 0;
+}
+
+.inv-bloque__cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.inv-bloque__cabecera h2 svg {
+  color: var(--re-primario);
+}
+
+.inv-bloque__cabecera p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--re-apagado);
+}
+
+.inv-resumen-lotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-resumen-lotes span {
+  padding: 7px 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.inv-resumen-lotes b {
+  font-size: 16px;
+}
+
+.inv-resumen-lotes [data-tono="alerta"] {
+  border-color: transparent;
+  background: color-mix(in srgb, #ffb454 18%, transparent);
+  color: #ffb454;
+}
+
+.inv-resumen-lotes [data-tono="peligro"] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  color: var(--re-peligro);
+}
+
+.inv-resumen-lotes [data-vacio="true"] {
+  opacity: 0.45;
+}
+
+/* ---------- Tablas ---------- */
+
+.inv-tabla-caja {
+  overflow-x: auto;
+}
+
+.inv-tabla {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.inv-tabla th {
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--re-apagado);
+  white-space: nowrap;
+}
+
+.inv-tabla td {
+  padding: 13px 14px;
+  vertical-align: middle;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+  font-size: 15px;
+}
+
+.inv-tabla td:first-child {
+  border-radius: 14px 0 0 14px;
+}
+
+.inv-tabla td:last-child {
+  border-radius: 0 14px 14px 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .inv-tabla tbody tr:hover td {
+    background: var(--re-superficie-alta);
+  }
+}
+
+.inv-tabla small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--re-apagado);
+}
+
+.inv-der {
+  text-align: right !important;
+}
+
+.inv-celda {
+  display: grid;
+  min-width: 0;
+}
+
+.inv-celda strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.inv-tabla strong[data-bajo="true"] {
+  color: #ffb454;
+}
+
+.inv-tabla small.inv-bajo {
+  color: #ffb454;
+  font-weight: 700;
+}
+
+.inv-tabla small.inv-vencido {
+  color: var(--re-peligro);
+  font-weight: 700;
+}
+
+.inv-sin {
+  color: var(--re-apagado);
+  font-size: 14px;
+}
+
+.inv-codigo {
+  padding: 3px 10px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 8px;
+  background: var(--re-superficie-alta);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+.inv-pastilla {
+  display: inline-block;
+  padding: 4px 12px;
+
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.inv-pastilla[data-estado="VIGENTE"] {
+  background: color-mix(in srgb, var(--re-ok) 16%, transparent);
+  color: var(--re-ok);
+}
+
+.inv-pastilla[data-estado="POR_VENCER"] {
+  background: color-mix(in srgb, #ffb454 18%, transparent);
+  color: #ffb454;
+}
+
+.inv-pastilla[data-estado="VENCIDO"],
+.inv-pastilla[data-estado="FECHA_INVALIDA"],
+.inv-pastilla[data-tono="peligro"] {
+  background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  color: var(--re-peligro);
+}
+
+.inv-pastilla[data-estado="SIN_EXISTENCIAS"] {
+  background: var(--re-superficie-alta);
+  color: var(--re-apagado);
+}
+
+.inv-tabla tr[data-estado="SIN_EXISTENCIAS"] td {
+  opacity: 0.6;
+}
+
+.inv-fila-acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.inv-baja {
+  color: var(--re-peligro);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .inv-baja:hover:not(:disabled) {
+    border-color: var(--re-peligro);
+    background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  }
+}
+
+.inv-nota {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--re-apagado);
+}
+
+/* ---------- Ventanas ---------- */
+
+.inv-resumen-fila {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+
+  border: 1px solid color-mix(in srgb, #ffb454 40%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, #ffb454 10%, transparent);
+  font-size: 15px;
+}
+
+.inv-resumen-fila strong {
+  font-size: 18px;
+}
+
+.inv-resumen-fila--peligro {
+  border-color: color-mix(in srgb, var(--re-peligro) 45%, transparent);
+  background: color-mix(in srgb, var(--re-peligro) 10%, transparent);
+}
+
+.inv-texto {
+  width: 100%;
+  min-height: 90px;
+  padding: 12px 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-fondo) 55%, transparent);
+  color: var(--re-texto);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.inv-texto:focus {
+  border-color: var(--re-primario);
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--re-primario) 24%, transparent);
+}
+
+.re-campo input[type="number"],
+.re-campo input[type="date"] {
+  color-scheme: dark;
+}
+
+/* ---------- Adaptación ---------- */
+
+@media (max-width: 1100px) {
+  .inv-metricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .inv-bloque {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .inv-metricas {
+    gap: 8px;
+  }
+
+  .inv-metrica {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .inv-metrica strong {
+    font-size: 22px;
+  }
+
+  .inv-metrica em {
+    display: none;
+  }
+
+  .inv-tabla thead {
+    display: none;
+  }
+
+  .inv-tabla,
+  .inv-tabla tbody,
+  .inv-tabla tr,
+  .inv-tabla td {
+    display: block;
+  }
+
+  .inv-tabla tr {
+    margin-bottom: 10px;
+    padding: 6px 0;
+
+    border: 1px solid var(--re-borde);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+  }
+
+  .inv-tabla td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+
+    border-radius: 0 !important;
+    background: transparent;
+    text-align: right;
+  }
+
+  .inv-tabla td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--re-apagado);
+  }
+
+  .inv-tabla td > .inv-celda {
+    justify-items: end;
+    text-align: right;
+  }
+
+  .inv-fila-acciones {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* La guía es informativa: no debe parecer un error */
+.re-aviso.inv-guia {
+  border-color: var(--re-borde);
+  background: var(--re-superficie);
+}
+
+/* ---------- Movimientos y alertas ---------- */
+
+.inv-metricas--tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.inv-pastilla[data-mov="entra"] {
+  background: color-mix(in srgb, var(--re-ok) 16%, transparent);
+  color: var(--re-ok);
+}
+
+.inv-pastilla[data-mov="sale"] {
+  background: color-mix(in srgb, #ffb454 18%, transparent);
+  color: #ffb454;
+}
+
+.inv-pastilla[data-mov="igual"] {
+  background: var(--re-superficie-alta);
+  color: var(--re-apagado);
+}
+
+.inv-delta {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-delta[data-mov="entra"] {
+  color: var(--re-ok);
+}
+
+.inv-delta[data-mov="sale"] {
+  color: #ffb454;
+}
+
+.inv-stock {
+  color: var(--re-apagado);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inv-stock b {
+  color: var(--re-texto);
+}
+
+.re-boton[href] {
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .inv-metricas--tres {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

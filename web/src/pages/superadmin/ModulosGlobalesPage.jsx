@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, createElement } from "react";
 import {
   Boxes,
   CircleCheck,
@@ -22,6 +22,7 @@ import {
 } from "../../services/moduloService";
 import { registrarAuditoria } from "../../services/auditService";
 import useAuth from "../../hooks/useAuth";
+import useConfirmar from "../../hooks/useConfirmar";
 import { MODULE_ICON_OPTIONS, obtenerIconoModulo } from "../../data/moduleIcons";
 
 const formularioInicial = {
@@ -33,6 +34,7 @@ const formularioInicial = {
 
 export default function ModulosGlobalesPage() {
   const { usuario } = useAuth();
+  const confirmar = useConfirmar();
   const [modulos, setModulos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("TODOS");
@@ -138,7 +140,16 @@ export default function ModulosGlobalesPage() {
 
   const cambiarEstado = async (modulo) => {
     const nuevoEstado = !modulo.activo;
-    if (!window.confirm(`¿Deseas ${nuevoEstado ? "activar" : "desactivar"} el módulo "${modulo.nombre}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: nuevoEstado ? "Activar módulo" : "Desactivar módulo",
+      mensaje: nuevoEstado
+        ? `El módulo "${modulo.nombre}" quedará marcado como activo en el catálogo.`
+        : `El módulo "${modulo.nombre}" quedará marcado como inactivo en el catálogo.`,
+      accion: nuevoEstado ? "Activar" : "Desactivar",
+      peligro: !nuevoEstado
+    });
+
+    if (!confirmado) return;
     await cambiarEstadoModulo(modulo.id, nuevoEstado);
     await registrarAuditoria({
       empresaId: null,
@@ -162,7 +173,14 @@ export default function ModulosGlobalesPage() {
   };
 
   const eliminar = async (modulo) => {
-    if (!window.confirm(`¿Eliminar definitivamente el módulo "${modulo.nombre}"?`)) return;
+    const confirmado = await confirmar({
+      titulo: "Eliminar módulo",
+      mensaje: `Se eliminará definitivamente el módulo "${modulo.nombre}". No se puede deshacer.`,
+      accion: "Eliminar",
+      peligro: true
+    });
+
+    if (!confirmado) return;
     try {
       await eliminarModulo(modulo.id);
       await registrarAuditoria({
@@ -180,14 +198,12 @@ export default function ModulosGlobalesPage() {
     }
   };
 
-  const IconoFormulario = obtenerIconoModulo(formulario.icono);
-
   return (
     <div>
       <div className="sa-page-header">
         <div>
           <h1>Módulos</h1>
-          <p>Catálogo global de funcionalidades ya desarrolladas. Los planes y licencias usan este catálogo para habilitar o bloquear capacidades.</p>
+          <p>Catálogo global de funcionalidades ya desarrolladas. Todas las empresas las tienen; cada dueño reparte permisos a sus trabajadores en «Roles y permisos».</p>
         </div>
         <div className="sa-header-actions-v4">
           <button className="sa-secondary-button" onClick={cargarBase}><WandSparkles size={17} /> Módulos base</button>
@@ -196,7 +212,7 @@ export default function ModulosGlobalesPage() {
       </div>
 
       <div className="info-panel-v4">
-        <strong>Importante:</strong> registrar un módulo aquí no crea una nueva pantalla ni programa una funcionalidad automáticamente. Este catálogo representa funcionalidades que ya existen en el código y permite asignarlas a planes, licencias y empresas.
+        <strong>Importante:</strong> registrar un módulo aquí no crea una nueva pantalla ni programa una funcionalidad automáticamente. Este catálogo representa funcionalidades que ya existen en el código.
       </div>
 
       <section className="sa-panel">
@@ -267,7 +283,7 @@ export default function ModulosGlobalesPage() {
                   <div className="sa-form-group"><label>Nombre *</label><input value={formulario.nombre} onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })} placeholder="Inventario" /></div>
                   <div className="sa-form-group"><label>Código *</label><input value={formulario.codigo} onChange={(e) => setFormulario({ ...formulario, codigo: e.target.value.toUpperCase().replace(/\s+/g, "_") })} placeholder="INVENTARIO" /></div>
                   <div className="sa-form-group full"><label>Descripción</label><textarea value={formulario.descripcion} onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })} placeholder="Qué funcionalidad controla este módulo..." /></div>
-                  <div className="sa-form-group full"><label>Icono *</label><div className="module-icon-picker-v4"><span className="module-icon-preview-v4 large"><IconoFormulario size={22} /></span><select value={formulario.icono} onChange={(e) => setFormulario({ ...formulario, icono: e.target.value })}>{MODULE_ICON_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div><small className="field-help-v4">Se usa un icono vectorial de Lucide, no una imagen subida. Así todos mantienen el mismo tamaño, grosor y calidad visual.</small></div>
+                  <div className="sa-form-group full"><label>Icono *</label><div className="module-icon-picker-v4"><span className="module-icon-preview-v4 large">{createElement(obtenerIconoModulo(formulario.icono), { size: 22 })}</span><select value={formulario.icono} onChange={(e) => setFormulario({ ...formulario, icono: e.target.value })}>{MODULE_ICON_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div><small className="field-help-v4">Se usa un icono vectorial de Lucide, no una imagen subida. Así todos mantienen el mismo tamaño, grosor y calidad visual.</small></div>
                 </div>
 
                 {error && <div className="sa-form-error">{error}</div>}

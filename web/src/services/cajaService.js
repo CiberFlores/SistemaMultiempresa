@@ -90,7 +90,44 @@ export async function abrirCaja({
   });
 }
 
-export async function cerrarCaja(caja, usuarioId) {
+// Ingresos, egresos y dinero que debería haber en una caja
+export function resumirCaja(caja, movimientos = []) {
+  let ingresos = 0;
+  let egresos = 0;
+
+  movimientos.forEach((m) => {
+    const monto = Number(m.monto) || 0;
+    if (m.tipo === "INGRESO") ingresos += monto;
+    if (m.tipo === "EGRESO") egresos += monto;
+  });
+
+  ingresos = Math.round(ingresos * 100) / 100;
+  egresos = Math.round(egresos * 100) / 100;
+
+  return {
+    ingresos,
+    egresos,
+    saldo: Math.round((Number(caja?.saldoInicial || 0) + ingresos - egresos) * 100) / 100
+  };
+}
+
+// Dinero que hay ahora mismo en una caja (lee sus movimientos)
+export async function obtenerSaldoCaja(caja) {
+  const snapshot = await getDocs(
+    query(
+      collection(db, "movimientosCaja"),
+      where("empresaId", "==", caja.empresaId),
+      where("cajaId", "==", caja.id)
+    )
+  );
+
+  return resumirCaja(
+    caja,
+    snapshot.docs.map((d) => d.data())
+  ).saldo;
+}
+
+export async function cerrarCaja(caja, usuarioId, { saldoContado } = {}) {
   if (caja.estado !== "ABIERTA") {
     throw new Error("La caja ya se encuentra cerrada.");
   }
@@ -103,29 +140,28 @@ export async function cerrarCaja(caja, usuarioId) {
     )
   );
 
-  const movimientos = movimientosSnapshot.docs.map((documento) =>
-    documento.data()
+  const resumen = resumirCaja(
+    caja,
+    movimientosSnapshot.docs.map((documento) => documento.data())
   );
 
-  const totalIngresos = movimientos
-    .filter((m) => m.tipo === "INGRESO")
-    .reduce((total, m) => total + Number(m.monto || 0), 0);
+  const contado =
+    saldoContado === undefined || saldoContado === null || saldoContado === ""
+      ? null
+      : Math.round(Number(saldoContado) * 100) / 100;
 
-  const totalEgresos = movimientos
-    .filter((m) => m.tipo === "EGRESO")
-    .reduce((total, m) => total + Number(m.monto || 0), 0);
-
-  const saldoFinal =
-    Number(caja.saldoInicial || 0) +
-    totalIngresos -
-    totalEgresos;
+  if (contado !== null && (!Number.isFinite(contado) || contado < 0)) {
+    throw new Error("El dinero contado debe ser un número desde cero.");
+  }
 
   await updateDoc(
     doc(db, "cajas", caja.id),
     {
-      totalIngresos,
-      totalEgresos,
-      saldoFinal,
+      totalIngresos: resumen.ingresos,
+      totalEgresos: resumen.egresos,
+      saldoFinal: resumen.saldo,
+      saldoContado: contado,
+      diferencia: contado === null ? null : Math.round((contado - resumen.saldo) * 100) / 100,
       usuarioCierreId: usuarioId,
       estado: "CERRADA",
       fechaCierre: serverTimestamp(),
