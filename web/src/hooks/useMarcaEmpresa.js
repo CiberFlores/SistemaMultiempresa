@@ -50,7 +50,7 @@ export default function useMarcaEmpresa() {
     return {
       listo: empresa !== null && personalizacion !== null,
       nombre,
-      appNombre: `${nombre} GO`,
+      appNombre: nombre,
       logoUrl: p.logoUrl || e.logoUrl || "",
       tema: derivarTema(identidad),
       tipografia: identidad.tipografia,

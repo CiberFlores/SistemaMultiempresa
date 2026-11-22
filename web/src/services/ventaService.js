@@ -101,44 +101,31 @@ export async function obtenerCatalogosVenta(empresaId) {
     throw new Error("No hay empresa asignada.");
   }
 
+  // Cada lectura dice cuál falló si falta un permiso
+  const leer = async (nombre, etiqueta, lectura) => {
+    try {
+      return await lectura;
+    } catch (error) {
+      if (error?.code === "permission-denied") {
+        throw new Error(`No tienes permiso para ver ${etiqueta}. Pídele a tu jefe que revise tu cargo.`);
+      }
+      throw error;
+    }
+  };
+
+  const consulta = (nombre) =>
+    getDocs(query(collection(db, nombre), where("empresaId", "==", empresaId)));
+
   const [
-    clientesSnap,
     productosSnap,
     sucursalesSnap,
     inventariosSnap,
     cajas
   ] = await Promise.all([
-
-    getDocs(
-      query(
-        collection(db, "clientes"),
-        where("empresaId", "==", empresaId)
-      )
-    ),
-
-    getDocs(
-      query(
-        collection(db, "productos"),
-        where("empresaId", "==", empresaId)
-      )
-    ),
-
-    getDocs(
-      query(
-        collection(db, "sucursales"),
-        where("empresaId", "==", empresaId)
-      )
-    ),
-
-    getDocs(
-      query(
-        collection(db, "inventarios"),
-        where("empresaId", "==", empresaId)
-      )
-    ),
-
-    obtenerCajasAbiertas(empresaId)
-
+    leer("productos", "los productos", consulta("productos")),
+    leer("sucursales", "las sucursales", consulta("sucursales")),
+    leer("inventarios", "las existencias", consulta("inventarios")),
+    leer("cajas", "las cajas", obtenerCajasAbiertas(empresaId))
   ]);
 
 
@@ -169,12 +156,7 @@ export async function obtenerCatalogosVenta(empresaId) {
   // CONSULTAR LOTES DE LA EMPRESA
 
   const lotesSnap = requiereLotes
-    ? await getDocs(
-        query(
-          collection(db, "lotesInventario"),
-          where("empresaId", "==", empresaId)
-        )
-      )
+    ? await leer("lotesInventario", "los lotes de vencimiento", consulta("lotesInventario"))
     : null;
 
 
@@ -267,13 +249,6 @@ export async function obtenerCatalogosVenta(empresaId) {
   // DEVOLVER CATALOGOS
 
   return {
-    clientes: clientesSnap.docs
-      .map((d) => ({
-        id: d.id,
-        ...d.data()
-      }))
-      .filter((c) => c.estado === "ACTIVO"),
-
     productos,
 
     sucursales: sucursalesSnap.docs

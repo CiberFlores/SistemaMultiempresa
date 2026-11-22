@@ -9,6 +9,9 @@ import {
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 
+// Los correos de Firebase (verificar cuenta, cambiar contraseña) salen en español
+auth.languageCode = "es";
+
 const ROLES_PERMITIDOS = ["SUPER_ADMIN", "ADMIN", "TRABAJADOR"];
 
 export const MENSAJE_EMPRESA_SUSPENDIDA =

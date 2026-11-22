@@ -27,6 +27,7 @@ import ProductosPage from "../pages/inventario/ProductosPage.jsx";
 import InventarioPage from "../pages/inventario/InventarioPage.jsx";
 import MovimientosInventarioPage from "../pages/inventario/MovimientosInventarioPage.jsx";
 import StockAlertasPage from "../pages/inventario/StockAlertasPage.jsx";
+import AccionCuentaPage from "../pages/auth/AccionCuentaPage.jsx";
 import CuentaBloqueadaPage from "../pages/auth/CuentaBloqueadaPage.jsx";
 import ProveedoresPage from "../pages/compras/ProveedoresPage.jsx";
 import ComprasPage from "../pages/compras/ComprasPage.jsx";
@@ -50,7 +51,7 @@ import NotFoundPage from "../pages/NotFoundPage.jsx";
 
 
 export default function AppRoutes(){return <Routes>
-  <Route path="/" element={<Navigate to="/login" replace/>}/><Route path="/login" element={<LoginPage/>}/><Route path="/recuperar-contrasena" element={<ForgotPasswordPage/>}/><Route path="/sin-permiso" element={<UnauthorizedPage/>}/><Route path="/cuenta-bloqueada" element={<CuentaBloqueadaPage/>}/>
+  <Route path="/" element={<Navigate to="/login" replace/>}/><Route path="/login" element={<LoginPage/>}/><Route path="/recuperar-contrasena" element={<ForgotPasswordPage/>}/><Route path="/sin-permiso" element={<UnauthorizedPage/>}/><Route path="/cuenta-bloqueada" element={<CuentaBloqueadaPage/>}/><Route path="/auth/accion" element={<AccionCuentaPage/>}/>
   <Route element={<ProtectedRoute/>}>
     <Route element={<RoleRoute rolesPermitidos={["SUPER_ADMIN"]}/>}> <Route path="/superadmin" element={<SuperAdminLayout/>}>
       <Route index element={<Navigate to="dashboard" replace/>}/><Route path="dashboard" element={<DashboardGlobalPage/>}/><Route path="empresas" element={<EmpresasPage/>}/><Route path="empresas/:empresaId/control" element={<EmpresaControlPage/>}/><Route path="administradores" element={<AdministradoresPage/>}/><Route path="modulos" element={<ModulosGlobalesPage/>}/><Route path="auditoria" element={<AuditoriaGlobalPage/>}/><Route path="notificaciones" element={<NotificacionesGlobalesPage/>}/><Route path="seguridad" element={<SeguridadPage/>}/><Route path="respaldos" element={<RespaldosPage/>}/><Route path="mi-seguridad" element={<SeguridadCuentaPage/>}/>

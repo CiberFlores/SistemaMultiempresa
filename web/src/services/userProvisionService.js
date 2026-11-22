@@ -7,6 +7,7 @@ import { validarPassword } from "../utils/password";
 async function crearCuentaSecundaria(correo, password) {
   const secondary = initializeApp(firebaseConfig, `provision-${Date.now()}-${Math.random()}`);
   const secondaryAuth = getAuth(secondary);
+  secondaryAuth.languageCode = "es";
   try {
     const credential = await createUserWithEmailAndPassword(secondaryAuth, correo, password);
     await sendEmailVerification(credential.user);

@@ -13,6 +13,10 @@ const UPLOAD_PRESET =
   import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET ||
   "multiempresa_productos_unsigned";
 
+// Preset opcional con "sobrescribir" activado: así una foto nueva REEMPLAZA a la anterior
+// en Cloudinary (misma dirección interna) y no se acumulan archivos viejos.
+const PRESET_SOBRESCRIBIR = import.meta.env.VITE_CLOUDINARY_PRESET_SOBRESCRIBIR || "";
+
 const TIPOS = [
   "image/jpeg",
   "image/png",
@@ -232,7 +236,8 @@ export async function subirImagenEmpresa({
   empresaId,
   carpeta,
   archivo,
-  nombre
+  nombre,
+  sobrescribir = false
 }) {
 
   if (!archivo) {
@@ -289,10 +294,16 @@ export async function subirImagenEmpresa({
     optimizada
   );
 
+  const reemplaza = sobrescribir && Boolean(PRESET_SOBRESCRIBIR);
+
   datos.append(
     "upload_preset",
-    UPLOAD_PRESET
+    reemplaza ? PRESET_SOBRESCRIBIR : UPLOAD_PRESET
   );
+
+  if (reemplaza) {
+    datos.append("public_id", `${carpeta}/${nombre}`);
+  }
 
 
   // EL PRESET CONFIGURA EL DESTINO DE LA FOTO.

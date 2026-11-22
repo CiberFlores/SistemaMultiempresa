@@ -277,19 +277,69 @@ export default function MobileLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos.inventarios, datos.productos, datos.lotesInventario, sucursalId, ahora]);
 
-  const alertas = useMemo(() => {
-    const lista = [];
+  const nombreSucursal = (id) => datos.sucursales.find((x) => x.id === id)?.nombre || "Sucursal";
+
+  // Un producto = una tarjeta. Con "Todas" las sucursales se suman; el detalle muestra cada una y sus lotes.
+  const stockProductos = useMemo(() => {
+    const hoy = textoFecha(new Date(ahora));
+    const peso = { AGOTADO: 3, SOLO_VENCIDO: 2, BAJO: 1, NORMAL: 0 };
+
+    const lotesPor = new Map();
+    datos.lotesInventario
+      .filter((l) => l.estado === "ACTIVO" && Number(l.cantidadDisponible) > 0 && filtraSucursal(l))
+      .forEach((l) => {
+        if (!lotesPor.has(l.productoId)) lotesPor.set(l.productoId, []);
+        lotesPor.get(l.productoId).push({
+          id: l.id,
+          numero: l.numeroLote || "Sin número",
+          vence: l.fechaVencimiento || "",
+          cantidad: Number(l.cantidadDisponible),
+          sucursalId: l.sucursalId,
+          vencido: !l.fechaVencimiento || l.fechaVencimiento < hoy
+        });
+      });
+
+    const porProducto = new Map();
 
     stock.forEach((fila) => {
-      if (fila.estado === "AGOTADO") lista.push({ clave: `A${fila.id}`, tipo: "peligro", titulo: `${fila.producto.nombre} se agotó`, detalle: "No queda stock para vender." });
-      else if (fila.estado === "SOLO_VENCIDO") lista.push({ clave: `V${fila.id}`, tipo: "peligro", titulo: `${fila.producto.nombre} solo tiene unidades vencidas`, detalle: `${cantidad(fila.vencido)} vencidas. Compra más.` });
-      else if (fila.estado === "BAJO") lista.push({ clave: `B${fila.id}`, tipo: "alerta", titulo: `${fila.producto.nombre} se está acabando`, detalle: `Quedan ${cantidad(fila.vendible)}. El mínimo es ${cantidad(fila.minimo)}.` });
+      const sucursal = { id: fila.sucursalId, nombre: nombreSucursal(fila.sucursalId), vendible: fila.vendible, estado: fila.estado };
+      const actual = porProducto.get(fila.producto.id);
 
-      if (fila.porVencer > 0) lista.push({ clave: `P${fila.id}`, tipo: "alerta", titulo: `${fila.producto.nombre} está por vencer`, detalle: `${cantidad(fila.porVencer)} unidades vencen pronto.` });
+      if (!actual) {
+        porProducto.set(fila.producto.id, { ...fila, id: fila.producto.id, sucursales: [sucursal] });
+        return;
+      }
+
+      actual.vendible += fila.vendible;
+      actual.vencido += fila.vencido;
+      actual.porVencer += fila.porVencer;
+      actual.minimo += fila.minimo;
+      actual.tope += fila.tope;
+      if (peso[fila.estado] > peso[actual.estado]) actual.estado = fila.estado;
+      actual.sucursales.push(sucursal);
+    });
+
+    return [...porProducto.values()]
+      .map((r) => ({ ...r, lotes: (lotesPor.get(r.producto.id) || []).sort((a, b) => String(a.vence).localeCompare(String(b.vence))) }))
+      .sort((a, b) => peso[b.estado] - peso[a.estado] || a.vendible - b.vendible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stock, datos.lotesInventario, datos.sucursales, sucursalId, ahora]);
+
+  const alertas = useMemo(() => {
+    const lista = [];
+    const donde = (fila) => (datos.sucursales.length > 1 ? ` · ${nombreSucursal(fila.sucursalId)}` : "");
+
+    stock.forEach((fila) => {
+      if (fila.estado === "AGOTADO") lista.push({ clave: `A${fila.id}`, tipo: "peligro", titulo: `${fila.producto.nombre} se agotó`, detalle: `No queda stock para vender${donde(fila)}.` });
+      else if (fila.estado === "SOLO_VENCIDO") lista.push({ clave: `V${fila.id}`, tipo: "peligro", titulo: `${fila.producto.nombre} solo tiene unidades vencidas`, detalle: `${cantidad(fila.vencido)} vencidas. Compra más${donde(fila)}.` });
+      else if (fila.estado === "BAJO") lista.push({ clave: `B${fila.id}`, tipo: "alerta", titulo: `${fila.producto.nombre} se está acabando`, detalle: `Quedan ${cantidad(fila.vendible)}. El mínimo es ${cantidad(fila.minimo)}${donde(fila)}.` });
+
+      if (fila.porVencer > 0) lista.push({ clave: `P${fila.id}`, tipo: "alerta", titulo: `${fila.producto.nombre} está por vencer`, detalle: `${cantidad(fila.porVencer)} unidades vencen pronto${donde(fila)}.` });
     });
 
     return lista;
-  }, [stock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stock, datos.sucursales]);
 
   // Suena y vibra cuando aparece una alerta nueva mientras la app está abierta
   const vistas = useRef(null);
@@ -385,12 +435,12 @@ export default function MobileLayout() {
         equipo={equipo}
         ir={cambiar}
         abrirAlertas={() => setHoja(true)}
-        stockEnRiesgo={stock.filter((f) => f.estado !== "NORMAL")}
+        stockEnRiesgo={stockProductos.filter((f) => f.estado !== "NORMAL")}
         cargando={cargandoDatos}
       />
     ),
     ventas: <Ventas ventas={ventas} sucursales={datos.sucursales} ahora={ahora} />,
-    stock: <Stock key={consulta} filas={stock} consulta={consulta} />,
+    stock: <Stock key={consulta} filas={stockProductos} consulta={consulta} />,
     equipo: <Equipo equipo={equipo} nombreRol={nombreRol} ahora={ahora} />,
     ajustes: <Ajustes marca={marca} usuario={usuario} empresaId={empresaId} salir={async () => { await cerrarSesion(); navigate("/login", { replace: true }); }} />
   };
@@ -823,8 +873,16 @@ function Ventas({ ventas, sucursales, ahora }) {
   );
 }
 
+function fechaCorta(texto) {
+  if (!texto) return "Sin fecha";
+  const [anio, mes, dia] = String(texto).split("-").map(Number);
+  return new Date(anio, mes - 1, dia).toLocaleDateString("es-BO", { day: "2-digit", month: "short", year: "numeric" });
+}
+
 function Stock({ filas, consulta = "" }) {
+  const [abierto, setAbierto] = useState(null);
   const [filtro, setFiltro] = useState("TODOS");
+  const detalle = filas.find((f) => f.id === abierto) || null;
   const [busqueda, setBusqueda] = useState(consulta);
 
   const visibles = filas.filter((f) => {
@@ -881,7 +939,22 @@ function Stock({ filas, consulta = "" }) {
       ) : (
         <ul className="gx-rejilla">
           {visibles.map((f, i) => (
-            <motion.li key={f.id} className="gx-producto" data-estado={f.estado} {...entrada(i)}>
+            <motion.li
+              key={f.id}
+              className="gx-producto"
+              data-estado={f.estado}
+              role="button"
+              tabIndex={0}
+              aria-label={`Ver el detalle de ${f.producto.nombre}`}
+              onClick={() => setAbierto(f.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setAbierto(f.id);
+                }
+              }}
+              {...entrada(i)}
+            >
               <span className="gx-producto__foto">
                 {f.producto.imagenUrl ? <img src={f.producto.imagenUrl} alt="" loading="lazy" /> : <b>{(f.producto.nombre || "?").charAt(0).toUpperCase()}</b>}
                 <em>{ETIQUETA[f.estado]}</em>
@@ -895,6 +968,7 @@ function Stock({ filas, consulta = "" }) {
                   <strong>{Number(f.producto.precioVenta) > 0 ? dinero(f.producto.precioVenta) : "—"}</strong>
                   <small>{cantidad(f.vendible)} u.</small>
                 </span>
+                {f.sucursales.length > 1 && <small className="gx-producto__sucursales">En {f.sucursales.length} sucursales</small>}
                 {f.porVencer > 0 && (
                   <small className="gx-producto__vence">
                     <CalendarClock size={12} aria-hidden="true" /> {cantidad(f.porVencer)} por vencer
@@ -905,6 +979,80 @@ function Stock({ filas, consulta = "" }) {
           ))}
         </ul>
       )}
+      <AnimatePresence>
+        {detalle && (
+          <motion.div className="gx-fondo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAbierto(null)}>
+            <motion.section
+              className="gx-hoja"
+              role="dialog"
+              aria-modal="true"
+              aria-label={detalle.producto.nombre}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="gx-hoja__asa" aria-hidden="true" />
+              <header>
+                <h2>{detalle.producto.nombre}</h2>
+                <button type="button" onClick={() => setAbierto(null)} aria-label="Cerrar">
+                  <X size={20} />
+                </button>
+              </header>
+
+              <div className="gx-detalle__foto">
+                {detalle.producto.imagenUrl ? <img src={detalle.producto.imagenUrl} alt="" /> : <b>{(detalle.producto.nombre || "?").charAt(0).toUpperCase()}</b>}
+              </div>
+
+              <div className="gx-detalle__cifras">
+                <div>
+                  <small>Para vender</small>
+                  <strong>{cantidad(detalle.vendible)}</strong>
+                </div>
+                <div>
+                  <small>Precio</small>
+                  <strong>{Number(detalle.producto.precioVenta) > 0 ? dinero(detalle.producto.precioVenta) : "—"}</strong>
+                </div>
+                <div>
+                  <small>Vencidas</small>
+                  <strong data-alerta={detalle.vencido > 0}>{cantidad(detalle.vencido)}</strong>
+                </div>
+              </div>
+
+              <h3 className="gx-detalle__titulo">Por sucursal</h3>
+              <ul className="gx-lista">
+                {detalle.sucursales.map((suc) => (
+                  <li key={suc.id} className="gx-detalle__fila" data-estado={suc.estado}>
+                    <span>{suc.nombre}</span>
+                    <b>{cantidad(suc.vendible)} u.</b>
+                  </li>
+                ))}
+              </ul>
+
+              <h3 className="gx-detalle__titulo">Lotes</h3>
+              {detalle.lotes.length === 0 ? (
+                <p className="gx-ayuda">{detalle.producto.controlaVencimiento ? "No quedan lotes con unidades." : "Este producto no vence, así que no se maneja por lotes."}</p>
+              ) : (
+                <ul className="gx-lista">
+                  {detalle.lotes.map((l) => (
+                    <li key={l.id} className="gx-detalle__fila" data-vencido={l.vencido}>
+                      <span>
+                        <b>Lote {l.numero}</b>
+                        <small>
+                          {l.vencido ? "Venció" : "Vence"} el {fechaCorta(l.vence)}
+                          {detalle.sucursales.length > 1 ? ` · ${detalle.sucursales.find((x) => x.id === l.sucursalId)?.nombre || ""}` : ""}
+                        </small>
+                      </span>
+                      <b>{cantidad(l.cantidad)} u.</b>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </motion.section>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -983,8 +1131,8 @@ function Ajustes({ marca, usuario, empresaId, salir }) {
       return;
     }
 
-    if (archivo.size > 5 * 1024 * 1024) {
-      setError("La imagen pesa demasiado. Usa una de menos de 5 MB.");
+    if (archivo.size > 20 * 1024 * 1024) {
+      setError("La imagen pesa demasiado. Usa una de menos de 20 MB.");
       return;
     }
 
@@ -1053,7 +1201,7 @@ function Ajustes({ marca, usuario, empresaId, salir }) {
         <h2>
           <QrCode size={18} aria-hidden="true" /> Mi QR de cobro
         </h2>
-        <p className="gx-ayuda">Súbelo una vez. Cuando tu equipo cobre con QR, el cliente lo ve en la pantalla de caja.</p>
+        <p className="gx-ayuda">Súbelo una vez. Cuando tu equipo cobre con QR, el cliente lo ve en la pantalla de caja. Si la foto es grande, se reduce sola.</p>
 
         <div className="gx-qr">
           <div className="gx-qr__vista" data-vacio={!hayQr} data-apagado={hayQr && !marca.qrActivo}>

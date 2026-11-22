@@ -79,8 +79,8 @@ let manifiestoAnterior = "";
 
 // Cambia el nombre, el icono y el color con que el navegador instala la app
 export async function aplicarMarcaApp({ nombre, logoUrl, primario, sobre, fondo }) {
-  const nombreApp = `${nombre} GO`;
-  const corto = nombre.length > 11 ? `${nombre.slice(0, 11).trim()} GO` : nombreApp;
+  const nombreApp = nombre;
+  const corto = nombre.length > 12 ? nombre.slice(0, 12).trim() : nombre;
   const datos = { logoUrl, primario, sobre, inicial: nombre.charAt(0).toUpperCase() };
 
   const [icono192, icono512] = await Promise.all([generarIcono(192, datos), generarIcono(512, datos)]);
@@ -91,7 +91,7 @@ export async function aplicarMarcaApp({ nombre, logoUrl, primario, sobre, fondo 
     id: `${origen}/admin-movil`,
     name: nombreApp,
     short_name: corto,
-    description: `Mira cómo le va a ${nombre}: ventas, stock, equipo y alertas en tiempo real.`,
+    description: `Mira cómo le va a tu negocio ${nombre}: ventas, stock, equipo y alertas en tiempo real.`,
     start_url: `${origen}/admin-movil`,
     scope: `${origen}/`,
     display: "standalone",
