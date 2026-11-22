@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { BellRing, Boxes, Building2, CircleDollarSign, ClipboardList, FileBarChart2, FolderTree, Gauge, HandCoins, History, PackageSearch, Percent, ReceiptText, ScrollText, Settings2, ShieldCheck, ShoppingBag, ShoppingCart, Store, Tags, UsersRound, WalletCards } from "lucide-react";
+import { BellRing, Boxes, Building2, CircleDollarSign, ClipboardList, FileBarChart2, FolderTree, Gauge, HandCoins, History, PackageSearch, Percent, ReceiptText, ScrollText, Settings2, ShieldCheck, ShoppingBag, ShoppingCart, Smartphone, Store, Tags, UsersRound, WalletCards } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import useAuth from "../../hooks/useAuth"; import useCompanyModules from "../../hooks/useCompanyModules"; import { db } from "../../services/firebase/firebaseConfig";
 const MODULE_BY_PERMISSION={"dashboard.ver":"DASHBOARD","configuracion.gestionar":"CONFIGURACION","categorias.gestionar":"CATALOGO","marcas.gestionar":"CATALOGO","productos.gestionar":"PRODUCTOS","inventario.ver":"INVENTARIO","clientes.gestionar":"CLIENTES","proveedores.gestionar":"COMPRAS","compras.gestionar":"COMPRAS","caja.gestionar":"CAJA","ventas.registrar":"VENTAS","ventas.ver":"VENTAS","promociones.gestionar":"PROMOCIONES","finanzas.gestionar":"FINANZAS","reportes.ver":"REPORTES","notificaciones.ver":"NOTIFICACIONES","auditoria.ver":"AUDITORIA"};
 const groups=[
  {title:"INICIO",items:[{to:"/dashboard",label:"Dashboard",icon:Gauge,permiso:"dashboard.ver"}]},
  {title:"PERSONAL",items:[{to:"/usuarios/roles",label:"Roles y permisos",icon:ShieldCheck,soloAdmin:true},{to:"/usuarios/trabajadores",label:"Trabajadores",icon:UsersRound,soloAdmin:true}]},
- {title:"NEGOCIO",items:[{to:"/empresa/configuracion",label:"Configuración",icon:Settings2,soloAdmin:true},{to:"/empresa/sucursales",label:"Sucursales",icon:Store,soloAdmin:true}]},
+ {title:"NEGOCIO",items:[{to:"/empresa/configuracion",label:"Configuración",icon:Settings2,soloAdmin:true},{to:"/empresa/sucursales",label:"Sucursales",icon:Store,soloAdmin:true},{to:"/empresa/app-movil",label:"Aplicación móvil",icon:Smartphone,soloAdmin:true}]},
  {title:"CATÁLOGO",items:[{to:"/inventario/categorias",label:"Categorías",icon:FolderTree,permiso:"categorias.gestionar"},{to:"/inventario/marcas",label:"Marcas",icon:Tags,permiso:"marcas.gestionar"},{to:"/inventario/productos",label:"Productos",icon:PackageSearch,permiso:"productos.gestionar"}]},
  {title:"INVENTARIO",items:[{to:"/inventario",label:"Existencias",icon:Boxes,permiso:"inventario.ver"},{to:"/inventario/movimientos",label:"Movimientos",icon:History,permiso:"inventario.ver"},{to:"/inventario/alertas",label:"Stock bajo",icon:BellRing,permiso:"inventario.ver"}]},
  {title:"COMPRAS",items:[{to:"/compras/proveedores",label:"Proveedores",icon:Building2,permiso:"proveedores.gestionar"},{to:"/compras",label:"Compras",icon:ShoppingBag,permiso:"compras.gestionar"},{to:"/compras/historial",label:"Historial compras",icon:ClipboardList,permiso:"compras.gestionar"}]},

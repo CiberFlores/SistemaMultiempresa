@@ -1,0 +1,324 @@
+/* Página "Aplicación móvil" del dueño: explica la app y deja instalarla */
+
+.am-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 24px;
+  align-items: center;
+  padding: clamp(20px, 3vw, 34px);
+
+  border: 1px solid var(--re-borde);
+  border-radius: 26px;
+  background:
+    radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--re-primario) 26%, transparent), transparent 60%),
+    var(--re-superficie);
+}
+
+.am-hero > * {
+  min-width: 0;
+}
+
+.am-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 999px;
+  background: var(--re-superficie);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--re-apagado);
+}
+
+.am-hero h2 {
+  margin: 14px 0 8px;
+  font-size: clamp(26px, 3.4vw, 36px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.am-hero__texto > p {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--re-apagado);
+}
+
+.am-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.am-acciones a.re-boton {
+  text-decoration: none;
+}
+
+.am-instalar {
+  min-height: 50px;
+}
+
+.am-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-ok) 16%, transparent);
+  color: var(--re-ok);
+  font-weight: 700;
+}
+
+.am-nota {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 14px;
+  background: var(--re-superficie);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ---------- Celular de muestra ---------- */
+
+.am-celular {
+  display: grid;
+  place-items: center;
+}
+
+.am-celular__marco {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 270px);
+  padding: 16px;
+
+  border: 6px solid color-mix(in srgb, var(--re-texto) 22%, #000);
+  border-radius: 34px;
+  background: var(--re-fondo);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.4);
+  transform: rotate(3deg);
+}
+
+.am-celular__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+
+  border-radius: 20px;
+  background: var(--re-primario);
+  color: var(--re-sobre);
+}
+
+.am-celular__cabecera > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.am-celular__cabecera small {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.am-celular__cabecera strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.am-celular__logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+
+  border-radius: 14px;
+  background: #fff;
+  color: #222;
+}
+
+.am-celular__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.am-celular__venta {
+  display: grid;
+  gap: 2px;
+  padding: 14px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 18px;
+  background: var(--re-superficie);
+}
+
+.am-celular__venta small {
+  font-size: 12px;
+  color: var(--re-apagado);
+}
+
+.am-celular__venta strong {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.am-celular__venta i {
+  display: block;
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--re-primario) 72%, var(--re-borde) 72%);
+}
+
+.am-celular__fila {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.am-celular__fila span {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  background: var(--re-superficie);
+  font-size: 12px;
+  color: var(--re-apagado);
+}
+
+.am-celular__fila b {
+  font-size: 20px;
+  color: var(--re-texto);
+}
+
+.am-celular__fila svg {
+  color: var(--re-primario);
+}
+
+.am-celular__alerta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-peligro) 16%, transparent);
+  color: var(--re-peligro);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------- Beneficios y pasos ---------- */
+
+.am-beneficios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.am-beneficios li {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+}
+
+.am-beneficios li > span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--re-primario) 18%, transparent);
+  color: var(--re-primario);
+}
+
+.am-beneficios strong {
+  font-size: 16px;
+}
+
+.am-beneficios p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--re-apagado);
+}
+
+.am-pasos {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.am-pasos li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+
+  border: 1px solid var(--re-borde);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--re-fondo) 45%, transparent);
+  font-size: 16px;
+}
+
+.am-pasos b {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+  background: var(--re-primario);
+  color: var(--re-sobre);
+}
+
+@media (max-width: 900px) {
+  .am-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .am-celular__marco {
+    transform: none;
+  }
+
+  .am-beneficios {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .am-acciones > * {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-celular__marco {
+    transform: none;
+  }
+}

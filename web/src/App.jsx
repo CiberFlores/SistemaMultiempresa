@@ -10,7 +10,6 @@ import AppRoutes from "./routes/AppRoutes";
 
 import MobileLayout from "./components/admin-movil/MobileLayout";
 
-import MobileInstallButton from "./components/admin-movil/MobileInstallButton";
 
 import useAuth from "./hooks/useAuth";
 
@@ -131,43 +130,6 @@ function AplicacionActual() {
 
 
   // ========================================
-  // F. IDENTIFICAR PANTALLAS PUBLICAS
-  // ========================================
-
-  const esRutaPublica = [
-
-    "/",
-
-    "/login",
-
-    "/recuperar-contrasena",
-
-    "/sin-permiso"
-
-  ].includes(ubicacion.pathname);
-
-
-  // ========================================
-  // G. CONTROLAR BOTON DE INSTALACION
-  // ========================================
-
-  // SOLO PERMITIMOS MOSTRAR NUESTRO BOTON
-  // CUANDO EL USUARIO YA INICIO SESION,
-  // ES ADMINISTRADOR Y TIENE EMPRESA.
-  //
-  // SI LA APP YA ESTA INSTALADA EN MODO
-  // STANDALONE, NO MOSTRAMOS EL BOTON.
-
-  const puedeMostrarInstalacion =
-
-    esAdministrador &&
-
-    !esRutaPublica &&
-
-    !instalada;
-
-
-  // ========================================
   // H. IDENTIFICAR PANEL MOVIL
   // ========================================
 
@@ -250,32 +212,6 @@ function AplicacionActual() {
 
       {contenido}
 
-
-      {/* ================================= */}
-      {/* INSTALACION CONTROLADA */}
-      {/* ================================= */}
-
-      {/*
-        MANTENEMOS EL COMPONENTE MONTADO
-        PARA QUE PUEDA ESCUCHAR EL EVENTO
-        DE INSTALACION DEL NAVEGADOR.
-
-        CUANDO NO EXISTE UN ADMIN VALIDADO,
-        RECIBE NULL Y NO MUESTRA SU BOTON.
-
-        MOBILEINSTALLBUTTON TAMBIEN
-        COMPRUEBA SI ES CELULAR O TABLET.
-      */}
-
-      <MobileInstallButton
-
-        usuario={
-          puedeMostrarInstalacion
-            ? usuario
-            : null
-        }
-
-      />
 
     </>
 

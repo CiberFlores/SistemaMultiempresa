@@ -20,6 +20,7 @@ import ConfiguracionEmpresaPage from "../pages/empresa/ConfiguracionEmpresaPage.
 import SucursalesPage from "../pages/empresa/SucursalesPage.jsx";
 import RolesEmpresaPage from "../pages/usuarios/RolesEmpresaPage.jsx";
 import TrabajadoresPage from "../pages/usuarios/TrabajadoresPage.jsx";
+import AppMovilPage from "../pages/empresa/AppMovilPage.jsx";
 import SeguridadCuentaPage from "../pages/usuarios/SeguridadCuentaPage.jsx";
 import CategoriasPage from "../pages/inventario/CategoriasPage.jsx";
 import MarcasPage from "../pages/inventario/MarcasPage.jsx";
@@ -58,7 +59,7 @@ export default function AppRoutes(){return <Routes>
     </Route></Route>
     <Route element={<RoleRoute rolesPermitidos={["ADMIN","TRABAJADOR"]}/>}> <Route element={<DashboardLayout/>}>
       <Route element={<PermissionRoute permiso="dashboard.ver"/>}><Route path="/dashboard" element={<DashboardPage/>}/></Route>
-      <Route element={<RoleRoute rolesPermitidos={["ADMIN"]}/>}> <Route path="/empresa/configuracion" element={<ConfiguracionEmpresaPage/>}/><Route path="/empresa/sucursales" element={<SucursalesPage/>}/><Route path="/usuarios/roles" element={<RolesEmpresaPage/>}/><Route path="/usuarios/trabajadores" element={<TrabajadoresPage/>}/></Route>
+      <Route element={<RoleRoute rolesPermitidos={["ADMIN"]}/>}> <Route path="/empresa/configuracion" element={<ConfiguracionEmpresaPage/>}/><Route path="/empresa/sucursales" element={<SucursalesPage/>}/><Route path="/empresa/app-movil" element={<AppMovilPage/>}/><Route path="/usuarios/roles" element={<RolesEmpresaPage/>}/><Route path="/usuarios/trabajadores" element={<TrabajadoresPage/>}/></Route>
       <Route element={<PermissionRoute permiso="categorias.gestionar"/>}><Route path="/inventario/categorias" element={<CategoriasPage/>}/></Route>
       <Route element={<PermissionRoute permiso="marcas.gestionar"/>}><Route path="/inventario/marcas" element={<MarcasPage/>}/></Route>
       <Route element={<PermissionRoute permiso="productos.gestionar"/>}><Route path="/inventario/productos" element={<ProductosPage/>}/></Route>
