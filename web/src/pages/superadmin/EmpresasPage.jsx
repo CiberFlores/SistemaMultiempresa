@@ -499,7 +499,7 @@ export default function EmpresasPage() {
         detalle: `${row.nombreComercial}: ${row.estado || "ACTIVA"} → ${next}`
       });
     } catch (err) {
-      alert(mensajeError(err, "No se pudo cambiar el estado de la empresa."));
+      confirmar({ titulo: "No se pudo completar", mensaje: mensajeError(err, "No se pudo cambiar el estado de la empresa."), accion: "Entendido" });
     }
   };
 
@@ -528,7 +528,7 @@ export default function EmpresasPage() {
         detalle: `Eliminó la empresa ${row.nombreComercial}`
       });
     } catch (err) {
-      alert(mensajeError(err, "No se pudo eliminar."));
+      confirmar({ titulo: "No se pudo completar", mensaje: mensajeError(err, "No se pudo eliminar."), accion: "Entendido" });
     }
   };
 

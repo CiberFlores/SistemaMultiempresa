@@ -52,7 +52,10 @@ function AuthProvider({ children }) {
       } catch (error) {
         console.error("Error cargando usuario:", error);
         setUsuario(null);
-        if (error?.code === "permission-denied") await signOut(auth).catch(() => {});
+        if (error?.code === "permission-denied") {
+          guardarMotivoSalida(MOTIVO_DESACTIVADA);
+          await signOut(auth).catch(() => {});
+        }
       } finally { setCargando(false); }
     });
     return () => unsubscribe();

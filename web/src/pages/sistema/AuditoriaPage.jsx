@@ -74,6 +74,7 @@ export default function AuditoriaPage() {
   const empresaId = usuario?.empresaId;
 
   const { datos, cargando, error } = useColeccionesEmpresa(empresaId, usuario?.tipoUsuario === "ADMIN" ? ["auditorias", "usuarios"] : ["auditorias"]);
+  // Solo el dueño puede leer la lista de personas
   const { empresa, personalizacion } = useIdentidadEmpresa(empresaId);
 
   const [periodo, setPeriodo] = useState("SEMANA");
@@ -86,7 +87,7 @@ export default function AuditoriaPage() {
   const rango = useMemo(() => rangoDe(periodo, desde, hasta), [periodo, desde, hasta]);
 
   const nombreDe = (r) => {
-    const encontrado = datos.usuarios.find((u) => u.id === r.usuarioId);
+    const encontrado = (datos.usuarios || []).find((u) => u.id === r.usuarioId);
     return encontrado?.nombreCompleto || r.usuarioNombre || "Alguien del equipo";
   };
 

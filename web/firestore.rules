@@ -620,11 +620,7 @@ service cloud.firestore {
 
         (
           (
-            hasPermission('inventario.ver') ||
-            hasPermission('inventario.ajustar') ||
-            hasPermission('compras.gestionar') ||
-            hasPermission('ventas.registrar') ||
-            hasPermission('ventas.ver')
+            hasAnyPermission(['inventario.ver', 'inventario.ajustar', 'compras.gestionar', 'ventas.registrar', 'ventas.ver'])
           ) &&
 
           (
@@ -639,11 +635,7 @@ service cloud.firestore {
 
         (
           (
-            hasPermission('inventario.ver') ||
-            hasPermission('inventario.ajustar') ||
-            hasPermission('compras.gestionar') ||
-            hasPermission('ventas.registrar') ||
-            hasPermission('ventas.ver')
+            hasAnyPermission(['inventario.ver', 'inventario.ajustar', 'compras.gestionar', 'ventas.registrar', 'ventas.ver'])
           ) &&
 
           sameExistingCompany()
@@ -654,9 +646,7 @@ service cloud.firestore {
       allow create: if
 
         (
-          hasPermission('inventario.ajustar') ||
-          hasPermission('compras.gestionar') ||
-          hasPermission('ventas.registrar')
+          hasAnyPermission(['inventario.ajustar', 'compras.gestionar', 'ventas.registrar'])
         ) &&
 
         sameNewCompany() &&
@@ -678,10 +668,7 @@ service cloud.firestore {
 
           (
             (
-              hasPermission('inventario.ajustar') ||
-              hasPermission('compras.gestionar') ||
-              hasPermission('ventas.registrar') ||
-              hasPermission('ventas.ver')
+              hasAnyPermission(['inventario.ajustar', 'compras.gestionar', 'ventas.registrar', 'ventas.ver'])
             ) &&
 
             request.resource.data.diff(
@@ -827,10 +814,7 @@ service cloud.firestore {
               'REGULARIZACION_LOTE' &&
 
             (
-              hasPermission('inventario.ajustar') ||
-              hasPermission('compras.gestionar') ||
-              hasPermission('ventas.registrar') ||
-              hasPermission('ventas.ver')
+              hasAnyPermission(['inventario.ajustar', 'compras.gestionar', 'ventas.registrar', 'ventas.ver'])
             )
           )
         );
@@ -854,11 +838,7 @@ service cloud.firestore {
 
         (
           (
-            hasPermission('inventario.ver') ||
-            hasPermission('inventario.ajustar') ||
-            hasPermission('compras.gestionar') ||
-            hasPermission('ventas.registrar') ||
-            hasPermission('ventas.ver')
+            hasAnyPermission(['inventario.ver', 'inventario.ajustar', 'compras.gestionar', 'ventas.registrar', 'ventas.ver'])
           ) &&
 
           sameExistingCompany()
@@ -1055,8 +1035,7 @@ service cloud.firestore {
 
           (
             (
-              hasPermission('ventas.registrar') ||
-              hasPermission('ventas.ver')
+              hasAnyPermission(['ventas.registrar', 'ventas.ver'])
             ) &&
 
             request.resource.data.diff(
@@ -1462,10 +1441,7 @@ service cloud.firestore {
         (hasPermission('reportes.ver') && sameExistingCompany()) ||
         (
           (
-            hasPermission('caja.gestionar') ||
-            hasPermission('ventas.registrar') ||
-            hasPermission('compras.gestionar') ||
-            hasPermission('finanzas.gestionar')
+            hasAnyPermission(['caja.gestionar', 'ventas.registrar', 'compras.gestionar', 'finanzas.gestionar'])
           ) &&
 
           sameExistingCompany()
@@ -1539,8 +1515,7 @@ service cloud.firestore {
         (hasPermission('reportes.ver') && sameExistingCompany()) ||
         (
           (
-            hasPermission('caja.gestionar') ||
-            hasPermission('finanzas.gestionar')
+            hasAnyPermission(['caja.gestionar', 'finanzas.gestionar'])
           ) &&
 
           sameExistingCompany()
@@ -1627,8 +1602,7 @@ service cloud.firestore {
 
       allow create: if
         (
-          hasPermission('ventas.registrar') ||
-          hasPermission('finanzas.gestionar')
+          hasAnyPermission(['ventas.registrar', 'finanzas.gestionar'])
         ) &&
         sameNewCompany();
 
@@ -1684,8 +1658,7 @@ service cloud.firestore {
 
       allow create: if
         (
-          hasPermission('compras.gestionar') ||
-          hasPermission('finanzas.gestionar')
+          hasAnyPermission(['compras.gestionar', 'finanzas.gestionar'])
         ) &&
         sameNewCompany();
 

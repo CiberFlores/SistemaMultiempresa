@@ -1,3 +1,4 @@
+import ErrorPantalla from "../components/common/ErrorPantalla";
 import { createElement, lazy, Suspense } from "react";
 
 const CLAVE = "an-recarga-version";
@@ -21,6 +22,10 @@ export default function pagina(cargar) {
   });
 
   return function Pagina(props) {
-    return <Suspense fallback={<div className="admin-empty" role="status">Cargando…</div>}>{createElement(Pantalla, props)}</Suspense>;
+    return (
+      <ErrorPantalla>
+        <Suspense fallback={<div className="admin-empty" role="status">Cargando…</div>}>{createElement(Pantalla, props)}</Suspense>
+      </ErrorPantalla>
+    );
   };
 }

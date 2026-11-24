@@ -167,9 +167,9 @@ export default function ModulosGlobalesPage() {
   const cargarBase = async () => {
     try {
       const cantidad = await inicializarModulosBase();
-      alert(cantidad ? `Se crearon ${cantidad} módulos base.` : "Los módulos base ya estaban creados.");
+      confirmar({ titulo: "Listo", mensaje: cantidad ? `Se crearon ${cantidad} módulos base.` : "Los módulos base ya estaban creados.", accion: "Entendido" });
     } catch (err) {
-      alert(mensajeError(err, "No se pudieron inicializar los módulos."));
+      confirmar({ titulo: "No se pudo completar", mensaje: mensajeError(err, "No se pudieron inicializar los módulos."), accion: "Entendido" });
     }
   };
 
@@ -195,7 +195,7 @@ export default function ModulosGlobalesPage() {
         detalle: `Eliminó el módulo ${modulo.nombre}`
       });
     } catch (err) {
-      alert(mensajeError(err, "No se pudo eliminar."));
+      confirmar({ titulo: "No se pudo completar", mensaje: mensajeError(err, "No se pudo eliminar."), accion: "Entendido" });
     }
   };
 

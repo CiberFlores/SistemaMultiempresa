@@ -26,6 +26,24 @@ const MODULE_BY_PERMISSION = {
   "auditoria.ver": "AUDITORIA"
 };
 
+// Primera pantalla que puede abrir alguien cuyo cargo no incluye el panel
+const INICIO = [
+  ["ventas.registrar", "/ventas/pos"],
+  ["ventas.ver", "/ventas"],
+  ["caja.gestionar", "/ventas/cajas"],
+  ["inventario.ver", "/inventario"],
+  ["productos.gestionar", "/inventario/productos"],
+  ["compras.gestionar", "/compras"],
+  ["proveedores.gestionar", "/compras/proveedores"],
+  ["categorias.gestionar", "/inventario/categorias"],
+  ["marcas.gestionar", "/inventario/marcas"],
+  ["promociones.gestionar", "/ventas/promociones"],
+  ["finanzas.gestionar", "/finanzas/cuentas-cobrar"],
+  ["reportes.ver", "/reportes/ventas"],
+  ["notificaciones.ver", "/sistema/notificaciones"],
+  ["auditoria.ver", "/sistema/auditoria"]
+];
+
 export default function PermissionRoute({ permiso }) {
   const { usuario, cargando } = useAuth();
   const modules = useCompanyModules();
@@ -65,7 +83,16 @@ export default function PermissionRoute({ permiso }) {
     );
   const modulo = MODULE_BY_PERMISSION[permiso];
 
-  if (!permisoOk || (modulo && !modules.isEnabled(modulo))) return <Navigate to="/sin-permiso" replace />;
+  if (!permisoOk || (modulo && !modules.isEnabled(modulo))) {
+    const tiene = (p) =>
+      usuario.tipoUsuario === "ADMIN" ||
+      (datos?.estado === "ACTIVO" && datos.empresaId === usuario.empresaId && Array.isArray(datos.permisos) && datos.permisos.includes(p));
+    const inicio =
+      permiso === "dashboard.ver" &&
+      INICIO.find(([p]) => tiene(p) && modules.isEnabled(MODULE_BY_PERMISSION[p]));
+
+    return <Navigate to={inicio ? inicio[1] : "/sin-permiso"} replace />;
+  }
 
   return <Outlet />;
 }

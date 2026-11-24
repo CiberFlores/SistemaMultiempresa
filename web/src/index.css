@@ -369,3 +369,15 @@ input:-webkit-autofill:focus {
   object-fit: contain;
   border-radius: 12px;
 }
+
+/* Pantalla sin permiso */
+.sin-permiso { display: grid; place-items: center; min-height: 100vh; min-height: 100svh; padding: 24px; background: #1e0724; color: #fcf7f5; }
+.sin-permiso section { width: min(520px, 100%); text-align: center; }
+.sin-permiso svg { color: #fe7c01; }
+.sin-permiso h1 { margin: 18px 0 12px; font: 650 clamp(28px, 4vw, 40px)/1.12 "Fraunces", Georgia, serif; color: inherit; }
+.sin-permiso p { margin: 0 0 28px; font-size: 17px; line-height: 1.5; color: #e6ddd6; }
+.sin-permiso div { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.sin-permiso button { display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 24px; border: 2px solid #fe7c01; border-radius: 14px; background: #fe7c01; color: #33033d; font: inherit; font-weight: 700; cursor: pointer; }
+.sin-permiso button svg { color: inherit; }
+.sin-permiso button:focus-visible { outline: 3px solid #ffd479; outline-offset: 3px; }
+.sin-permiso .sin-permiso__salir { border-color: rgb(252 247 245 / 0.4); background: transparent; color: #fcf7f5; }
