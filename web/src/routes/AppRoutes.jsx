@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import RoleRoute from "./RoleRoute.jsx";
+import ModuleRoute from "./ModuleRoute.jsx";
 import PermissionRoute from "./PermissionRoute.jsx";
 import SuperAdminLayout from "../layouts/SuperAdminLayout.jsx";
 import DashboardLayout from "../layouts/DashboardLayout.jsx";
@@ -61,7 +62,7 @@ export default function AppRoutes(){return <Routes>
     </Route></Route>
     <Route element={<RoleRoute rolesPermitidos={["ADMIN","TRABAJADOR"]}/>}> <Route element={<DashboardLayout/>}>
       <Route element={<PermissionRoute permiso="dashboard.ver"/>}><Route path="/dashboard" element={<DashboardPage/>}/></Route>
-      <Route element={<RoleRoute rolesPermitidos={["ADMIN"]}/>}> <Route path="/empresa/configuracion" element={<ConfiguracionEmpresaPage/>}/><Route path="/empresa/sucursales" element={<SucursalesPage/>}/><Route path="/empresa/app-movil" element={<AppMovilPage/>}/><Route path="/usuarios/roles" element={<RolesEmpresaPage/>}/><Route path="/usuarios/trabajadores" element={<TrabajadoresPage/>}/></Route>
+      <Route element={<RoleRoute rolesPermitidos={["ADMIN"]}/>}> <Route element={<ModuleRoute modulo="CONFIGURACION"/>}><Route path="/empresa/configuracion" element={<ConfiguracionEmpresaPage/>}/></Route><Route element={<ModuleRoute modulo="SUCURSALES"/>}><Route path="/empresa/sucursales" element={<SucursalesPage/>}/></Route><Route path="/empresa/app-movil" element={<AppMovilPage/>}/><Route element={<ModuleRoute modulo="ROLES"/>}><Route path="/usuarios/roles" element={<RolesEmpresaPage/>}/></Route><Route element={<ModuleRoute modulo="USUARIOS"/>}><Route path="/usuarios/trabajadores" element={<TrabajadoresPage/>}/></Route></Route>
       <Route element={<PermissionRoute permiso="categorias.gestionar"/>}><Route path="/inventario/categorias" element={<CategoriasPage/>}/></Route>
       <Route element={<PermissionRoute permiso="marcas.gestionar"/>}><Route path="/inventario/marcas" element={<MarcasPage/>}/></Route>
       <Route element={<PermissionRoute permiso="productos.gestionar"/>}><Route path="/inventario/productos" element={<ProductosPage/>}/></Route>

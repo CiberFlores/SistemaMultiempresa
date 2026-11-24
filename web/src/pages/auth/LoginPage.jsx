@@ -13,6 +13,7 @@ import {
   Wallet
 } from "lucide-react";
 import mensajeError from "../../utils/mensajeError";
+import { hayBloqueo } from "../../utils/bloqueo";
 import { leerMotivoSalida } from "../../utils/sesion";
 
 import { useEffect, useRef, useState } from "react";
@@ -107,13 +108,7 @@ function LoginPage() {
 
   // Si sacaron a la persona porque su empresa fue desactivada, va a la pantalla de bloqueo
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("an-empresa-bloqueada")) {
-        navigate("/cuenta-bloqueada", { replace: true });
-      }
-    } catch {
-      /* sin almacenamiento */
-    }
+    if (hayBloqueo()) navigate("/cuenta-bloqueada", { replace: true });
   }, [navigate]);
 
   // Las tarjetas del panel siguen al ratón con un desplazamiento mínimo (solo ratón fino)
@@ -241,7 +236,7 @@ function LoginPage() {
       setError("El usuario no tiene un rol válido.");
       sacudirFormulario();
     } catch (error) {
-      if (error.code === "empresa/suspendida") {
+      if (error.code === "empresa/suspendida" || (error.code === "cuenta/bloqueada" && hayBloqueo())) {
         navigate("/cuenta-bloqueada", { replace: true });
         return;
       }

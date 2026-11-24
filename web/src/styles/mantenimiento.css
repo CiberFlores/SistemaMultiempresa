@@ -1,0 +1,63 @@
+/* ARCA NOVA · MANTENIMIENTO Y ESCENA DE LA TIENDA */
+
+.et { display: block; width: 100%; height: auto; overflow: visible; }
+.et__letrero { transform-box: view-box; transform-origin: 240px 128px; animation: et-vaiven 4.5s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+.et__brillo { transform-box: fill-box; transform-origin: center; animation: et-brillo 3s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+
+@keyframes et-vaiven { from { transform: rotate(-3.5deg); } to { transform: rotate(3.5deg); } }
+@keyframes et-brillo { from { transform: scale(0.86) rotate(-8deg); } to { transform: scale(1.08) rotate(8deg); } }
+
+.mt {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 16px;
+  min-height: min(720px, calc(100svh - 150px));
+  padding: clamp(28px, 5vw, 60px) clamp(18px, 4vw, 48px);
+  border-radius: 28px;
+  background: radial-gradient(120% 90% at 50% 0, #fff, #fcf7f5 45%, #f6e7d8);
+  color: #42054e;
+  text-align: center;
+}
+
+.mt .et { width: min(430px, 88%); }
+.mt h1 { max-width: 20ch; margin: 10px 0 0; font: 650 clamp(28px, 3.4vw, 48px)/1.1 "Fraunces", Georgia, serif; color: #42054e; text-wrap: balance; }
+.mt p { max-width: 46ch; margin: 0; font-size: 17px; line-height: 1.55; color: #5c4263; text-wrap: pretty; }
+.mt small { font-size: 14px; font-weight: 650; color: #6e5574; }
+
+.mt button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 50px;
+  margin-top: 6px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 14px;
+  background: #fe7c01;
+  color: #33033d;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease;
+}
+
+.mt button:active { transform: scale(0.97); }
+.mt button:focus-visible { outline: 3px solid #42054e; outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .mt button:hover { background: #ff9127; } }
+
+.gx .mt { min-height: 0; margin: 4px 0 20px; padding: 30px 18px; }
+
+.admin-nav-obra { margin-left: auto; padding: 2px 7px; border-radius: 99px; background: #ffd479; color: #42054e; font-size: 11px; font-weight: 750; font-style: normal; white-space: nowrap; }
+
+/* ---------- Pantalla de bloqueo ---------- */
+.cb__escena { width: min(400px, 82%); margin: -4px 0 4px; }
+.cb__pasos { display: grid; gap: 10px; width: 100%; margin: 6px 0 0; padding: 18px 20px; border-radius: 18px; background: #fcf7f5; list-style: none; text-align: left; font-size: 16px; line-height: 1.45; color: #5c4263; }
+.cb__pasos li { display: flex; gap: 12px; align-items: flex-start; }
+.cb__pasos svg { flex: none; margin-top: 2px; color: #c85f00; }
+
+@media (prefers-reduced-motion: reduce) {
+  .et__letrero, .et__brillo { animation: none; }
+  .mt button { transition: none; }
+}

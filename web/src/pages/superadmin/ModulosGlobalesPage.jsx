@@ -142,16 +142,21 @@ export default function ModulosGlobalesPage() {
   const cambiarEstado = async (modulo) => {
     const nuevoEstado = !modulo.activo;
     const confirmado = await confirmar({
-      titulo: nuevoEstado ? "Activar módulo" : "Desactivar módulo",
+      titulo: nuevoEstado ? "Activar módulo" : "Poner en mantenimiento",
       mensaje: nuevoEstado
-        ? `El módulo "${modulo.nombre}" quedará marcado como activo en el catálogo.`
-        : `El módulo "${modulo.nombre}" quedará marcado como inactivo en el catálogo.`,
-      accion: nuevoEstado ? "Activar" : "Desactivar",
+        ? `El módulo "${modulo.nombre}" vuelve a abrirse para todas las empresas.`
+        : `El módulo "${modulo.nombre}" se cierra para todas las empresas. Verán la pantalla de mantenimiento hasta que lo actives.`,
+      accion: nuevoEstado ? "Activar" : "Cerrar módulo",
       peligro: !nuevoEstado
     });
 
     if (!confirmado) return;
-    await cambiarEstadoModulo(modulo.id, nuevoEstado);
+    try {
+      await cambiarEstadoModulo(modulo.id, nuevoEstado);
+    } catch (err) {
+      confirmar({ titulo: "No se pudo completar", mensaje: mensajeError(err, "No se pudo cambiar el módulo."), accion: "Entendido" });
+      return;
+    }
     await registrarAuditoria({
       empresaId: null,
       usuarioId: usuario?.uid,
@@ -219,7 +224,7 @@ export default function ModulosGlobalesPage() {
       <section className="sa-panel">
         <div className="sa-table-toolbar sa-toolbar-v4">
           <div className="sa-table-search"><Search size={17} /><input placeholder="Buscar por nombre, código o descripción..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} /></div>
-          <select className="sa-filter-select-v4" value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}><option value="TODOS">Todos los estados</option><option value="ACTIVO">Activos</option><option value="INACTIVO">Inactivos</option></select>
+          <select className="sa-filter-select-v4" value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}><option value="TODOS">Todos los estados</option><option value="ACTIVO">Activos</option><option value="INACTIVO">En mantenimiento</option></select>
           <span>{modulosFiltrados.length} módulo(s)</span>
         </div>
 
@@ -240,11 +245,11 @@ export default function ModulosGlobalesPage() {
                       <td><strong>{modulo.nombre}</strong></td>
                       <td><span className="sa-slug">{modulo.codigo}</span></td>
                       <td>{modulo.descripcion || "-"}</td>
-                      <td><span className={modulo.activo ? "sa-badge active" : "sa-badge suspended"}>{modulo.activo ? "ACTIVO" : "INACTIVO"}</span></td>
+                      <td><span className={modulo.activo ? "sa-badge active" : "sa-badge suspended"}>{modulo.activo ? "ACTIVO" : "MANTENIMIENTO"}</span></td>
                       <td><div className="sa-actions">
                         <button title="Ver detalle" onClick={() => setDetalle(modulo)}><Eye size={16} /></button>
                         <button title="Editar" onClick={() => abrirEditar(modulo)}><Pencil size={16} /></button>
-                        <button title={modulo.activo ? "Desactivar" : "Activar"} onClick={() => cambiarEstado(modulo)}>{modulo.activo ? <Power size={16} /> : <CircleCheck size={16} />}</button>
+                        <button title={modulo.activo ? "Poner en mantenimiento" : "Activar"} onClick={() => cambiarEstado(modulo)}>{modulo.activo ? <Power size={16} /> : <CircleCheck size={16} />}</button>
                         <button title="Eliminar" className="danger" onClick={() => eliminar(modulo)}><Trash2 size={16} /></button>
                       </div></td>
                     </tr>
@@ -263,7 +268,7 @@ export default function ModulosGlobalesPage() {
               <div className="sa-modal-header"><div><h2>{detalle.nombre}</h2><p>Detalle de la funcionalidad global.</p></div><button onClick={() => setDetalle(null)}><X size={19} /></button></div>
               <div className="detail-grid-v4">
                 <div><span>Código</span><strong>{detalle.codigo}</strong></div>
-                <div><span>Estado</span><strong>{detalle.activo ? "ACTIVO" : "INACTIVO"}</strong></div>
+                <div><span>Estado</span><strong>{detalle.activo ? "ACTIVO" : "EN MANTENIMIENTO"}</strong></div>
                 <div><span>Icono</span><strong>{detalle.icono || "Boxes"}</strong></div>
                 <div className="detail-span-2"><span>Descripción</span><strong>{detalle.descripcion || "-"}</strong></div>
               </div>

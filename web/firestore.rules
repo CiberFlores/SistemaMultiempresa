@@ -241,7 +241,12 @@ service cloud.firestore {
 
       allow read: if
         superAdmin() ||
-        (userEnabled() && request.auth.uid == uid) ||
+        // También con la cuenta bloqueada: así se le explica por qué no entra
+        (
+          signedIn() &&
+          request.auth.token.email_verified == true &&
+          request.auth.uid == uid
+        ) ||
         (
           admin() &&
           resource.data.empresaId == myCompany()

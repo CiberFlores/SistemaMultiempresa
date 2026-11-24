@@ -31,6 +31,8 @@ import { useColeccionesEmpresa } from "../../hooks/useColeccionesEmpresa";
 import { cambiarQrActivo, quitarQrCobro, subirQrCobro } from "../../services/qrCobroService";
 import { sonidoPop } from "../../utils/sonidos";
 
+import Mantenimiento from "../common/Mantenimiento";
+import useCompanyModules from "../../hooks/useCompanyModules";
 import "../../styles/app-movil-go.css";
 
 // ------------------------------------------------------------------
@@ -135,6 +137,7 @@ export default function MobileLayout() {
   const { usuario, cargando, cerrarSesion } = useAuth();
   const navigate = useNavigate();
   const marca = useMarcaEmpresa();
+  const modulos = useCompanyModules();
 
   const esDueno = usuario?.tipoUsuario === "ADMIN" && Boolean(usuario?.empresaId);
   const empresaId = esDueno ? usuario.empresaId : null;
@@ -445,6 +448,11 @@ export default function MobileLayout() {
     equipo: <Equipo equipo={equipo} nombreRol={nombreRol} ahora={ahora} />,
     ajustes: <Ajustes marca={marca} usuario={usuario} empresaId={empresaId} salir={async () => { await cerrarSesion(); navigate("/login", { replace: true }); }} />
   };
+
+  const MODULO_DE = { inicio: "DASHBOARD", ventas: "VENTAS", stock: "INVENTARIO", equipo: "USUARIOS" };
+  for (const [clave, codigo] of Object.entries(MODULO_DE)) {
+    if (!modulos.isEnabled(codigo)) paginas[clave] = <Mantenimiento nombre={modulos.nombreDe(codigo)} />;
+  }
 
   const NAV = [
     ["inicio", "Inicio", House],

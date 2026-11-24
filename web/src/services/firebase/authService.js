@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
+import { recordarBloqueo } from "../../utils/bloqueo";
 import { borrarMotivoSalida, marcarActividad, olvidarActividad } from "../../utils/sesion";
 
 // Los correos de Firebase (verificar cuenta, cambiar contraseña) salen en español
@@ -17,17 +18,6 @@ const ROLES_PERMITIDOS = ["SUPER_ADMIN", "ADMIN", "TRABAJADOR"];
 
 export const MENSAJE_EMPRESA_SUSPENDIDA =
   "Esta empresa fue desactivada. Habla con los encargados de la plataforma para volver a activarla.";
-
-// Dónde se guarda el nombre de la empresa bloqueada para mostrarlo en la pantalla de bloqueo
-export const CLAVE_EMPRESA_BLOQUEADA = "an-empresa-bloqueada";
-
-export function recordarEmpresaBloqueada(nombre) {
-  try {
-    sessionStorage.setItem(CLAVE_EMPRESA_BLOQUEADA, JSON.stringify({ nombre: nombre || "" }));
-  } catch {
-    /* sin almacenamiento: la pantalla de bloqueo sale sin el nombre */
-  }
-}
 
 // Si la empresa fue suspendida devuelve { nombre }; si está activa, null
 export async function empresaSuspendida(empresaId) {
@@ -83,7 +73,8 @@ export async function iniciarSesion(correo, contraseña) {
   const datosUsuario = documentoUsuario.data();
   if (datosUsuario.estado !== true) {
     await signOut(auth);
-    throw new Error("La cuenta se encuentra deshabilitada.");
+    if (datosUsuario.tipoUsuario !== "SUPER_ADMIN") recordarBloqueo({ motivo: "CUENTA", rol: datosUsuario.tipoUsuario });
+    throw Object.assign(new Error("Tu cuenta está bloqueada."), { code: "cuenta/bloqueada" });
   }
   if (!ROLES_PERMITIDOS.includes(datosUsuario.tipoUsuario)) {
     await signOut(auth);
@@ -97,7 +88,7 @@ export async function iniciarSesion(correo, contraseña) {
   const bloqueo = datosUsuario.tipoUsuario !== "SUPER_ADMIN" ? await empresaSuspendida(datosUsuario.empresaId) : null;
 
   if (bloqueo) {
-    recordarEmpresaBloqueada(bloqueo.nombre);
+    recordarBloqueo({ motivo: "EMPRESA", rol: datosUsuario.tipoUsuario, empresa: bloqueo.nombre });
     await signOut(auth);
     const error = new Error(MENSAJE_EMPRESA_SUSPENDIDA);
     error.code = "empresa/suspendida";

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { doc, onSnapshot } from "firebase/firestore";
+import Mantenimiento from "../components/common/Mantenimiento";
 import useAuth from "../hooks/useAuth";
 import useCompanyModules from "../hooks/useCompanyModules";
 import { db } from "../services/firebase/firebaseConfig";
@@ -83,15 +84,19 @@ export default function PermissionRoute({ permiso }) {
     );
   const modulo = MODULE_BY_PERMISSION[permiso];
 
-  if (!permisoOk || (modulo && !modules.isEnabled(modulo))) {
+  if (!permisoOk) {
     const tiene = (p) =>
       usuario.tipoUsuario === "ADMIN" ||
       (datos?.estado === "ACTIVO" && datos.empresaId === usuario.empresaId && Array.isArray(datos.permisos) && datos.permisos.includes(p));
     const inicio =
       permiso === "dashboard.ver" &&
-      INICIO.find(([p]) => tiene(p) && modules.isEnabled(MODULE_BY_PERMISSION[p]));
+      INICIO.find(([p]) => tiene(p));
 
     return <Navigate to={inicio ? inicio[1] : "/sin-permiso"} replace />;
+  }
+
+  if (modulo && !modules.isEnabled(modulo)) {
+    return <Mantenimiento nombre={modules.nombreDe(modulo)} volverA={modulo !== "DASHBOARD" && modules.isEnabled("DASHBOARD") ? "/dashboard" : ""} />;
   }
 
   return <Outlet />;
