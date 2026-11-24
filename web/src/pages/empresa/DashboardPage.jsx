@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 
 import {
   collection,
@@ -732,8 +733,7 @@ function DashboardPage() {
         if (vigente) {
 
           setErrorEmpresa(
-            err.message ||
-            "No se pudo consultar la empresa."
+            mensajeError(err, "No se pudo consultar la empresa.")
           );
 
         }

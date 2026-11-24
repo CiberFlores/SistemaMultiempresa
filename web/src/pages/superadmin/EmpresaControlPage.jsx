@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Blocks, Building2, Check, Palette, Save, ShieldCheck } from "lucide-react";
 import LocationPicker from "../../components/common/LocationPicker";
@@ -114,7 +115,7 @@ export default function EmpresaControlPage() {
       setLogoQuitado(false);
       setMessage("Configuración guardada correctamente.");
     } catch (e) {
-      setMessage(e.message || "No se pudo guardar.");
+      setMessage(mensajeError(e, "No se pudo guardar."));
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
@@ -243,7 +244,7 @@ export default function SucursalesPage() {
       setAbierto(false);
     } catch (fallo) {
       console.error(fallo);
-      setError(fallo.message || "No se pudo guardar la sucursal.");
+      setError(mensajeError(fallo, "No se pudo guardar la sucursal."));
     } finally {
       setGuardando(false);
     }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Check, Lock, RotateCcw, Save } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
@@ -177,7 +178,7 @@ export default function ConfiguracionEmpresaPage() {
       setError(
         fallo?.code === "permission-denied"
           ? "No tienes permiso para cambiar la imagen de la empresa."
-          : fallo.message || "No se pudieron guardar los cambios."
+          : mensajeError(fallo, "No se pudieron guardar los cambios.")
       );
     } finally {
       setGuardando(false);

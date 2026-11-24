@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import {
   BadgeDollarSign,
   CircleCheck,
@@ -205,7 +206,7 @@ export default function PlanesPage() {
 
       cerrarModal();
     } catch (err) {
-      setError(err.message || "No se pudo guardar el plan.");
+      setError(mensajeError(err, "No se pudo guardar el plan."));
     } finally {
       setGuardando(false);
     }
@@ -242,7 +243,7 @@ export default function PlanesPage() {
         detalle: `Eliminó el plan ${plan.nombre}`
       });
     } catch (err) {
-      alert(err.message || "No se pudo eliminar el plan.");
+      alert(mensajeError(err, "No se pudo eliminar el plan."));
     }
   };
 

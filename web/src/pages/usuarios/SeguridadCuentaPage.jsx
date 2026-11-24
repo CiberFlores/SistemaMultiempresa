@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Check, Eye, EyeOff, KeyRound, LockKeyhole, MailCheck, ShieldCheck, UserRound, X } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
@@ -85,7 +86,7 @@ export default function SeguridadCuentaPage() {
       } else if (codigo.includes("too-many-requests")) {
         fallar("Hiciste muchos intentos. Espera unos minutos e inténtalo otra vez.");
       } else {
-        fallar(e?.message || "No pudimos cambiar la contraseña. Inténtalo otra vez.");
+        fallar(mensajeError(e, "No pudimos cambiar la contraseña. Inténtalo otra vez."));
       }
     } finally {
       setGuardando(false);

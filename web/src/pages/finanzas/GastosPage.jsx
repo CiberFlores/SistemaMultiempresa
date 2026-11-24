@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Ban, Check, ChevronDown, Info, Pencil, Plus, Receipt, Search, TrendingDown, Wallet, X } from "lucide-react";
@@ -284,7 +285,7 @@ export default function GastosPage() {
       setAbierto(false);
     } catch (e) {
       console.error(e);
-      fallar(e.message || "No pudimos guardar el gasto. Inténtalo otra vez.");
+      fallar(mensajeError(e, "No pudimos guardar el gasto. Inténtalo otra vez."));
     } finally {
       setGuardando(false);
     }
@@ -311,7 +312,7 @@ export default function GastosPage() {
     } catch (e) {
       console.error(e);
       sonidoError();
-      setErrorLista(e.message || "No pudimos anular el gasto.");
+      setErrorLista(mensajeError(e, "No pudimos anular el gasto."));
     }
   }
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Navigate, useNavigate } from "react-router-dom";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
@@ -1144,7 +1145,7 @@ function Ajustes({ marca, usuario, empresaId, salir }) {
       sonidoPop();
     } catch (e) {
       console.error(e);
-      setError(e.message || "No pudimos subir el QR. Inténtalo otra vez.");
+      setError(mensajeError(e, "No pudimos subir el QR. Inténtalo otra vez."));
     } finally {
       setSubiendo(false);
     }

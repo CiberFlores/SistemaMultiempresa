@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
@@ -239,7 +240,7 @@ function RolesEmpresaPage() {
       setFormulario(formularioInicial);
     } catch (fallo) {
       console.error(fallo);
-      setError(fallo.message || "No se pudo guardar el rol.");
+      setError(mensajeError(fallo, "No se pudo guardar el rol."));
     } finally {
       setGuardando(false);
     }

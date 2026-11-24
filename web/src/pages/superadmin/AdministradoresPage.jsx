@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import {
   Eye,
   EyeOff,
@@ -10,10 +11,10 @@ import {
   X
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../services/firebase/firebaseConfig";
+import { suscribirEmpresas } from "../../services/empresaService";
 import { suscribirAdministradores } from "../../services/platformService";
-import { provisionarUsuario, actualizarPerfilUsuario } from "../../services/userProvisionService";
+import { provisionarUsuario, reactivarAdministrador, actualizarPerfilUsuario } from "../../services/userProvisionService";
+import { recuperarContrasena } from "../../services/firebase/authService";
 import { registrarAuditoria } from "../../services/auditService";
 import AdvancedFilterBar from "../../components/filters/AdvancedFilterBar";
 import PasswordStrength from "../../components/common/PasswordStrength";
@@ -46,13 +47,16 @@ export default function AdministradoresPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [avisoError, setAvisoError] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [salida, setSalida] = useState(null);
 
   useEffect(() => {
-    const unsub = suscribirAdministradores(setRows, console.error);
-    getDocs(collection(db, "empresas")).then((snapshot) =>
-      setEmpresas(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
-    );
-    return unsub;
+    const unsub = suscribirAdministradores(setRows, (e) => setAvisoError(mensajeError(e, "No se pudieron cargar los administradores.")));
+    const unsubEmpresas = suscribirEmpresas(setEmpresas, (e) => setAvisoError(mensajeError(e, "No se pudieron cargar las empresas.")));
+    return () => {
+      unsub();
+      unsubEmpresas();
+    };
   }, []);
 
   const company = (id) => empresas.find((item) => item.id === id);
@@ -84,6 +88,8 @@ export default function AdministradoresPage() {
     setForm(initial);
     setShowPassword(false);
     setError("");
+    setSalida(null);
+    setAviso("");
     setOpen(true);
   };
 
@@ -92,10 +98,20 @@ export default function AdministradoresPage() {
     setForm({ ...initial, ...row, password: "" });
     setShowPassword(false);
     setError("");
+    setSalida(null);
+    setAviso("");
     setOpen(true);
   };
 
+  const cambiarCorreo = (correo) => {
+    setForm((prev) => ({ ...prev, correo }));
+    setError("");
+    setSalida(null);
+  };
+
   const handleCompanyChange = (empresaId) => {
+    setError("");
+    setSalida(null);
     const selected = company(empresaId);
     setForm((prev) => {
       if (!selected || editing) return { ...prev, empresaId };
@@ -114,6 +130,7 @@ export default function AdministradoresPage() {
     try {
       setSaving(true);
       setError("");
+      setSalida(null);
 
       if (!form.empresaId) throw new Error("Selecciona una empresa.");
       if (!form.nombreCompleto.trim()) throw new Error("El nombre completo es obligatorio.");
@@ -123,7 +140,6 @@ export default function AdministradoresPage() {
         await actualizarPerfilUsuario(editing.id, {
           empresaId: form.empresaId,
           nombreCompleto: form.nombreCompleto.trim(),
-          correo: form.correo.trim().toLowerCase(),
           telefono: form.telefono.trim(),
           estado: Boolean(form.estado),
           eliminado: false
@@ -139,7 +155,12 @@ export default function AdministradoresPage() {
           detalle: `Actualizó al administrador ${form.nombreCompleto.trim()}`
         });
       } else {
-        const uid = await provisionarUsuario({ ...form, tipoUsuario: "ADMIN" });
+        const { uid, correoEnviado } = await provisionarUsuario({ ...form, tipoUsuario: "ADMIN" });
+        setAviso(
+          correoEnviado
+            ? `Cuenta de ${form.nombreCompleto.trim()} creada. Debe abrir el correo de verificación antes de entrar.`
+            : `Cuenta de ${form.nombreCompleto.trim()} creada. El correo de verificación no salió; se enviará cuando intente entrar.`
+        );
         await registrarAuditoria({
           empresaId: null,
           usuarioId: usuario?.uid,
@@ -154,7 +175,43 @@ export default function AdministradoresPage() {
 
       setOpen(false);
     } catch (err) {
-      setError(err.message || "No se pudo guardar.");
+      setError(mensajeError(err, "No se pudo guardar."));
+      if (err.code === "cuenta/reactivable") setSalida({ tipo: "reactivar", perfil: err.perfil });
+      if (err.code === "cuenta/otra-clave") setSalida({ tipo: "enlace" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Salidas cuando el correo ya tiene cuenta
+  const resolverSalida = async () => {
+    try {
+      setSaving(true);
+
+      if (salida.tipo === "enlace") {
+        await recuperarContrasena(form.correo);
+        setError("Enviamos un enlace a ese correo. Cuando elija su nueva contraseña, escríbela aquí y guarda otra vez.");
+        setSalida(null);
+        return;
+      }
+
+      const previa = companyName(salida.perfil.empresaId);
+      await reactivarAdministrador(salida.perfil.id, form);
+      await registrarAuditoria({
+        empresaId: null,
+        usuarioId: usuario?.uid,
+        usuarioNombre: usuario?.nombreCompleto || usuario?.correo || "",
+        accion: "REACTIVAR",
+        modulo: "usuarios",
+        entidad: "administrador",
+        entidadId: salida.perfil.id,
+        detalle: `Devolvió el acceso a ${form.nombreCompleto.trim()}: ${previa} → ${companyName(form.empresaId)}`
+      });
+      setAviso(`${form.nombreCompleto.trim()} recuperó el acceso. Entra con la contraseña que ya tenía.`);
+      setSalida(null);
+      setOpen(false);
+    } catch (err) {
+      setError(mensajeError(err, "No se pudo completar."));
     } finally {
       setSaving(false);
     }
@@ -167,7 +224,7 @@ export default function AdministradoresPage() {
     try {
       await actualizarPerfilUsuario(row.id, { estado: next });
     } catch (err) {
-      setAvisoError(err.message || "No se pudo cambiar el estado del administrador.");
+      setAvisoError(mensajeError(err, "No se pudo cambiar el estado del administrador."));
       return;
     }
     await registrarAuditoria({
@@ -203,7 +260,7 @@ export default function AdministradoresPage() {
         eliminadoMotivo: "Retirado por SUPER_ADMIN"
       });
     } catch (err) {
-      setAvisoError(err.message || "No se pudo retirar el acceso del administrador.");
+      setAvisoError(mensajeError(err, "No se pudo retirar el acceso del administrador."));
       return;
     }
 
@@ -237,6 +294,12 @@ export default function AdministradoresPage() {
       {avisoError && (
         <div className="form-error" role="alert">
           {avisoError}
+        </div>
+      )}
+
+      {aviso && (
+        <div className="success-banner" role="status">
+          {aviso}
         </div>
       )}
 
@@ -365,7 +428,8 @@ export default function AdministradoresPage() {
 
                 <label className="field-block">
                   <span>Correo *</span>
-                  <input type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} />
+                  <input type="email" value={form.correo} disabled={Boolean(editing)} onChange={(e) => cambiarCorreo(e.target.value)} />
+                  {editing && <small>Es el correo con el que entra; no se puede cambiar.</small>}
                 </label>
 
                 <label className="field-block">
@@ -400,7 +464,15 @@ export default function AdministradoresPage() {
                   </label>
                 )}
 
-                {error && <div className="form-error field-span-2">{error}</div>}
+                {error && <div className="form-error field-span-2" role="alert">{error}</div>}
+
+                {salida && (
+                  <button type="button" className="secondary-action field-span-2" onClick={resolverSalida} disabled={saving}>
+                    {salida.tipo === "reactivar"
+                      ? "Devolver el acceso y asignar esta empresa"
+                      : "Enviar enlace para cambiar la contraseña"}
+                  </button>
+                )}
 
                 <div className="modal-actions field-span-2">
                   <button type="button" className="secondary-action" onClick={() => setOpen(false)}>Cancelar</button>

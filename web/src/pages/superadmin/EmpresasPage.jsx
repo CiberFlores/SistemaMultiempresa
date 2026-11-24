@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Building2,
@@ -457,10 +458,10 @@ export default function EmpresasPage() {
         edicionActual.current = empresaCreada.id;
         setEditing({ id: empresaCreada.id, nombreComercial: form.nombreComercial });
         setError(
-          `La empresa se creó, pero no se pudo guardar su identidad visual: ${err.message || "error desconocido"}`
+          `La empresa se creó, pero no se pudo guardar su identidad visual: ${mensajeError(err, "error desconocido")}`
         );
       } else {
-        setError(err.message || "No se pudo guardar.");
+        setError(mensajeError(err, "No se pudo guardar."));
       }
     } finally {
       setSaving(false);
@@ -498,7 +499,7 @@ export default function EmpresasPage() {
         detalle: `${row.nombreComercial}: ${row.estado || "ACTIVA"} → ${next}`
       });
     } catch (err) {
-      alert(err.message || "No se pudo cambiar el estado de la empresa.");
+      alert(mensajeError(err, "No se pudo cambiar el estado de la empresa."));
     }
   };
 
@@ -527,7 +528,7 @@ export default function EmpresasPage() {
         detalle: `Eliminó la empresa ${row.nombreComercial}`
       });
     } catch (err) {
-      alert(err.message || "No se pudo eliminar.");
+      alert(mensajeError(err, "No se pudo eliminar."));
     }
   };
 

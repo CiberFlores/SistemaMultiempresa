@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import {
   AlertTriangle,
   Boxes,
@@ -165,7 +166,7 @@ export default function InventarioPage() {
     } catch (error) {
       console.error(error);
       if (solicitud === solicitudLotes.current) {
-        setErrorGeneral(error.message || "No se pudieron cargar los lotes.");
+        setErrorGeneral(mensajeError(error, "No se pudieron cargar los lotes."));
         setLotesCargados(false);
       }
       throw error;
@@ -233,7 +234,7 @@ export default function InventarioPage() {
       await cargarLotes();
     } catch (error) {
       console.error(error);
-      setErrorGeneral(error.message || "No se pudo actualizar el inventario.");
+      setErrorGeneral(mensajeError(error, "No se pudo actualizar el inventario."));
     }
   }
 
@@ -405,7 +406,7 @@ export default function InventarioPage() {
       sonidoExito();
     } catch (error) {
       console.error(error);
-      setErrorModal(error.message || "No se pudo registrar el movimiento.");
+      setErrorModal(mensajeError(error, "No se pudo registrar el movimiento."));
     } finally {
       setGuardando(false);
     }
@@ -496,7 +497,7 @@ export default function InventarioPage() {
       await cargarLotes();
     } catch (error) {
       console.error(error);
-      setErrorModal(error.message || "No se pudo regularizar el lote.");
+      setErrorModal(mensajeError(error, "No se pudo regularizar el lote."));
     } finally {
       setGuardando(false);
     }
@@ -551,7 +552,7 @@ export default function InventarioPage() {
       await cargarLotes();
     } catch (error) {
       console.error(error);
-      setErrorModal(error.message || "No se pudo registrar la baja.");
+      setErrorModal(mensajeError(error, "No se pudo registrar la baja."));
     } finally {
       setGuardando(false);
     }

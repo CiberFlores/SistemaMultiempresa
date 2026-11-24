@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -315,8 +316,7 @@ export default function ProductosPage() {
     const fallo = (err) => {
 
       setErrorLista(
-        err.message ||
-        "Error al cargar los productos."
+        mensajeError(err, "Error al cargar los productos.")
       );
 
     };
@@ -1097,8 +1097,7 @@ export default function ProductosPage() {
       );
 
       setError(
-        err.message ||
-        "No se pudo guardar el producto."
+        mensajeError(err, "No se pudo guardar el producto.")
       );
 
     } finally {
@@ -1139,8 +1138,7 @@ export default function ProductosPage() {
     } catch (err) {
 
       setErrorLista(
-        err.message ||
-        "No se pudo cambiar el estado."
+        mensajeError(err, "No se pudo cambiar el estado.")
       );
 
     }
@@ -1180,8 +1178,7 @@ export default function ProductosPage() {
     } catch (err) {
 
       setErrorLista(
-        err.message ||
-        "No se pudo eliminar el producto."
+        mensajeError(err, "No se pudo eliminar el producto.")
       );
 
     }

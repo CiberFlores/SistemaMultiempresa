@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { ConfirmContext } from "../../context/ConfirmContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Eye, Pencil, Plus, Power, Search, Trash2, X } from "lucide-react";
@@ -347,7 +348,7 @@ export default function GenericCrudPage({
       setForm(defaultValues);
       setError("");
     } catch (err) {
-      setError(err.message || "No se pudo guardar.");
+      setError(mensajeError(err, "No se pudo guardar."));
     } finally {
       setSaving(false);
     }
@@ -385,7 +386,7 @@ export default function GenericCrudPage({
       setAviso(desactivar ? "Quedó desactivado." : "Quedó activado.");
     } catch (err) {
       console.error(err);
-      setError(err.message || "No se pudo cambiar el estado.");
+      setError(mensajeError(err, "No se pudo cambiar el estado."));
     }
   };
 
@@ -414,7 +415,7 @@ export default function GenericCrudPage({
       });
       setAviso(`Se eliminó el ${entityLabel}.`);
     } catch (err) {
-      setError(err.message || "No se pudo eliminar.");
+      setError(mensajeError(err, "No se pudo eliminar."));
     }
   };
 

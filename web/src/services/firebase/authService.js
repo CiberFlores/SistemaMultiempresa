@@ -62,10 +62,20 @@ export async function iniciarSesion(correo, contraseña) {
   }
 
   const referenciaUsuario = doc(db, "usuarios", usuarioFirebase.uid);
-  const documentoUsuario = await getDoc(referenciaUsuario);
+  let documentoUsuario;
+  try {
+    documentoUsuario = await getDoc(referenciaUsuario);
+  } catch (fallo) {
+    // Las reglas no dejan leer el perfil de una cuenta desactivada o sin perfil
+    await signOut(auth);
+    if (fallo.code === "permission-denied") {
+      throw new Error("Tu cuenta está desactivada o ya no tiene acceso. Habla con quien administra tu empresa.", { cause: fallo });
+    }
+    throw fallo;
+  }
   if (!documentoUsuario.exists()) {
     await signOut(auth);
-    throw new Error("El usuario no tiene un perfil registrado en Firestore.");
+    throw new Error("Esta cuenta no tiene un perfil en el sistema. Habla con quien administra tu empresa.");
   }
 
   const datosUsuario = documentoUsuario.data();

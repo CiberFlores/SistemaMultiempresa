@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeCheck,
@@ -293,12 +294,16 @@ export default function TrabajadoresPage() {
         await actualizarTrabajador(editando.id, datos);
         setAviso(`Datos de ${nombreLimpio} actualizados.`);
       } else {
-        await provisionarUsuario({
+        const { correoEnviado } = await provisionarUsuario({
           ...datos,
           empresaId: usuario.empresaId,
           tipoUsuario: "TRABAJADOR"
         });
-        setAviso(`Cuenta de ${nombreLimpio} creada. Le llegó un correo para verificarla.`);
+        setAviso(
+          correoEnviado
+            ? `Cuenta de ${nombreLimpio} creada. Le llegó un correo para verificarla.`
+            : `Cuenta de ${nombreLimpio} creada. El correo de verificación no salió; se enviará cuando intente entrar.`
+        );
       }
 
       sonidoExito();
@@ -306,11 +311,11 @@ export default function TrabajadoresPage() {
       setForm(formularioInicial);
     } catch (fallo) {
       console.error(fallo);
-      const mensaje = String(fallo?.code || fallo?.message || "");
+      const mensaje = String(fallo?.code || mensajeError(fallo, ""));
       setError(
         mensaje.includes("email-already-in-use")
           ? "Ese correo ya tiene una cuenta en el sistema."
-          : fallo.message || "No se pudo guardar."
+          : mensajeError(fallo, "No se pudo guardar.")
       );
     } finally {
       setGuardando(false);

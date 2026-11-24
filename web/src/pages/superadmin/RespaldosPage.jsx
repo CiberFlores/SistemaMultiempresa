@@ -10,6 +10,7 @@ import {
   Info,
   ShieldCheck
 } from "lucide-react";
+import mensajeError from "../../utils/mensajeError";
 import { useEffect, useMemo, useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import {
@@ -158,7 +159,7 @@ export default function RespaldosPage() {
           "No tienes permiso para esta operación. Comprueba que tu cuenta de super administrador esté activa."
         );
       } else {
-        setError(err?.message || "No se pudo generar el respaldo.");
+        setError(mensajeError(err, "No se pudo generar el respaldo."));
       }
     } finally {
       setBusy(false);

@@ -1,5 +1,6 @@
 import "../../styles/empresa-identidad.css";
 import { ImagePlus, Sparkles, Trash2, Upload } from "lucide-react";
+import mensajeError from "../../utils/mensajeError";
 
 import { useId, useRef, useState } from "react";
 
@@ -108,7 +109,7 @@ function IdentidadVisualEditor({
       const resultado = await procesarLogo(archivo);
       alLogo(resultado);
     } catch (error) {
-      setErrorLogo(error.message || "No se pudo preparar la imagen.");
+      setErrorLogo(mensajeError(error, "No se pudo preparar la imagen."));
     } finally {
       setProcesando(false);
 

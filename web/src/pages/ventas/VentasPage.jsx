@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
@@ -172,7 +173,7 @@ export default function VentasPage() {
     } catch (e) {
       console.error(e);
       sonidoError();
-      setError(e.message || "No pudimos anular la venta.");
+      setError(mensajeError(e, "No pudimos anular la venta."));
     }
   }
 

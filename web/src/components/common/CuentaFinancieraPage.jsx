@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -250,7 +251,7 @@ export default function CuentaFinancieraPage({ tipo }) {
       setElegida(null);
     } catch (e) {
       console.error(e);
-      fallar(e.message || "No pudimos registrar el movimiento. Inténtalo otra vez.");
+      fallar(mensajeError(e, "No pudimos registrar el movimiento. Inténtalo otra vez."));
     } finally {
       setGuardando(false);
     }

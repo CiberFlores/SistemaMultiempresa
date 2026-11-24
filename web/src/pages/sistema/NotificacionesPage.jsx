@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { AnimatePresence, motion } from "framer-motion";
 import { BellRing, Check, Inbox, Megaphone, Pencil, Plus, Power, Search, Trash2, Users, X } from "lucide-react";
 
@@ -266,7 +267,7 @@ function PanelDueno({ usuario }) {
     } catch (e) {
       console.error(e);
       sonidoError();
-      setError(e.message || "No pudimos enviar el aviso. Inténtalo otra vez.");
+      setError(mensajeError(e, "No pudimos enviar el aviso. Inténtalo otra vez."));
     } finally {
       setGuardando(false);
     }

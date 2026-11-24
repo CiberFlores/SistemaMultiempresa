@@ -3,6 +3,7 @@ import {
   useMemo,
   useState
 } from "react";
+import mensajeError from "../../utils/mensajeError";
 
 import {
   CalendarDays,
@@ -450,8 +451,7 @@ function LicenciasPage() {
       console.error(error);
 
       setError(
-        error.message ||
-          "No se pudo guardar la licencia."
+        mensajeError(error, "No se pudo guardar la licencia.")
       );
     } finally {
       setGuardando(false);
@@ -492,8 +492,7 @@ function LicenciasPage() {
         console.error(error);
 
         alert(
-          error.message ||
-            "No se pudo modificar la licencia."
+          mensajeError(error, "No se pudo modificar la licencia.")
         );
       }
     };

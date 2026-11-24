@@ -5,6 +5,7 @@ import {
   useRef,
   useState
 } from "react";
+import mensajeError from "../../utils/mensajeError";
 
 import {
   AlertTriangle,
@@ -259,8 +260,7 @@ function PosPage() {
       if (solicitud === solicitudRef.current) {
 
         setError(
-          err.message ||
-          "No se pudieron cargar los datos del punto de venta."
+          mensajeError(err, "No se pudieron cargar los datos del punto de venta.")
         );
 
       }
@@ -909,8 +909,7 @@ function PosPage() {
       console.error(err);
 
       setError(
-        err.message ||
-        "No se pudo registrar la venta."
+        mensajeError(err, "No se pudo registrar la venta.")
       );
 
     } finally {

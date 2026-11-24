@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Wallet
 } from "lucide-react";
+import mensajeError from "../../utils/mensajeError";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -294,7 +295,7 @@ function LoginPage() {
       }
 
       // ERRORES PERSONALIZADOS
-      setError(error.message || "No se pudo iniciar sesión.");
+      setError(mensajeError(error, "No se pudo iniciar sesión."));
     } finally {
       setCargando(false);
     }

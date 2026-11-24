@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -357,7 +358,7 @@ export default function ComprasPage() {
     } catch (error) {
       console.error(error);
       sonidoError();
-      setErrorCompra(error.message || "No pudimos registrar la compra. Inténtalo otra vez.");
+      setErrorCompra(mensajeError(error, "No pudimos registrar la compra. Inténtalo otra vez."));
     } finally {
       setGuardando(false);
     }

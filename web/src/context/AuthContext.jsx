@@ -14,6 +14,8 @@ async function expulsarPorEmpresaSuspendida(nombre) {
   await signOut(auth);
 }
 
+const CAMPOS_VIVOS = ["empresaId", "tipoUsuario", "rolId", "sucursales", "nombreCompleto", "telefono", "imagenPerfilUrl"];
+
 export const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
@@ -36,6 +38,7 @@ function AuthProvider({ children }) {
       } catch (error) {
         console.error("Error cargando usuario:", error);
         setUsuario(null);
+        if (error?.code === "permission-denied") await signOut(auth).catch(() => {});
       } finally { setCargando(false); }
     });
     return () => unsubscribe();
@@ -59,6 +62,30 @@ function AuthProvider({ children }) {
       () => {}
     );
   }, [empresaId]);
+
+  // Si desactivan la cuenta o le cambian el cargo, se aplica sin volver a entrar
+  const uid = usuario?.uid;
+
+  useEffect(() => {
+    if (!uid) return undefined;
+
+    return onSnapshot(
+      doc(db, "usuarios", uid),
+      (documento) => {
+        const datos = documento.data();
+        if (!datos) return;
+        if (datos.estado !== true) { setUsuario(null); signOut(auth); return; }
+        setUsuario((actual) => {
+          if (!actual) return actual;
+          const igual = CAMPOS_VIVOS.every((k) => JSON.stringify(actual[k]) === JSON.stringify(datos[k]));
+          return igual ? actual : { ...actual, ...datos };
+        });
+      },
+      (error) => {
+        if (error.code === "permission-denied") { setUsuario(null); signOut(auth); }
+      }
+    );
+  }, [uid]);
 
   const cerrarSesion = async () => { await firebaseCerrarSesion(); setUsuario(null); };
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import mensajeError from "../../utils/mensajeError";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
@@ -156,7 +157,7 @@ export default function CajasPage() {
       setAbrir(false);
     } catch (error) {
       console.error(error);
-      fallar(error.message || "No pudimos abrir la caja. Inténtalo otra vez.");
+      fallar(mensajeError(error, "No pudimos abrir la caja. Inténtalo otra vez."));
     } finally {
       setGuardando(false);
     }
@@ -184,7 +185,7 @@ export default function CajasPage() {
     } catch (error) {
       console.error(error);
       sonidoError();
-      setErrorCerrar(error.message || "No pudimos cerrar la caja. Inténtalo otra vez.");
+      setErrorCerrar(mensajeError(error, "No pudimos cerrar la caja. Inténtalo otra vez."));
     } finally {
       setGuardando(false);
     }

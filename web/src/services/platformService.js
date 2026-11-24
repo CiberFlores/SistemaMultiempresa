@@ -1,6 +1,5 @@
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -10,17 +9,16 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  where
+  where,
+  writeBatch
 } from "firebase/firestore";
 import { db } from "./firebase/firebaseConfig";
 
 export function suscribirAdministradores(callback, errorCallback) {
   return onSnapshot(
-    collection(db, "usuarios"),
+    query(collection(db, "usuarios"), where("tipoUsuario", "==", "ADMIN")),
     (snapshot) => {
-      const rows = snapshot.docs
-        .map((item) => ({ id: item.id, ...item.data() }))
-        .filter((item) => item.tipoUsuario === "ADMIN");
+      const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       rows.sort((a, b) => (a.nombreCompleto || "").localeCompare(b.nombreCompleto || ""));
       callback(rows);
     },
@@ -90,6 +88,7 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
     "marcas",
     "productos",
     "inventarios",
+    "lotesInventario",
     "movimientosStock",
     "proveedores",
     "compras",
@@ -102,6 +101,8 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
     "gastos",
     "cuentasCobrar",
     "cuentasPagar",
+    "pagosCredito",
+    "pagosProveedor",
     "promociones",
     "devoluciones"
   ];
@@ -117,7 +118,14 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
     }
   }
 
-  await deleteDoc(doc(db, "empresas", empresaId));
+  // La configuración de la empresa se va con ella para no dejar restos
+  const licencias = await getDocs(query(collection(db, "licencias"), where("empresaId", "==", empresaId)));
+  const lote = writeBatch(db);
+  licencias.docs.forEach((item) => lote.delete(item.ref));
+  ["configuracionesEmpresas", "personalizacionesEmpresas", "modulosEmpresa", "empresas"].forEach((nombre) =>
+    lote.delete(doc(db, nombre, empresaId))
+  );
+  await lote.commit();
 }
 
 /* ==========================================================
@@ -144,6 +152,7 @@ const BACKUP_COLLECTIONS = [
   "marcas",
   "productos",
   "inventarios",
+  "lotesInventario",
   "movimientosStock",
   "proveedores",
   "compras",

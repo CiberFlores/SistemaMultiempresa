@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, createElement } from "react";
+import mensajeError from "../../utils/mensajeError";
 import {
   Boxes,
   CircleCheck,
@@ -132,7 +133,7 @@ export default function ModulosGlobalesPage() {
       }
       cerrarModal();
     } catch (err) {
-      setError(err.message || "No se pudo guardar el módulo.");
+      setError(mensajeError(err, "No se pudo guardar el módulo."));
     } finally {
       setGuardando(false);
     }
@@ -168,7 +169,7 @@ export default function ModulosGlobalesPage() {
       const cantidad = await inicializarModulosBase();
       alert(cantidad ? `Se crearon ${cantidad} módulos base.` : "Los módulos base ya estaban creados.");
     } catch (err) {
-      alert(err.message || "No se pudieron inicializar los módulos.");
+      alert(mensajeError(err, "No se pudieron inicializar los módulos."));
     }
   };
 
@@ -194,7 +195,7 @@ export default function ModulosGlobalesPage() {
         detalle: `Eliminó el módulo ${modulo.nombre}`
       });
     } catch (err) {
-      alert(err.message || "No se pudo eliminar.");
+      alert(mensajeError(err, "No se pudo eliminar."));
     }
   };
 
