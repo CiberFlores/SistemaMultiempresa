@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import mensajeError from "../../utils/mensajeError";
 import {
   Eye,
@@ -59,8 +59,8 @@ export default function AdministradoresPage() {
     };
   }, []);
 
-  const company = (id) => empresas.find((item) => item.id === id);
-  const companyName = (id) => company(id)?.nombreComercial || "Sin empresa";
+  const company = useCallback((id) => empresas.find((item) => item.id === id), [empresas]);
+  const companyName = useCallback((id) => company(id)?.nombreComercial || "Sin empresa", [company]);
 
   const filtered = useMemo(
     () =>
@@ -80,7 +80,7 @@ export default function AdministradoresPage() {
         const companyOk = empresaFilter === "TODOS" || row.empresaId === empresaFilter;
         return matches && statusOk && companyOk;
       }),
-    [rows, search, status, empresaFilter, empresas]
+    [rows, search, status, empresaFilter, companyName]
   );
 
   const newAdmin = () => {

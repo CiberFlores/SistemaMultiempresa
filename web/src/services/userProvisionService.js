@@ -2,7 +2,8 @@ import { deleteApp, initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
   deleteUser,
-  getAuth,
+  initializeAuth,
+  inMemoryPersistence,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signOut
@@ -74,7 +75,8 @@ export async function provisionarUsuario({ correo, password, nombreCompleto, tel
   }
 
   const secundaria = initializeApp(firebaseConfig, `provision-${Date.now()}-${Math.random()}`);
-  const auth = getAuth(secundaria);
+  // La cuenta nueva nunca se guarda en este equipo
+  const auth = initializeAuth(secundaria, { persistence: inMemoryPersistence });
   auth.languageCode = "es";
 
   try {

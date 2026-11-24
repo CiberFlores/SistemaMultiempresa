@@ -27,6 +27,7 @@ service cloud.firestore {
     // La cuenta de la persona está habilitada
     function userEnabled() {
       return hasProfile() &&
+        request.auth.token.email_verified == true &&
         me().data.estado == true;
     }
 
@@ -263,6 +264,13 @@ service cloud.firestore {
         (
           active() &&
           request.auth.uid == uid &&
+
+          // Cada persona solo toca sus datos de contacto y su presencia
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'conectado', 'enPos', 'ultimaActividad', 'ultimoAcceso',
+            'correoVerificado', 'nombreCompleto', 'telefono',
+            'imagenPerfilUrl', 'fechaActualizacion'
+          ]) &&
 
           request.resource.data.tipoUsuario ==
             resource.data.tipoUsuario &&
@@ -1338,16 +1346,27 @@ service cloud.firestore {
 
       allow create: if
         hasPermission('ventas.registrar') &&
-        sameNewCompany();
+        sameNewCompany() &&
+        request.resource.data.usuarioId == request.auth.uid &&
+        request.resource.data.estado == 'COMPLETADA' &&
+        request.resource.data.fechaRegistro == request.time &&
+        request.resource.data.subtotal is number &&
+        request.resource.data.descuento is number &&
+        request.resource.data.total is number &&
+        request.resource.data.descuento >= 0 &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.total <= request.resource.data.subtotal;
 
+      // Una venta hecha no se edita: solo se puede anular, una vez y con nombre
       allow update: if
-
-        (
-          hasPermission('ventas.ver') ||
-          hasPermission('ventas.registrar')
-        ) &&
-
-        sameOnUpdate();
+        hasPermission('ventas.ver') &&
+        sameOnUpdate() &&
+        resource.data.estado == 'COMPLETADA' &&
+        request.resource.data.estado == 'ANULADA' &&
+        request.resource.data.usuarioAnulacion == request.auth.uid &&
+        request.resource.data.fechaAnulacion == request.time &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['estado', 'usuarioAnulacion', 'fechaAnulacion']);
 
       allow delete: if false;
     }
@@ -1382,17 +1401,8 @@ service cloud.firestore {
           sameExistingCompany()
         );
 
-      allow create: if
-        hasPermission('ventas.ver') &&
-        sameNewCompany();
-
-      allow update: if
-        hasPermission('ventas.ver') &&
-        sameOnUpdate();
-
-      allow delete: if
-        hasPermission('ventas.ver') &&
-        sameExistingCompany();
+      // El sistema todavía no registra devoluciones
+      allow write: if false;
     }
 
     // ==========================================
@@ -1461,15 +1471,61 @@ service cloud.firestore {
           sameExistingCompany()
         );
 
+      // Solo se abre si la sucursal quedó reservada para esta caja
       allow create: if
         hasPermission('caja.gestionar') &&
-        sameNewCompany();
+        sameNewCompany() &&
+        request.resource.data.estado == 'ABIERTA' &&
+        request.resource.data.usuarioAperturaId == request.auth.uid &&
+        request.resource.data.saldoInicial is number &&
+        request.resource.data.saldoInicial >= 0 &&
+        getAfter(
+          /databases/$(database)/documents/cajasAbiertas/$(request.resource.data.sucursalId)
+        ).data.cajaId == id;
+
+      // Lo único que cambia en una caja es su cierre, una sola vez
+      allow update: if
+        hasPermission('caja.gestionar') &&
+        sameOnUpdate() &&
+        resource.data.estado == 'ABIERTA' &&
+        request.resource.data.estado == 'CERRADA' &&
+        request.resource.data.usuarioCierreId == request.auth.uid &&
+        request.resource.data.fechaCierre == request.time &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'totalIngresos', 'totalEgresos', 'saldoFinal', 'saldoContado',
+          'diferencia', 'usuarioCierreId', 'estado', 'fechaCierre',
+          'fechaActualizacion'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // Qué caja tiene abierta cada sucursal: evita dos cajas a la vez
+    match /cajasAbiertas/{sucursalId} {
+
+      allow get: if
+        hasPermission('caja.gestionar') &&
+        (resource == null || sameExistingCompany());
+
+      allow create: if
+        hasPermission('caja.gestionar') &&
+        sameNewCompany() &&
+        request.resource.data.usuarioId == request.auth.uid &&
+        request.resource.data.sucursalId == sucursalId &&
+        get(
+          /databases/$(database)/documents/sucursales/$(sucursalId)
+        ).data.empresaId == myCompany();
 
       allow update: if
         hasPermission('caja.gestionar') &&
-        sameOnUpdate();
+        sameOnUpdate() &&
+        request.resource.data.usuarioId == request.auth.uid &&
+        request.resource.data.sucursalId == sucursalId &&
+        get(
+          /databases/$(database)/documents/cajas/$(resource.data.cajaId)
+        ).data.estado == 'CERRADA';
 
-      allow delete: if false;
+      allow list, delete: if false;
     }
 
     // ==========================================
@@ -1492,12 +1548,33 @@ service cloud.firestore {
 
       allow create: if
         sameNewCompany() &&
+        request.resource.data.usuarioId == request.auth.uid &&
+        request.resource.data.fechaRegistro == request.time &&
+        request.resource.data.monto is number &&
+        request.resource.data.monto >= 0 &&
 
         (
-          hasPermission('caja.gestionar') ||
-          hasPermission('ventas.registrar') ||
-          hasPermission('compras.gestionar') ||
-          validFinanceCashMovement(id)
+          hasAnyPermission([
+            'caja.gestionar',
+            'ventas.registrar',
+            'compras.gestionar'
+          ]) ||
+          validFinanceCashMovement(id) ||
+          (
+            // Quien anula una venta en efectivo devuelve su importe exacto
+            hasPermission('ventas.ver') &&
+            request.resource.data.tipo == 'EGRESO' &&
+            request.resource.data.categoria == 'ANULACION_VENTA' &&
+            get(
+              /databases/$(database)/documents/ventas/$(request.resource.data.referenciaId)
+            ).data.estado == 'COMPLETADA' &&
+            getAfter(
+              /databases/$(database)/documents/ventas/$(request.resource.data.referenciaId)
+            ).data.estado == 'ANULADA' &&
+            getAfter(
+              /databases/$(database)/documents/ventas/$(request.resource.data.referenciaId)
+            ).data.total == request.resource.data.monto
+          )
         );
 
       allow update, delete: if false;
@@ -1521,13 +1598,17 @@ service cloud.firestore {
         hasPermission('caja.gestionar') &&
         sameNewCompany();
 
+      // El monto, la caja y la fecha de un gasto no se cambian; se anula
       allow update: if
         hasPermission('caja.gestionar') &&
-        sameOnUpdate();
+        sameOnUpdate() &&
+        resource.data.estado != 'ANULADO' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'concepto', 'categoria', 'observacion', 'estado',
+          'fechaAnulacion', 'fechaActualizacion'
+        ]);
 
-      allow delete: if
-        hasPermission('caja.gestionar') &&
-        sameExistingCompany();
+      allow delete: if false;
     }
 
     // ==========================================
@@ -1551,12 +1632,18 @@ service cloud.firestore {
         ) &&
         sameNewCompany();
 
+      // Solo baja el saldo; el total y el cliente quedan fijos
       allow update: if
+        hasAnyPermission(['finanzas.gestionar', 'ventas.ver']) &&
+        sameOnUpdate() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['saldo', 'estadoCuenta', 'fechaActualizacion']) &&
+        request.resource.data.saldo >= 0 &&
+        request.resource.data.saldo <= resource.data.saldo &&
         (
           hasPermission('finanzas.gestionar') ||
-          hasPermission('ventas.ver')
-        ) &&
-        sameOnUpdate();
+          request.resource.data.estadoCuenta == 'ANULADA'
+        );
 
       allow delete: if false;
     }
@@ -1603,11 +1690,12 @@ service cloud.firestore {
         sameNewCompany();
 
       allow update: if
-        (
-          hasPermission('finanzas.gestionar') ||
-          hasPermission('compras.gestionar')
-        ) &&
-        sameOnUpdate();
+        hasPermission('finanzas.gestionar') &&
+        sameOnUpdate() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['saldo', 'estadoCuenta', 'fechaActualizacion']) &&
+        request.resource.data.saldo >= 0 &&
+        request.resource.data.saldo <= resource.data.saldo;
 
       allow delete: if false;
     }
@@ -1724,10 +1812,12 @@ service cloud.firestore {
           sameExistingCompany()
         );
 
+      // Nadie escribe un registro a nombre de otra persona ni con otra hora
       allow create: if
-        superAdmin() ||
+        request.resource.data.usuarioId == request.auth.uid &&
+        request.resource.data.fecha == request.time &&
         (
-          active() &&
+          superAdmin() ||
           sameNewCompany()
         );
 

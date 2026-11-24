@@ -1,6 +1,9 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useCallback, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import useCierrePorInactividad from "../hooks/useCierrePorInactividad";
+import { guardarMotivoSalida, olvidarActividad, sesionVencida } from "../utils/sesion";
+import { appInstalada } from "../utils/instalacionApp";
 import { auth, db } from "../services/firebase/firebaseConfig";
 import {
   cerrarSesion as firebaseCerrarSesion,
@@ -14,8 +17,12 @@ async function expulsarPorEmpresaSuspendida(nombre) {
   await signOut(auth);
 }
 
+const MOTIVO_INACTIVIDAD = "Cerramos tu sesión porque estuvo un rato sin uso. Entra otra vez.";
+const MOTIVO_DESACTIVADA = "Tu cuenta fue desactivada. Habla con quien administra tu empresa.";
+
 const CAMPOS_VIVOS = ["empresaId", "tipoUsuario", "rolId", "sucursales", "nombreCompleto", "telefono", "imagenPerfilUrl"];
 
+// eslint-disable-next-line react-refresh/only-export-components -- el contexto y su proveedor van juntos
 export const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
@@ -32,6 +39,13 @@ function AuthProvider({ children }) {
         if (!documento.exists()) { setUsuario(null); await signOut(auth); return; }
         const datos = documento.data();
         if (datos.estado !== true) { setUsuario(null); await signOut(auth); return; }
+        if ((!appInstalada() || datos.tipoUsuario === "SUPER_ADMIN") && sesionVencida(datos.tipoUsuario)) {
+          guardarMotivoSalida(MOTIVO_INACTIVIDAD);
+          olvidarActividad();
+          setUsuario(null);
+          await signOut(auth);
+          return;
+        }
         const bloqueo = datos.tipoUsuario !== "SUPER_ADMIN" ? await empresaSuspendida(datos.empresaId) : null;
         if (bloqueo) { setUsuario(null); await expulsarPorEmpresaSuspendida(bloqueo.nombre); return; }
         setUsuario({ uid: firebaseUser.uid, email: firebaseUser.email, emailVerified: firebaseUser.emailVerified, ...datos });
@@ -74,7 +88,7 @@ function AuthProvider({ children }) {
       (documento) => {
         const datos = documento.data();
         if (!datos) return;
-        if (datos.estado !== true) { setUsuario(null); signOut(auth); return; }
+        if (datos.estado !== true) { guardarMotivoSalida(MOTIVO_DESACTIVADA); setUsuario(null); signOut(auth); return; }
         setUsuario((actual) => {
           if (!actual) return actual;
           const igual = CAMPOS_VIVOS.every((k) => JSON.stringify(actual[k]) === JSON.stringify(datos[k]));
@@ -82,12 +96,20 @@ function AuthProvider({ children }) {
         });
       },
       (error) => {
-        if (error.code === "permission-denied") { setUsuario(null); signOut(auth); }
+        if (error.code === "permission-denied" && auth.currentUser) { guardarMotivoSalida(MOTIVO_DESACTIVADA); setUsuario(null); signOut(auth); }
       }
     );
   }, [uid]);
 
   const cerrarSesion = async () => { await firebaseCerrarSesion(); setUsuario(null); };
+
+  const cerrarPorInactividad = useCallback(async () => {
+    guardarMotivoSalida(MOTIVO_INACTIVIDAD);
+    setUsuario(null);
+    await firebaseCerrarSesion();
+  }, []);
+
+  useCierrePorInactividad(usuario, cerrarPorInactividad);
 
   return <AuthContext.Provider value={{ usuario, setUsuario, cargando, cerrarSesion }}>{children}</AuthContext.Provider>;
 }

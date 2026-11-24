@@ -17,5 +17,9 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Las pantallas muestran el estado de carga al abrir y leer Firestore en un efecto
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

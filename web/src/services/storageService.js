@@ -415,7 +415,8 @@ export async function subirImagenEmpresa({
 
       throw new Error(
         "La fotografía tardó demasiado en subirse. " +
-        "Comprueba tu conexión a Internet."
+        "Comprueba tu conexión a Internet.",
+        { cause: error }
       );
 
     }
@@ -427,7 +428,8 @@ export async function subirImagenEmpresa({
 
       throw new Error(
         "No fue posible conectar con Cloudinary. " +
-        "Comprueba Internet o la configuración CORS."
+        "Comprueba Internet o la configuración CORS.",
+        { cause: error }
       );
 
     }

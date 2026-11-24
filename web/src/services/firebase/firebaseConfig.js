@@ -1,7 +1,8 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { browserLocalPersistence, browserSessionPersistence, indexedDBLocalPersistence, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { appInstalada } from "../../utils/instalacionApp";
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,7 +14,9 @@ export const firebaseConfig = {
 };
 
 const app = getApps().find((item) => item.name === "[DEFAULT]") || initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// En el navegador la sesión dura lo que dure la pestaña. Solo la app instalada la recuerda.
+export const PERSISTENCIA = appInstalada() ? [indexedDBLocalPersistence, browserLocalPersistence] : browserSessionPersistence;
+const auth = initializeAuth(app, { persistence: PERSISTENCIA });
 const db = getFirestore(app);
 const storage = getStorage(app);
 

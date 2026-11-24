@@ -13,6 +13,7 @@ import {
   Wallet
 } from "lucide-react";
 import mensajeError from "../../utils/mensajeError";
+import { leerMotivoSalida } from "../../utils/sesion";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -99,7 +100,7 @@ function LoginPage() {
   const [contraseña, setContraseña] = useState("");
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(leerMotivoSalida);
   const [erroresCampo, setErroresCampo] = useState({});
   const [mayusculas, setMayusculas] = useState(false);
   const [bienvenida, setBienvenida] = useState(null);

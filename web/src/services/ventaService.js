@@ -107,7 +107,7 @@ export async function obtenerCatalogosVenta(empresaId) {
       return await lectura;
     } catch (error) {
       if (error?.code === "permission-denied") {
-        throw new Error(`No tienes permiso para ver ${etiqueta}. Pídele a tu jefe que revise tu cargo.`);
+        throw new Error(`No tienes permiso para ver ${etiqueta}. Pídele a tu jefe que revise tu cargo.`, { cause: error });
       }
       throw error;
     }

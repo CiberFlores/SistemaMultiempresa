@@ -1,5 +1,5 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "./firebase/firebaseConfig";
+import { auth, db } from "./firebase/firebaseConfig";
 
 export async function registrarAuditoria({
   empresaId = null,
@@ -16,7 +16,8 @@ export async function registrarAuditoria({
   try {
     await addDoc(collection(db, "auditorias"), {
       empresaId,
-      usuarioId,
+      // Siempre la persona que tiene la sesión: las reglas rechazan cualquier otra
+      usuarioId: auth.currentUser?.uid || usuarioId,
       usuarioNombre,
       accion,
       modulo,

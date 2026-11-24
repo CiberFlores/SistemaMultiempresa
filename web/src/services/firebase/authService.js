@@ -1,5 +1,5 @@
 import {
-  browserLocalPersistence,
+  browserSessionPersistence,
   sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
+import { borrarMotivoSalida, marcarActividad, olvidarActividad } from "../../utils/sesion";
 
 // Los correos de Firebase (verificar cuenta, cambiar contraseña) salen en español
 auth.languageCode = "es";
@@ -49,7 +50,8 @@ export async function iniciarSesion(correo, contraseña) {
   if (!correoLimpio) throw new Error("Debes ingresar tu correo electrónico.");
   if (!contraseña) throw new Error("Debes ingresar tu contraseña.");
 
-  await setPersistence(auth, browserLocalPersistence);
+  marcarActividad();
+  borrarMotivoSalida();
   const credencial = await signInWithEmailAndPassword(auth, correoLimpio, contraseña);
   const usuarioFirebase = credencial.user;
 
@@ -102,6 +104,10 @@ export async function iniciarSesion(correo, contraseña) {
     throw error;
   }
 
+  // La cuenta con más poder nunca queda guardada en el equipo
+  if (datosUsuario.tipoUsuario === "SUPER_ADMIN") await setPersistence(auth, browserSessionPersistence);
+  marcarActividad();
+
   try {
     await updateDoc(referenciaUsuario, { ultimoAcceso: serverTimestamp(), correoVerificado: true });
   } catch { /* no bloquear login por telemetría */ }
@@ -132,6 +138,7 @@ export async function cerrarSesion() {
   }
 
   await signOut(auth);
+  olvidarActividad();
   return true;
 }
 

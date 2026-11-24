@@ -93,8 +93,7 @@ function Header({ onMenu = () => {}, menuAbierto = false }) {
     };
 
   }, [
-    usuario?.tipoUsuario,
-    usuario?.rolId
+    usuario
   ]);
 
   const salir = async () => {

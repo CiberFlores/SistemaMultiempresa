@@ -1,12 +1,11 @@
 import {
-  addDoc,
   collection,
   doc,
   getDocs,
   onSnapshot,
   query,
+  runTransaction,
   serverTimestamp,
-  updateDoc,
   where
 } from "firebase/firestore";
 
@@ -73,7 +72,22 @@ export async function abrirCaja({
     throw new Error("Ya existe una caja abierta en esta sucursal.");
   }
 
-  return addDoc(cajasRef, {
+  // El candado de la sucursal evita que dos personas abran caja al mismo tiempo
+  const cajaRef = doc(cajasRef);
+  const candadoRef = doc(db, "cajasAbiertas", sucursalId);
+
+  await runTransaction(db, async (tx) => {
+    const candado = await tx.get(candadoRef);
+
+    if (candado.exists()) {
+      const anterior = await tx.get(doc(db, "cajas", candado.data().cajaId));
+      if (anterior.exists() && anterior.data().estado === "ABIERTA") {
+        throw new Error("Ya existe una caja abierta en esta sucursal.");
+      }
+    }
+
+    tx.set(candadoRef, { empresaId, sucursalId, cajaId: cajaRef.id, usuarioId, fechaActualizacion: serverTimestamp() });
+    tx.set(cajaRef, {
     empresaId,
     sucursalId,
     nombre: nombre?.trim() || "Caja principal",
@@ -87,7 +101,10 @@ export async function abrirCaja({
     fechaApertura: serverTimestamp(),
     fechaCierre: null,
     fechaActualizacion: serverTimestamp()
+    });
   });
+
+  return cajaRef;
 }
 
 // Ingresos, egresos y dinero que debería haber en una caja
@@ -154,9 +171,15 @@ export async function cerrarCaja(caja, usuarioId, { saldoContado } = {}) {
     throw new Error("El dinero contado debe ser un número desde cero.");
   }
 
-  await updateDoc(
-    doc(db, "cajas", caja.id),
-    {
+  const cajaRef = doc(db, "cajas", caja.id);
+
+  await runTransaction(db, async (tx) => {
+    const actual = await tx.get(cajaRef);
+    if (!actual.exists() || actual.data().estado !== "ABIERTA") {
+      throw new Error("Otra persona ya cerró esta caja.");
+    }
+
+    tx.update(cajaRef, {
       totalIngresos: resumen.ingresos,
       totalEgresos: resumen.egresos,
       saldoFinal: resumen.saldo,
@@ -166,6 +189,6 @@ export async function cerrarCaja(caja, usuarioId, { saldoContado } = {}) {
       estado: "CERRADA",
       fechaCierre: serverTimestamp(),
       fechaActualizacion: serverTimestamp()
-    }
-  );
+    });
+  });
 }

@@ -8,7 +8,8 @@ import {
 
 import AppRoutes from "./routes/AppRoutes";
 
-import MobileLayout from "./components/admin-movil/MobileLayout";
+import pagina from "./routes/pagina";
+
 
 
 import useAuth from "./hooks/useAuth";
@@ -16,6 +17,8 @@ import useAuth from "./hooks/useAuth";
 import useMarcaEmpresa from "./hooks/useMarcaEmpresa";
 
 import { aplicarMarcaApp } from "./utils/appMovilMarca";
+
+const MobileLayout = pagina(() => import("./components/admin-movil/MobileLayout"));
 
 
 // ==========================================
