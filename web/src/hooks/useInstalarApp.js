@@ -16,7 +16,15 @@ export default function useInstalarApp() {
   }, []);
 
   const instalar = useCallback(async () => {
+    setResultado("esperando");
+
+    // Si el navegador no muestra su ventana, no se queda esperando: salen los pasos
+    const reloj = setTimeout(() => {
+      if (document.hasFocus()) setResultado((r) => (r === "esperando" ? "manual" : r));
+    }, 5000);
+
     const respuesta = await pedirInstalacion();
+    clearTimeout(reloj);
 
     if (respuesta === "instalada") setResultado("instalada");
     // Sin aviso del navegador, o si la rechazó: se muestran los pasos manuales

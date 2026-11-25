@@ -44,10 +44,20 @@
     SE CONTROLAN DESDE REACT Y FIREBASE.
   -->
 
-  <link
-    rel="manifest"
-    href="/manifest.webmanifest"
-  />
+  <script>
+    // Solo las páginas de la app llevan manifiesto, y cada empresa el suyo
+    (function () {
+      var partes = location.pathname.split("/");
+      if (partes[1] !== "admin-movil") return;
+      var empresa = /^[A-Za-z0-9_-]+$/.test(partes[2] || "") ? partes[2] : "";
+      var listo = empresa && navigator.serviceWorker && navigator.serviceWorker.controller;
+      if (empresa && !listo) return;
+      var l = document.createElement("link");
+      l.rel = "manifest";
+      l.href = listo ? "/m/" + empresa + "/manifest.webmanifest" : "/manifest.webmanifest";
+      document.head.appendChild(l);
+    })();
+  </script>
 
 
   <!-- ===================================== -->

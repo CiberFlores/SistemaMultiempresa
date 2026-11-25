@@ -3,7 +3,7 @@
 // SERVICE WORKER
 // ==========================================
 
-const CACHE_NAME = "multiempresa-go-v2";
+const CACHE_NAME = "multiempresa-go-v3";
 
 const OFFLINE_URL = "/offline.html";
 
@@ -70,6 +70,27 @@ self.addEventListener("activate", (event) => {
 // CUANDO NO HAY INTERNET.
 
 self.addEventListener("fetch", (event) => {
+
+  // MANIFIESTO E ICONOS DE CADA EMPRESA,
+  // GUARDADOS EN EL CELULAR POR LA PROPIA WEB.
+
+  const direccion = new URL(event.request.url);
+
+  if (
+    direccion.origin === self.location.origin &&
+    direccion.pathname.startsWith("/m/")
+  ) {
+
+    event.respondWith(
+
+      caches.open("an-marca")
+        .then((cache) => cache.match(direccion.pathname))
+        .then((guardado) => guardado || fetch(event.request))
+
+    );
+
+    return;
+  }
 
   if (
     event.request.mode !== "navigate"

@@ -1,7 +1,12 @@
 // Marca de la app móvil de cada empresa: nombre, icono y colores al instalarla.
 //
-// El manifiesto de la app se arma en el momento con los datos de la empresa, así
-// "OXXO GO" se instala con el logo y los colores de OXXO, y otra empresa con los suyos.
+// Cada empresa tiene su propio manifiesto e iconos en /m/<empresa>/… Se guardan en el
+// celular y el service worker los entrega como archivos normales. Android no instala
+// manifiestos temporales (blob:) ni iconos incrustados (data:).
+
+import { olvidarAvisoDeInstalacion } from "./instalacionApp";
+
+const CACHE = "an-marca";
 
 const logoSeguro = (url) => (typeof url === "string" && url.startsWith("https://") ? url : "");
 
@@ -60,7 +65,7 @@ export async function generarIcono(tamano, { logoUrl, primario, sobre, inicial }
     c.fillText(inicial || "A", tamano / 2, tamano / 2 + tamano * 0.03);
   }
 
-  return lienzo.toDataURL("image/png");
+  return new Promise((resolve, reject) => lienzo.toBlob((b) => (b ? resolve(b) : reject(new Error("No se pudo crear el icono."))), "image/png"));
 }
 
 function poner(selector, crear, atributos) {
@@ -75,25 +80,33 @@ function poner(selector, crear, atributos) {
   return nodo;
 }
 
-let manifiestoAnterior = "";
+// El service worker tiene que estar a cargo de la página para entregar el manifiesto
+async function esperarServicio() {
+  if (!("serviceWorker" in navigator)) return false;
+  if (navigator.serviceWorker.controller) return true;
 
-// Cambia el nombre, el icono y el color con que el navegador instala la app
-export async function aplicarMarcaApp({ nombre, logoUrl, primario, sobre, fondo }) {
-  const nombreApp = nombre;
+  return Promise.race([
+    new Promise((listo) => navigator.serviceWorker.addEventListener("controllerchange", () => listo(true), { once: true })),
+    new Promise((listo) => setTimeout(() => listo(Boolean(navigator.serviceWorker.controller)), 5000))
+  ]);
+}
+
+// Deja lista la app de la empresa y, en sus páginas móviles, la ofrece para instalar
+export async function aplicarMarcaApp({ empresaId, nombre, logoUrl, primario, sobre, fondo }) {
   const corto = nombre.length > 12 ? nombre.slice(0, 12).trim() : nombre;
   const datos = { logoUrl, primario, sobre, inicial: nombre.charAt(0).toUpperCase() };
+  const base = `/m/${empresaId}`;
+  const inicio = `/admin-movil/${empresaId}`;
 
   const [icono192, icono512] = await Promise.all([generarIcono(192, datos), generarIcono(512, datos)]);
 
-  const origen = window.location.origin;
-
   const manifiesto = {
-    id: `${origen}/admin-movil`,
-    name: nombreApp,
+    id: inicio,
+    name: nombre,
     short_name: corto,
     description: `Mira cómo le va a tu negocio ${nombre}: ventas, stock, equipo y alertas en tiempo real.`,
-    start_url: `${origen}/admin-movil`,
-    scope: `${origen}/`,
+    start_url: inicio,
+    scope: inicio,
     display: "standalone",
     orientation: "portrait",
     background_color: fondo,
@@ -101,21 +114,28 @@ export async function aplicarMarcaApp({ nombre, logoUrl, primario, sobre, fondo 
     lang: "es",
     prefer_related_applications: false,
     icons: [
-      { src: icono192, sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: icono512, sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: icono512, sizes: "512x512", type: "image/png", purpose: "maskable" }
+      { src: `${base}/icono-192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: `${base}/icono-512.png`, sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: `${base}/icono-512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" }
     ]
   };
 
-  const direccion = URL.createObjectURL(new Blob([JSON.stringify(manifiesto)], { type: "application/manifest+json" }));
+  const cache = await caches.open(CACHE);
+  await Promise.all([
+    cache.put(`${base}/icono-192.png`, new Response(icono192, { headers: { "Content-Type": "image/png" } })),
+    cache.put(`${base}/icono-512.png`, new Response(icono512, { headers: { "Content-Type": "image/png" } })),
+    cache.put(`${base}/manifest.webmanifest`, new Response(JSON.stringify(manifiesto), { headers: { "Content-Type": "application/manifest+json" } }))
+  ]);
 
-  poner('link[rel="manifest"]', () => Object.assign(document.createElement("link"), { rel: "manifest" }), { href: direccion });
-  poner('link[rel="apple-touch-icon"]', () => Object.assign(document.createElement("link"), { rel: "apple-touch-icon" }), { href: icono192 });
+  poner('link[rel="apple-touch-icon"]', () => Object.assign(document.createElement("link"), { rel: "apple-touch-icon" }), { href: URL.createObjectURL(icono192) });
   poner('meta[name="theme-color"]', () => Object.assign(document.createElement("meta"), { name: "theme-color" }), { content: primario });
   poner('meta[name="apple-mobile-web-app-title"]', () => Object.assign(document.createElement("meta"), { name: "apple-mobile-web-app-title" }), { content: corto });
 
-  if (manifiestoAnterior) URL.revokeObjectURL(manifiestoAnterior);
-  manifiestoAnterior = direccion;
+  if (!window.location.pathname.startsWith(inicio) || !(await esperarServicio())) return;
 
-  return { nombreApp, icono192 };
+  const direccion = `${base}/manifest.webmanifest`;
+  if (document.head.querySelector('link[rel="manifest"]')?.getAttribute("href") === direccion) return;
+
+  olvidarAvisoDeInstalacion();
+  poner('link[rel="manifest"]', () => Object.assign(document.createElement("link"), { rel: "manifest" }), { href: direccion });
 }

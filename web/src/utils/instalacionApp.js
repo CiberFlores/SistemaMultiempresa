@@ -26,6 +26,12 @@ if (typeof window !== "undefined") {
   });
 }
 
+// Cambió la app que se va a instalar: el aviso anterior ya no sirve y, si se usa, no pasa nada
+export function olvidarAvisoDeInstalacion() {
+  aviso = null;
+  avisar();
+}
+
 export function hayAvisoDeInstalacion() {
   return aviso !== null;
 }
@@ -45,14 +51,16 @@ export async function pedirInstalacion() {
   if (!aviso) return "sin-aviso";
 
   const evento = aviso;
-  aviso = null;
-  avisar();
 
   try {
     await evento.prompt();
     const eleccion = await evento.userChoice;
+    aviso = null;
+    avisar();
     return eleccion?.outcome === "accepted" ? "instalada" : "rechazada";
   } catch {
+    aviso = null;
+    avisar();
     return "sin-aviso";
   }
 }
@@ -71,4 +79,45 @@ export function detectarNavegador() {
   const movil = ios || android || (navigator.maxTouchPoints > 1 && window.innerWidth <= 1000);
 
   return { dentroDeApp, ios, android, samsung, firefox, edge, chrome, movil };
+}
+
+// Los pasos cambian según el navegador del celular
+export function pasosDeInstalacion(n) {
+  if (n.dentroDeApp) {
+    return [
+      "Este enlace está abierto dentro de otra aplicación (WhatsApp, Facebook…) y ahí no se puede instalar.",
+      "Toca los tres puntos ⋮ de arriba y elige «Abrir en Chrome» o «Abrir en el navegador».",
+      "Ya en el navegador, entra con tu cuenta de dueño y vuelve a esta página."
+    ];
+  }
+
+  if (n.ios) {
+    return [
+      "Abre esta página en Safari (en iPhone solo Safari puede instalarla).",
+      "Toca el botón Compartir (el cuadrado con la flecha hacia arriba).",
+      "Elige «Añadir a pantalla de inicio» y toca «Añadir»."
+    ];
+  }
+
+  if (n.firefox) {
+    return [
+      "Firefox no instala bien esta aplicación. Abre el enlace en Chrome.",
+      "En Chrome toca el menú ⋮ de arriba a la derecha.",
+      "Elige «Instalar aplicación» o «Agregar a la pantalla principal»."
+    ];
+  }
+
+  if (n.samsung) {
+    return [
+      "Toca el menú ☰ de abajo a la derecha.",
+      "Elige «Agregar página a» y luego «Pantalla de inicio».",
+      "Toca «Agregar». Si no aparece, abre el enlace en Chrome."
+    ];
+  }
+
+  return [
+    "Desde el celular, con tu cuenta de dueño, toca «Instalar en mi celular».",
+    "Toca el menú ⋮ de Chrome (arriba a la derecha) y elige «Instalar aplicación» o «Agregar a la pantalla principal».",
+    "Confirma con «Instalar». El icono con el logo de tu empresa aparece en tu pantalla de inicio."
+  ];
 }

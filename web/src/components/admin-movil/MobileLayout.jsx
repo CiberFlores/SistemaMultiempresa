@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import mensajeError from "../../utils/mensajeError";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   BellRing,
@@ -135,7 +135,6 @@ const entrada = (i = 0) => ({
 
 export default function MobileLayout() {
   const { usuario, cargando, cerrarSesion } = useAuth();
-  const navigate = useNavigate();
   const marca = useMarcaEmpresa();
   const modulos = useCompanyModules();
 
@@ -446,7 +445,7 @@ export default function MobileLayout() {
     ventas: <Ventas ventas={ventas} sucursales={datos.sucursales} ahora={ahora} />,
     stock: <Stock key={consulta} filas={stockProductos} consulta={consulta} />,
     equipo: <Equipo equipo={equipo} nombreRol={nombreRol} ahora={ahora} />,
-    ajustes: <Ajustes marca={marca} usuario={usuario} empresaId={empresaId} salir={async () => { await cerrarSesion(); navigate("/login", { replace: true }); }} />
+    ajustes: <Ajustes marca={marca} usuario={usuario} empresaId={empresaId} salir={async () => { await cerrarSesion(); }} />
   };
 
   const MODULO_DE = { inicio: "DASHBOARD", ventas: "VENTAS", stock: "INVENTARIO", equipo: "USUARIOS" };

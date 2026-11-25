@@ -8,6 +8,8 @@ import {
 
 import AppRoutes from "./routes/AppRoutes";
 
+import LoginPage from "./pages/auth/LoginPage.jsx";
+
 import pagina from "./routes/pagina";
 
 
@@ -18,6 +20,7 @@ import useMarcaEmpresa from "./hooks/useMarcaEmpresa";
 
 import { aplicarMarcaApp } from "./utils/appMovilMarca";
 
+const InstalarAppPage = pagina(() => import("./pages/empresa/InstalarAppPage"));
 const MobileLayout = pagina(() => import("./components/admin-movil/MobileLayout"));
 
 
@@ -110,6 +113,8 @@ function AplicacionActual() {
     Boolean(usuario?.empresaId);
 
 
+  const empresaId = usuario?.empresaId;
+
   // La app se instala con el nombre, el icono y los colores de la empresa
   const marca = useMarcaEmpresa();
 
@@ -117,13 +122,14 @@ function AplicacionActual() {
     if (!esAdministrador || !marca.listo) return;
 
     aplicarMarcaApp({
+      empresaId,
       nombre: marca.nombre,
       logoUrl: marca.logoUrl,
       primario: marca.tema.primario,
       sobre: marca.tema.sobrePrimario,
       fondo: marca.tema.fondo
     }).catch(console.warn);
-  }, [esAdministrador, marca.listo, marca.nombre, marca.logoUrl, marca.tema.primario, marca.tema.sobrePrimario, marca.tema.fondo]);
+  }, [esAdministrador, empresaId, marca.listo, marca.nombre, marca.logoUrl, marca.tema.primario, marca.tema.sobrePrimario, marca.tema.fondo]);
 
   // ========================================
   // E. COMPROBAR SI ESTA INSTALADA
@@ -158,10 +164,21 @@ function AplicacionActual() {
 
   if (esRutaMovil) {
 
+    const rutaPropia = `/admin-movil/${empresaId}`;
+    const quiereInstalar = new URLSearchParams(ubicacion.search).has("instalar");
+
+    // Sin sesión se entra aquí mismo: si la app instalada saliera a /login,
+    // el celular mostraría la barra del navegador.
+    if (!cargando && !usuario) contenido = <LoginPage />;
+
+    // Cada dueño abre solo la app de su empresa
+    else if (esAdministrador && ubicacion.pathname !== rutaPropia) contenido = <Navigate to={rutaPropia + ubicacion.search} replace />;
+
+    else if (esAdministrador && quiereInstalar && !instalada) contenido = <InstalarAppPage empresaId={empresaId} />;
+
     // MOBILELAYOUT COMPRUEBA EL USUARIO,
     // EL ROL ADMIN Y SU EMPRESA.
-
-    contenido = <MobileLayout />;
+    else contenido = <MobileLayout />;
 
   }
 
@@ -183,7 +200,7 @@ function AplicacionActual() {
     contenido = (
 
       <Navigate
-        to="/admin-movil"
+        to={`/admin-movil/${empresaId}`}
         replace
       />
 

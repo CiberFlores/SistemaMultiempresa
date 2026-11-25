@@ -1,0 +1,21 @@
+/* ARCA NOVA · INSTALAR LA APP DE LA EMPRESA */
+.ia { display: grid; place-items: center; min-height: 100vh; min-height: 100svh; padding: 24px 16px; background: #fcf7f5; color: #42054e; font-family: "Inter", system-ui, sans-serif; }
+.ia section { display: grid; justify-items: center; gap: 16px; width: min(100%, 460px); text-align: center; }
+.ia__icono { display: grid; place-items: center; width: 132px; height: 132px; border-radius: 34px; background: var(--ia-p); color: var(--ia-on); box-shadow: 0 22px 44px -20px rgb(66 5 78 / 0.55); overflow: hidden; }
+.ia__icono img { width: 92px; height: 92px; padding: 8px; border-radius: 20px; background: #fff; object-fit: contain; }
+.ia__icono b { font-size: 64px; line-height: 1; }
+.ia h1 { margin: 10px 0 0; font: 650 clamp(30px, 8vw, 42px)/1.1 "Fraunces", Georgia, serif; color: #42054e; overflow-wrap: anywhere; text-wrap: balance; }
+.ia p { margin: 0; font-size: 17px; line-height: 1.5; color: #5c4263; }
+.ia__boton { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 60px; padding: 0 24px; border: 0; border-radius: 18px; background: #fe7c01; color: #33033d; font: inherit; font-size: 18px; font-weight: 750; cursor: pointer; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1); }
+.ia__boton:active { transform: scale(0.97); }
+.ia__boton:disabled { background: #f0dfd0; color: #6e5574; cursor: progress; }
+.ia button:focus-visible { outline: 3px solid #42054e; outline-offset: 3px; }
+.ia__listo { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 99px; background: #23794c; color: #fff; font-weight: 700; }
+.ia__guia { display: grid; gap: 14px; width: 100%; padding: 20px; border: 1px solid #e6dce3; border-radius: 20px; background: #fff; text-align: left; }
+.ia__guia strong { font-size: 18px; }
+.ia__guia ol { display: grid; gap: 10px; margin: 0; padding-left: 22px; font-size: 16px; line-height: 1.5; color: #4b2f53; }
+.ia__guia p { padding-top: 14px; border-top: 1px solid #e6dce3; font-size: 15px; }
+.ia__volver { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; border: 0; background: none; color: #42054e; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.ia__gira { animation: ia-gira 1s linear infinite; }
+@keyframes ia-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ia__gira { animation: none; } }

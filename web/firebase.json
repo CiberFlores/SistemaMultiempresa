@@ -14,6 +14,18 @@
     ],
     "rewrites": [
       {
+        "source": "/m/*/manifest.webmanifest",
+        "destination": "/manifest.webmanifest"
+      },
+      {
+        "source": "/m/*/icono-192.png",
+        "destination": "/icons/arca-nova-192.png"
+      },
+      {
+        "source": "/m/*/icono-512.png",
+        "destination": "/icons/arca-nova-512.png"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

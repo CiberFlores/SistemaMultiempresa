@@ -40,3 +40,4 @@ import "./styles/promociones-empresa.css";
 import "./styles/reportes-empresa.css";
 import "./styles/app-movil-go.css";
 import "./styles/mantenimiento.css";
+import "./styles/instalar-app.css";
