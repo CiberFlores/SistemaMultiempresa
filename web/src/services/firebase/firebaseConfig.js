@@ -13,7 +13,24 @@ export const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = getApps().find((item) => item.name === "[DEFAULT]") || initializeApp(firebaseConfig);
+// Cada app instalada guarda su propia sesión: así dos empresas en el mismo celular no se mezclan
+const CLAVE_EMPRESA = "an-empresa-app";
+
+function nombreDeApp() {
+  if (!appInstalada()) return "[DEFAULT]";
+
+  try {
+    const empresa = window.location.pathname.match(/^\/admin-movil\/([A-Za-z0-9_-]+)/)?.[1] || sessionStorage.getItem(CLAVE_EMPRESA);
+    if (!empresa) return "[DEFAULT]";
+    sessionStorage.setItem(CLAVE_EMPRESA, empresa);
+    return `empresa-${empresa}`;
+  } catch {
+    return "[DEFAULT]";
+  }
+}
+
+const nombre = nombreDeApp();
+const app = getApps().find((item) => item.name === nombre) || initializeApp(firebaseConfig, nombre);
 // En el navegador la sesión dura lo que dure la pestaña. Solo la app instalada la recuerda.
 export const PERSISTENCIA = appInstalada() ? [indexedDBLocalPersistence, browserLocalPersistence] : browserSessionPersistence;
 const auth = initializeAuth(app, { persistence: PERSISTENCIA });

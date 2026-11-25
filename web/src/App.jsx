@@ -14,6 +14,8 @@ import pagina from "./routes/pagina";
 
 
 
+import { guardarMotivoSalida } from "./utils/sesion";
+
 import useAuth from "./hooks/useAuth";
 
 import useMarcaEmpresa from "./hooks/useMarcaEmpresa";
@@ -90,13 +92,24 @@ function estaInstalada() {
 // C. CONTROLAR WEB Y APLICACION MOVIL
 // ==========================================
 
+function SalirDeOtraEmpresa({ salir }) {
+  useEffect(() => {
+    guardarMotivoSalida("Esta app es de otra empresa. Entra con la cuenta de su dueño.");
+    salir();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- se hace una sola vez
+  }, []);
+
+  return null;
+}
+
 function AplicacionActual() {
 
   const ubicacion = useLocation();
 
   const {
     usuario,
-    cargando
+    cargando,
+    cerrarSesion
   } = useAuth();
 
 
@@ -165,11 +178,15 @@ function AplicacionActual() {
   if (esRutaMovil) {
 
     const rutaPropia = `/admin-movil/${empresaId}`;
+    const rutaConEmpresa = /^\/admin-movil\/[^/]+/.test(ubicacion.pathname);
     const quiereInstalar = new URLSearchParams(ubicacion.search).has("instalar");
 
     // Sin sesión se entra aquí mismo: si la app instalada saliera a /login,
     // el celular mostraría la barra del navegador.
     if (!cargando && !usuario) contenido = <LoginPage />;
+
+    // La app instalada es de una sola empresa: otra cuenta no entra en ella
+    else if (instalada && esAdministrador && rutaConEmpresa && ubicacion.pathname !== rutaPropia) contenido = <SalirDeOtraEmpresa salir={cerrarSesion} />;
 
     // Cada dueño abre solo la app de su empresa
     else if (esAdministrador && ubicacion.pathname !== rutaPropia) contenido = <Navigate to={rutaPropia + ubicacion.search} replace />;
