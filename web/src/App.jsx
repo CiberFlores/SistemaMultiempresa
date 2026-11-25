@@ -139,10 +139,9 @@ function AplicacionActual() {
       nombre: marca.nombre,
       logoUrl: marca.logoUrl,
       primario: marca.tema.primario,
-      sobre: marca.tema.sobrePrimario,
       fondo: marca.tema.fondo
     }).catch(console.warn);
-  }, [esAdministrador, empresaId, marca.listo, marca.nombre, marca.logoUrl, marca.tema.primario, marca.tema.sobrePrimario, marca.tema.fondo]);
+  }, [esAdministrador, empresaId, marca.listo, marca.nombre, marca.logoUrl, marca.tema.primario, marca.tema.fondo]);
 
   // ========================================
   // E. COMPROBAR SI ESTA INSTALADA

@@ -1,71 +1,39 @@
 // Marca de la app móvil de cada empresa: nombre, icono y colores al instalarla.
 //
-// Cada empresa tiene su propio manifiesto e iconos en /m/<empresa>/… Se guardan en el
-// celular y el service worker los entrega como archivos normales. Android no instala
-// manifiestos temporales (blob:) ni iconos incrustados (data:).
+// Android arma el icono en los servidores de Google, así que tiene que ser una imagen
+// pública en internet. Por eso sale del logo de la empresa en Cloudinary, ya recortado
+// al tamaño exacto. Al cambiar el logo cambia su dirección, y con eso el celular sabe
+// que debe actualizar el icono. Sin logo se usa el de Arca Nova.
+//
+// El manifiesto de cada empresa se guarda en el celular y lo entrega el service worker
+// en /m/<empresa>/manifest.webmanifest, como un archivo normal.
 
 import { olvidarAvisoDeInstalacion } from "./instalacionApp";
 
 const CACHE = "an-marca";
+const SUBIDA = "/image/upload/";
 
-const logoSeguro = (url) => (typeof url === "string" && url.startsWith("https://") ? url : "");
+// Dirección pública del icono cuadrado de la empresa
+export function iconoDeEmpresa(logoUrl, tamano) {
+  const esCloudinary = typeof logoUrl === "string" && logoUrl.startsWith("https://res.cloudinary.com/") && logoUrl.includes(SUBIDA);
 
-function cargarImagen(url) {
-  return new Promise((resolve, reject) => {
-    const imagen = new Image();
-    imagen.crossOrigin = "anonymous";
-    imagen.onload = () => resolve(imagen);
-    imagen.onerror = reject;
-    imagen.src = url;
-  });
+  if (!esCloudinary) return `/icons/arca-nova-${tamano}.png`;
+
+  const interior = Math.round(tamano * 0.8);
+  const ajuste = `c_pad,w_${interior},h_${interior},b_white/c_pad,w_${tamano},h_${tamano},b_white/f_png`;
+  const direccion = logoUrl.replace(SUBIDA, `${SUBIDA}${ajuste}/`);
+
+  // La extensión también pide PNG: es lo que el celular espera
+  return direccion.replace(/\.(webp|jpe?g|avif|gif|svg|png)(\?.*)?$/i, ".png");
 }
 
-// Icono cuadrado: color de la empresa con su logo al centro (o su inicial si no hay logo)
-export async function generarIcono(tamano, { logoUrl, primario, sobre, inicial }) {
-  const lienzo = document.createElement("canvas");
-  lienzo.width = tamano;
-  lienzo.height = tamano;
-  const c = lienzo.getContext("2d");
-
-  c.fillStyle = primario;
-  c.fillRect(0, 0, tamano, tamano);
-
-  const caja = tamano * 0.62;
-  const x = (tamano - caja) / 2;
-
-  let dibujado = false;
-  const url = logoSeguro(logoUrl);
-
-  if (url) {
-    try {
-      const imagen = await cargarImagen(url);
-      const radio = caja * 0.22;
-
-      c.fillStyle = "#ffffff";
-      c.beginPath();
-      c.roundRect(x, x, caja, caja, radio);
-      c.fill();
-
-      const margen = caja * 0.1;
-      const escala = Math.min((caja - margen * 2) / imagen.width, (caja - margen * 2) / imagen.height);
-      const ancho = imagen.width * escala;
-      const alto = imagen.height * escala;
-      c.drawImage(imagen, x + (caja - ancho) / 2, x + (caja - alto) / 2, ancho, alto);
-      dibujado = true;
-    } catch {
-      dibujado = false;
-    }
-  }
-
-  if (!dibujado) {
-    c.fillStyle = sobre;
-    c.font = `800 ${Math.round(tamano * 0.5)}px system-ui, sans-serif`;
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    c.fillText(inicial || "A", tamano / 2, tamano / 2 + tamano * 0.03);
-  }
-
-  return new Promise((resolve, reject) => lienzo.toBlob((b) => (b ? resolve(b) : reject(new Error("No se pudo crear el icono."))), "image/png"));
+function cargarImagen(url) {
+  return new Promise((resolve) => {
+    const imagen = new Image();
+    imagen.onload = () => resolve(true);
+    imagen.onerror = () => resolve(false);
+    imagen.src = url;
+  });
 }
 
 function poner(selector, crear, atributos) {
@@ -92,15 +60,21 @@ async function esperarServicio() {
 }
 
 // Deja lista la app de la empresa y, en sus páginas móviles, la ofrece para instalar
-export async function aplicarMarcaApp({ empresaId, nombre, logoUrl, primario, sobre, fondo }) {
+export async function aplicarMarcaApp({ empresaId, nombre, logoUrl, primario, fondo }) {
   const corto = nombre.length > 12 ? nombre.slice(0, 12).trim() : nombre;
-  const datos = { logoUrl, primario, sobre, inicial: nombre.charAt(0).toUpperCase() };
-  const base = `/m/${empresaId}`;
   const inicio = `/admin-movil/${empresaId}`;
+  const direccion = `/m/${empresaId}/manifest.webmanifest`;
 
-  const [icono192, icono512] = await Promise.all([generarIcono(192, datos), generarIcono(512, datos)]);
+  let icono192 = iconoDeEmpresa(logoUrl, 192);
+  let icono512 = iconoDeEmpresa(logoUrl, 512);
 
-  const manifiesto = {
+  // Si el logo no se puede preparar, la app se instala igual
+  if (!(await cargarImagen(icono512))) {
+    icono192 = iconoDeEmpresa("", 192);
+    icono512 = iconoDeEmpresa("", 512);
+  }
+
+  const texto = JSON.stringify({
     id: inicio,
     name: nombre,
     short_name: corto,
@@ -114,28 +88,28 @@ export async function aplicarMarcaApp({ empresaId, nombre, logoUrl, primario, so
     lang: "es",
     prefer_related_applications: false,
     icons: [
-      { src: `${base}/icono-192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: `${base}/icono-512.png`, sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: `${base}/icono-512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" }
+      { src: icono192, sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: icono512, sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: icono512, sizes: "512x512", type: "image/png", purpose: "maskable" }
     ]
-  };
+  });
 
   const cache = await caches.open(CACHE);
-  await Promise.all([
-    cache.put(`${base}/icono-192.png`, new Response(icono192, { headers: { "Content-Type": "image/png" } })),
-    cache.put(`${base}/icono-512.png`, new Response(icono512, { headers: { "Content-Type": "image/png" } })),
-    cache.put(`${base}/manifest.webmanifest`, new Response(JSON.stringify(manifiesto), { headers: { "Content-Type": "application/manifest+json" } }))
-  ]);
+  const previo = await cache.match(direccion).then((r) => r?.text());
+  if (previo !== texto) await cache.put(direccion, new Response(texto, { headers: { "Content-Type": "application/manifest+json" } }));
 
-  poner('link[rel="apple-touch-icon"]', () => Object.assign(document.createElement("link"), { rel: "apple-touch-icon" }), { href: URL.createObjectURL(icono192) });
+  poner('link[rel="icon"]', () => Object.assign(document.createElement("link"), { rel: "icon" }), { href: icono192 });
+  poner('link[rel="apple-touch-icon"]', () => Object.assign(document.createElement("link"), { rel: "apple-touch-icon" }), { href: icono192 });
   poner('meta[name="theme-color"]', () => Object.assign(document.createElement("meta"), { name: "theme-color" }), { content: primario });
   poner('meta[name="apple-mobile-web-app-title"]', () => Object.assign(document.createElement("meta"), { name: "apple-mobile-web-app-title" }), { content: corto });
 
   if (!window.location.pathname.startsWith(inicio) || !(await esperarServicio())) return;
 
-  const direccion = `${base}/manifest.webmanifest`;
-  if (document.head.querySelector('link[rel="manifest"]')?.getAttribute("href") === direccion) return;
+  const enlace = document.head.querySelector('link[rel="manifest"]');
+  if (previo === texto && enlace?.getAttribute("href") === direccion) return;
 
+  // Se vuelve a poner el enlace para que el navegador lea el manifiesto nuevo
+  enlace?.remove();
   olvidarAvisoDeInstalacion();
   poner('link[rel="manifest"]', () => Object.assign(document.createElement("link"), { rel: "manifest" }), { href: direccion });
 }

@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Download, LoaderCircle } from "lucide-react";
 
 import useInstalarApp from "../../hooks/useInstalarApp";
 import useMarcaEmpresa from "../../hooks/useMarcaEmpresa";
+import { iconoDeEmpresa } from "../../utils/appMovilMarca";
 import { detectarNavegador, pasosDeInstalacion } from "../../utils/instalacionApp";
 
 import "../../styles/instalar-app.css";
@@ -32,7 +33,7 @@ export default function InstalarAppPage({ empresaId }) {
     <main className="ia" style={{ "--ia-p": primario, "--ia-on": marca.tema.sobrePrimario }}>
       <section>
         <span className="ia__icono">
-          {marca.logoUrl ? <img src={marca.logoUrl} alt="" /> : <b>{(marca.nombre || "?").charAt(0).toUpperCase()}</b>}
+          <img src={iconoDeEmpresa(marca.logoUrl, 192)} alt="" />
         </span>
 
         <h1>{lista ? "App instalada" : `Instala ${marca.nombre}`}</h1>
