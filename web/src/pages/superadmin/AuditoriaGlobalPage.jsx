@@ -17,7 +17,7 @@ const ACCIONES = {
   REGISTRAR_COMPRA: { etiqueta: "Registró una compra", tono: "ok" }
 };
 
-const areaDe = (m) => (m === "clientes" || m === "metodosPago" ? "otros" : m);
+const areaDe = (m) => (["clientes", "metodosPago", "licencias", "planes"].includes(m) ? "otros" : m);
 
 const MODULOS = {
   empresas: "Empresas",

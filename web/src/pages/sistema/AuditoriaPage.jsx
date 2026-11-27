@@ -59,7 +59,7 @@ const ENTIDADES = {
   sucursales: "una sucursal"
 };
 
-const areaDe = (m) => (m === "clientes" || m === "metodosPago" ? "otros" : m);
+const areaDe = (m) => (["clientes", "metodosPago", "licencias", "planes"].includes(m) ? "otros" : m);
 const etiquetaModulo = (m) => MODULOS[areaDe(m)] || String(m || "Sistema").replace(/^./, (c) => c.toUpperCase());
 
 function descripcion(registro) {

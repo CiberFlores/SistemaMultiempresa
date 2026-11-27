@@ -139,8 +139,8 @@ function VistaPreviaPanel({ identidad, nombre, rubro }) {
                       <strong>348</strong>
                     </div>
                     <div>
-                      <small>Productos</small>
-                      <strong>96</strong>
+                      <small>Categorías</small>
+                      <strong>12</strong>
                     </div>
                   </div>
 
@@ -194,8 +194,8 @@ function VistaPreviaPanel({ identidad, nombre, rubro }) {
                     <strong>1.250</strong>
                   </div>
                   <div>
-                    <small>Productos</small>
-                    <strong>96</strong>
+                    <small>Categorías</small>
+                    <strong>12</strong>
                   </div>
                 </div>
 

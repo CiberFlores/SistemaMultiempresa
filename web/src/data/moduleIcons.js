@@ -37,7 +37,6 @@ export const MODULE_ICON_OPTIONS = [
   { value: "Package", label: "Productos" },
   { value: "Boxes", label: "Inventario" },
   { value: "ShoppingCart", label: "Ventas / POS" },
-  { value: "ContactRound", label: "Clientes" },
   { value: "Truck", label: "Compras / proveedores" },
   { value: "BadgeDollarSign", label: "Precios / comercial" },
   { value: "Percent", label: "Promociones" },
@@ -47,11 +46,8 @@ export const MODULE_ICON_OPTIONS = [
   { value: "Bell", label: "Notificaciones" },
   { value: "ScrollText", label: "Auditoría" },
   { value: "DatabaseBackup", label: "Respaldos" },
-  { value: "CreditCard", label: "Métodos de pago" },
   { value: "ReceiptText", label: "Comprobantes" },
-  { value: "CircleDollarSign", label: "Cuentas / cobros" },
   { value: "FileChartColumnIncreasing", label: "Analítica" },
-  { value: "KeyRound", label: "Licencias" },
   { value: "Building2", label: "Empresas" },
   { value: "BriefcaseBusiness", label: "Negocio" }
 ];
