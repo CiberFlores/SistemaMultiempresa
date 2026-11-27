@@ -7,7 +7,7 @@ import { descargarExcel, imprimirReporte } from "../../utils/exportarReporte";
 import { BarrasReporte, CabeceraReporte, FiltroPeriodo, GraficoDias, SelectorFiltro, TablaReporte, TarjetasResumen } from "../../components/reportes/ReporteUI";
 import { cantidad, dinero, enRango, fechaDe, normalizar, rangoDe, serieDiaria } from "../../utils/reporteHelpers";
 
-const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia", CREDITO: "A crédito" };
+const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia" };
 
 export default function ReportesVentasPage() {
   const { usuario } = useAuth();
@@ -50,7 +50,7 @@ export default function ReportesVentasPage() {
   const porPago = useMemo(() => {
     const mapa = new Map();
     completadas.forEach((v) => mapa.set(v.metodoPago, (mapa.get(v.metodoPago) || 0) + Number(v.total || 0)));
-    return [...mapa.entries()].map(([k, valor]) => ({ etiqueta: METODOS[k] || k || "Otro", valor })).sort((a, b) => b.valor - a.valor);
+    return [...mapa.entries()].map(([k, valor]) => ({ etiqueta: METODOS[k] || "Otro", valor })).sort((a, b) => b.valor - a.valor);
   }, [completadas]);
 
   const topProductos = useMemo(() => {
@@ -107,7 +107,7 @@ export default function ReportesVentasPage() {
           fechaDe(v.fechaRegistro)?.toLocaleString("es-BO") || "",
           v.clienteNombre || "Consumidor final",
           nombreSucursal(v.sucursalId),
-          METODOS[v.metodoPago] || v.metodoPago || "",
+          METODOS[v.metodoPago] || "Otro",
           v.estado === "ANULADA" ? "Anulada" : "Completada",
           v.estado === "ANULADA" ? 0 : Number(v.descuento || 0),
           v.estado === "ANULADA" ? 0 : Number(v.total || 0)
@@ -223,7 +223,7 @@ export default function ReportesVentasPage() {
               { etiqueta: "Fecha", render: (v) => fechaDe(v.fechaRegistro)?.toLocaleString("es-BO", { dateStyle: "medium", timeStyle: "short" }) || "—" },
               { etiqueta: "Cliente", render: (v) => <strong>{v.clienteNombre || "Consumidor final"}</strong> },
               { etiqueta: "Sucursal", render: (v) => nombreSucursal(v.sucursalId) },
-              { etiqueta: "Pago", render: (v) => <span className="co-pastilla-pago">{METODOS[v.metodoPago] || v.metodoPago || "—"}</span> },
+              { etiqueta: "Pago", render: (v) => <span className="co-pastilla-pago">{METODOS[v.metodoPago] || "Otro"}</span> },
               {
                 etiqueta: "Estado",
                 render: (v) => (

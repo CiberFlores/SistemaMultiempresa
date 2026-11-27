@@ -11,20 +11,16 @@ import {
 import { db } from "./firebase/firebaseConfig";
 
 // ==========================================
-// CONSULTAR CUENTAS POR COBRAR Y PAGAR
+// CONSULTAR CUENTAS POR PAGAR
 // ==========================================
 
 export function suscribirCuentas(
-  tipo,
   empresaId,
   callback,
   errorCallback
 ) {
-  const collectionName =
-    tipo === "COBRAR" ? "cuentasCobrar" : "cuentasPagar";
-
   const consulta = query(
-    collection(db, collectionName),
+    collection(db, "cuentasPagar"),
     where("empresaId", "==", empresaId)
   );
 
@@ -54,7 +50,6 @@ export function suscribirCuentas(
 // ==========================================
 
 export async function registrarPagoCuenta({
-  tipo,
   cuentaId,
   empresaId,
   monto,
@@ -63,10 +58,6 @@ export async function registrarPagoCuenta({
   usuarioId,
   cajaId = ""
 }) {
-  if (tipo !== "COBRAR" && tipo !== "PAGAR") {
-    throw new Error("El tipo de cuenta no es válido.");
-  }
-
   if (!cuentaId || !empresaId) {
     throw new Error("Faltan datos de la cuenta.");
   }
@@ -101,20 +92,14 @@ export async function registrarPagoCuenta({
     );
   }
 
-  const collectionName =
-    tipo === "COBRAR" ? "cuentasCobrar" : "cuentasPagar";
-
-  const paymentsName =
-    tipo === "COBRAR" ? "pagosCredito" : "pagosProveedor";
-
   const cuentaRef = doc(
     db,
-    collectionName,
+    "cuentasPagar",
     cuentaId
   );
 
   const pagoRef = doc(
-    collection(db, paymentsName)
+    collection(db, "pagosProveedor")
   );
 
   const cajaRef = cajaSeleccionada
@@ -228,7 +213,7 @@ export async function registrarPagoCuenta({
     tx.set(pagoRef, {
       empresaId,
       cuentaId,
-      tipo,
+      tipo: "PAGAR",
       monto: amount,
       metodoPago: metodo,
       observacion: String(observacion || "").trim(),
@@ -243,22 +228,16 @@ export async function registrarPagoCuenta({
     // ======================================
 
     if (movimientoRef && caja) {
-      const esCobro = tipo === "COBRAR";
-
       tx.set(movimientoRef, {
         empresaId,
         sucursalId: caja.sucursalId,
         cajaId: cajaSeleccionada,
 
-        tipo: esCobro ? "INGRESO" : "EGRESO",
+        tipo: "EGRESO",
 
-        categoria: esCobro
-          ? "COBRO_CREDITO"
-          : "PAGO_PROVEEDOR",
+        categoria: "PAGO_PROVEEDOR",
 
-        descripcion: esCobro
-          ? `Cobro de cuenta ${cuentaId}`
-          : `Pago de cuenta ${cuentaId}`,
+        descripcion: `Pago de cuenta ${cuentaId}`,
 
         monto: amount,
         metodoPago: metodo,

@@ -25,8 +25,7 @@ const METODOS = {
   EFECTIVO: "Efectivo",
   QR: "QR",
   TARJETA: "Tarjeta",
-  TRANSFERENCIA: "Transferencia",
-  CREDITO: "A crédito"
+  TRANSFERENCIA: "Transferencia"
 };
 
 const normalizar = (valor) =>
@@ -377,7 +376,7 @@ export default function VentasPage() {
                       </td>
                       <td data-label="Pago">
                         <span className="co-pastilla-pago" data-metodo={venta.metodoPago}>
-                          {METODOS[venta.metodoPago] || venta.metodoPago || "—"}
+                          {METODOS[venta.metodoPago] || "Otro"}
                         </span>
                       </td>
                       <td data-label="Total" className="inv-der">
@@ -465,7 +464,7 @@ export default function VentasPage() {
                   </div>
                   <div>
                     <small>Forma de pago</small>
-                    <strong>{METODOS[elegida.metodoPago] || elegida.metodoPago || "—"}</strong>
+                    <strong>{METODOS[elegida.metodoPago] || "Otro"}</strong>
                   </div>
                 </div>
 

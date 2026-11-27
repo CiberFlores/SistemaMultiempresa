@@ -343,8 +343,7 @@ export async function registrarVenta({
       "EFECTIVO",
       "QR",
       "TARJETA",
-      "TRANSFERENCIA",
-      "CREDITO"
+      "TRANSFERENCIA"
     ].includes(metodoPago)
   ) {
     throw new Error(
@@ -361,18 +360,6 @@ export async function registrarVenta({
   ) {
     throw new Error(
       "Selecciona una caja abierta para el pago en efectivo."
-    );
-  }
-
-
-  // VALIDAR CLIENTE PARA CREDITO
-
-  if (
-    metodoPago === "CREDITO" &&
-    !clienteId
-  ) {
-    throw new Error(
-      "Una venta a crédito requiere un cliente registrado."
     );
   }
 
@@ -529,9 +516,6 @@ export async function registrarVenta({
     ? doc(collection(db, "movimientosCaja"))
     : null;
 
-  const cuentaRef = metodoPago === "CREDITO"
-    ? doc(collection(db, "cuentasCobrar"))
-    : null;
 
 
   // ========================================
@@ -1104,44 +1088,6 @@ export async function registrarVenta({
 
 
     // ======================================
-    // VENTAS A CREDITO
-    // ======================================
-
-    if (cuentaRef) {
-      tx.set(
-        cuentaRef,
-        {
-          empresaId,
-          clienteId,
-
-          ventaId:
-            ventaRef.id,
-
-          referencia:
-            ventaRef.id,
-
-          total,
-
-          saldo:
-            total,
-
-          estadoCuenta:
-            "PENDIENTE",
-
-          estado:
-            "ACTIVO",
-
-          fechaRegistro:
-            serverTimestamp(),
-
-          fechaActualizacion:
-            serverTimestamp()
-        }
-      );
-    }
-
-
-    // ======================================
     // MOVIMIENTO DE CAJA
     // ======================================
 
@@ -1317,34 +1263,6 @@ export async function anularVenta({
       "Revisa el historial de devoluciones."
     );
   }
-
-
-  // ========================================
-  // BUSCAR CUENTAS POR COBRAR
-  // ========================================
-
-  const cuentasSnap =
-    ventaPrevia.data().metodoPago === "CREDITO"
-
-      ? await getDocs(
-          query(
-            collection(db, "cuentasCobrar"),
-            where("empresaId", "==", empresaId)
-          )
-        )
-
-      : null;
-
-
-  const cuentaRefs = (
-    cuentasSnap?.docs || []
-  )
-    .filter(
-      (d) => d.data().ventaId === ventaId
-    )
-    .map(
-      (d) => d.ref
-    );
 
 
   // ========================================
@@ -1720,57 +1638,6 @@ export async function anularVenta({
 
 
     // ======================================
-    // VALIDAR CUENTAS POR COBRAR
-    // ======================================
-
-    const cuentas = [];
-
-
-    if (venta.metodoPago === "CREDITO") {
-      if (!cuentaRefs.length) {
-        throw new Error(
-          "No se encontró la cuenta por cobrar " +
-          "de la venta a crédito."
-        );
-      }
-
-
-      for (const ref of cuentaRefs) {
-        const snap = await tx.get(ref);
-
-
-        if (
-          !snap.exists() ||
-          snap.data().empresaId !== empresaId
-        ) {
-          throw new Error(
-            "La cuenta por cobrar ya no está disponible."
-          );
-        }
-
-
-        const cuenta = snap.data();
-
-
-        // EVITAR ANULACION SI YA HUBO PAGOS
-
-        if (
-          Number(cuenta.saldo) + 0.000001 <
-          Number(cuenta.total)
-        ) {
-          throw new Error(
-            "Esta venta a crédito ya tiene cobros. " +
-            "Revisa sus pagos antes de anular."
-          );
-        }
-
-
-        cuentas.push(ref);
-      }
-    }
-
-
-    // ======================================
     // TERMINARON TODAS LAS LECTURAS
     // ======================================
 
@@ -1929,26 +1796,6 @@ export async function anularVenta({
       );
     }
 
-
-    // ======================================
-    // ANULAR CUENTAS POR COBRAR
-    // ======================================
-
-    for (const ref of cuentas) {
-      tx.update(
-        ref,
-        {
-          saldo:
-            0,
-
-          estadoCuenta:
-            "ANULADA",
-
-          fechaActualizacion:
-            serverTimestamp()
-        }
-      );
-    }
 
   });
 

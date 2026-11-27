@@ -28,7 +28,7 @@ export const PERMISOS_DISPONIBLES = [
   { id: "ventas.registrar", nombre: "Registrar ventas / POS" },
   { id: "ventas.ver", nombre: "Ver el historial de ventas" },
   { id: "promociones.gestionar", nombre: "Gestionar promociones" },
-  { id: "finanzas.gestionar", nombre: "Gestionar cuentas por cobrar/pagar" },
+  { id: "finanzas.gestionar", nombre: "Gestionar cuentas por pagar" },
   { id: "reportes.ver", nombre: "Ver reportes" },
   { id: "notificaciones.ver", nombre: "Ver notificaciones" },
   { id: "auditoria.ver", nombre: "Ver auditoría" }

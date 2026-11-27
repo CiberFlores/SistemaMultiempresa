@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Info, Receipt, Scale, ShoppingBag, TrendingDown, Truck, Wallet, Users } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Info, Receipt, Scale, ShoppingBag, TrendingDown, Truck, Wallet } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
 import { useColeccionesEmpresa, useIdentidadEmpresa } from "../../hooks/useColeccionesEmpresa";
@@ -7,7 +7,7 @@ import { descargarExcel, imprimirReporte } from "../../utils/exportarReporte";
 import { BarrasReporte, CabeceraReporte, FiltroPeriodo, GraficoDias, SelectorFiltro, TablaReporte, TarjetasResumen } from "../../components/reportes/ReporteUI";
 import { dinero, enRango, fechaDe, rangoDe, serieDiaria } from "../../utils/reporteHelpers";
 
-const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia", CREDITO: "A crédito" };
+const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia" };
 
 const CATEGORIAS_GASTO = {
   OPERATIVO: "Operativo",
@@ -29,7 +29,6 @@ export default function ReportesFinanzasPage() {
     "compras",
     "gastos",
     "movimientosCaja",
-    "cuentasCobrar",
     "cuentasPagar",
     "cajas",
     "sucursales"
@@ -77,9 +76,7 @@ export default function ReportesFinanzasPage() {
   const salio = suma(movimientos.filter((m) => m.tipo === "EGRESO"), (m) => m.monto);
 
   // Lo que pasa hoy (no depende del período)
-  const cuentasCobrar = datos.cuentasCobrar.filter((c) => c.estadoCuenta !== "PAGADA" && (!sucursalId || c.sucursalId === sucursalId));
   const cuentasPagar = datos.cuentasPagar.filter((c) => c.estadoCuenta !== "PAGADA" && (!sucursalId || c.sucursalId === sucursalId));
-  const teDeben = suma(cuentasCobrar, (c) => c.saldo);
   const debes = suma(cuentasPagar, (c) => c.saldo);
 
   const dineroEnCajas = useMemo(() => {
@@ -96,7 +93,7 @@ export default function ReportesFinanzasPage() {
   const porPago = useMemo(() => {
     const mapa = new Map();
     ventas.forEach((v) => mapa.set(v.metodoPago, (mapa.get(v.metodoPago) || 0) + Number(v.total || 0)));
-    return [...mapa.entries()].map(([k, valor]) => ({ etiqueta: METODOS[k] || k || "Otro", valor })).sort((a, b) => b.valor - a.valor);
+    return [...mapa.entries()].map(([k, valor]) => ({ etiqueta: METODOS[k] || "Otro", valor })).sort((a, b) => b.valor - a.valor);
   }, [ventas]);
 
   const porCategoria = useMemo(() => {
@@ -131,7 +128,6 @@ export default function ReportesFinanzasPage() {
       { etiqueta: "Comprado", valor: dinero(comprado) },
       { etiqueta: "Gastos", valor: dinero(gastado) },
       { etiqueta: "Ventas menos compras y gastos", valor: dinero(resultado) },
-      { etiqueta: "Te deben", valor: dinero(teDeben) },
       { etiqueta: "Debes", valor: dinero(debes) },
       { etiqueta: "Dinero en cajas abiertas", valor: dinero(dineroEnCajas) }
     ],
@@ -184,7 +180,6 @@ export default function ReportesFinanzasPage() {
           { etiqueta: "Saldo", tipo: "dinero" }
         ],
         filas: [
-          ["Te deben (clientes)", cuentasCobrar.length, teDeben],
           ["Debes (proveedores)", cuentasPagar.length, debes]
         ]
       }
@@ -231,7 +226,6 @@ export default function ReportesFinanzasPage() {
 
           <TarjetasResumen
             items={[
-              { icono: Users, titulo: "Te deben", valor: dinero(teDeben), nota: `${cuentasCobrar.length} ${cuentasCobrar.length === 1 ? "cuenta" : "cuentas"} por cobrar`, tono: teDeben > 0 ? "alerta" : undefined },
               { icono: Receipt, titulo: "Debes", valor: dinero(debes), nota: `${cuentasPagar.length} ${cuentasPagar.length === 1 ? "cuenta" : "cuentas"} por pagar`, tono: debes > 0 ? "alerta" : undefined },
               { icono: Wallet, titulo: "Dinero en cajas", valor: dinero(dineroEnCajas), nota: "sumando las cajas abiertas", tono: dineroEnCajas < 0 ? "peligro" : undefined },
               { icono: entro >= salio ? ArrowUpRight : ArrowDownRight, titulo: "Movimiento de cajas", valor: dinero(entro - salio), nota: `entró ${dinero(entro)} · salió ${dinero(salio)}` }

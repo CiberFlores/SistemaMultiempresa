@@ -7,7 +7,7 @@ Versión web consolidada del **Sistema Genérico de Ventas e Inventario Multiemp
 - `SUPER_ADMIN`: propietario/operador global de la plataforma SaaS.
 - `ADMIN`: administrador de una empresa específica.
 - `TRABAJADOR`: usuario operativo con `rolId` y permisos dinámicos.
-- `CLIENTE` no es un rol de Authentication; es un registro comercial relacionado con ventas, créditos, pagos, promociones y devoluciones.
+- `CLIENTE` no es un rol de Authentication; es un registro comercial relacionado con ventas, promociones y devoluciones.
 
 ## SUPER ADMIN
 
@@ -58,7 +58,6 @@ Versión web consolidada del **Sistema Genérico de Ventas e Inventario Multiemp
 - Historial de ventas.
 - Caja y movimientos.
 - Gastos.
-- Cuentas por cobrar y pagos.
 - Cuentas por pagar y pagos.
 - Reportes de ventas, compras, inventario y finanzas.
 - Notificaciones.

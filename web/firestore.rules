@@ -144,27 +144,19 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // E. HU-22: MOVIMIENTOS FINANCIEROS
+    // E. PAGOS A PROVEEDORES DESDE LA CAJA
     // ==========================================
 
     function validFinanceCashMovement(id) {
 
       let m = request.resource.data;
 
-      let esCobro =
-        m.tipo == 'INGRESO' &&
-        m.categoria == 'COBRO_CREDITO';
-
       let esPago =
         m.tipo == 'EGRESO' &&
         m.categoria == 'PAGO_PROVEEDOR';
 
-      let coleccionPago = esCobro
-        ? 'pagosCredito'
-        : 'pagosProveedor';
-
       let pagoPath =
-        /databases/$(database)/documents/$(coleccionPago)/$(id);
+        /databases/$(database)/documents/pagosProveedor/$(id);
 
       let cajaPath =
         /databases/$(database)/documents/cajas/$(m.cajaId);
@@ -185,7 +177,7 @@ service cloud.firestore {
           'usuarioId'
         ]) &&
 
-        (esCobro || esPago) &&
+        esPago &&
 
         m.metodoPago == 'EFECTIVO' &&
 
@@ -230,7 +222,7 @@ service cloud.firestore {
           request.auth.uid &&
 
         getAfter(pagoPath).data.tipo ==
-          (esCobro ? 'COBRAR' : 'PAGAR');
+          'PAGAR';
     }
 
     // ==========================================
@@ -1589,62 +1581,6 @@ service cloud.firestore {
         ]);
 
       allow delete: if false;
-    }
-
-    // ==========================================
-    // AB. CUENTAS POR COBRAR
-    // ==========================================
-
-    match /cuentasCobrar/{id} {
-
-      allow read: if
-        superAdmin() ||
-        (hasPermission('reportes.ver') && sameExistingCompany()) ||
-        (
-          hasPermission('finanzas.gestionar') &&
-          sameExistingCompany()
-        );
-
-      allow create: if
-        (
-          hasAnyPermission(['ventas.registrar', 'finanzas.gestionar'])
-        ) &&
-        sameNewCompany();
-
-      // Solo baja el saldo; el total y el cliente quedan fijos
-      allow update: if
-        hasAnyPermission(['finanzas.gestionar', 'ventas.ver']) &&
-        sameOnUpdate() &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['saldo', 'estadoCuenta', 'fechaActualizacion']) &&
-        request.resource.data.saldo >= 0 &&
-        request.resource.data.saldo <= resource.data.saldo &&
-        (
-          hasPermission('finanzas.gestionar') ||
-          request.resource.data.estadoCuenta == 'ANULADA'
-        );
-
-      allow delete: if false;
-    }
-
-    // ==========================================
-    // AC. PAGOS DE CLIENTES
-    // ==========================================
-
-    match /pagosCredito/{id} {
-
-      allow read: if
-        superAdmin() ||
-        (
-          hasPermission('finanzas.gestionar') &&
-          sameExistingCompany()
-        );
-
-      allow create: if
-        hasPermission('finanzas.gestionar') &&
-        sameNewCompany();
-
-      allow update, delete: if false;
     }
 
     // ==========================================

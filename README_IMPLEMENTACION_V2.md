@@ -27,7 +27,7 @@ Refactor web del sistema genérico de ventas e inventario. La arquitectura separ
 - Clientes, POS, ventas, comprobante imprimible y anulación con reversión de stock.
 - Promociones, devoluciones y métodos de pago.
 - Cajas, movimientos y gastos.
-- Cuentas por cobrar/pagar y registro de pagos.
+- Cuentas por pagar y registro de pagos.
 - Reportes de ventas, compras, inventario y finanzas con exportación CSV.
 - Notificaciones y auditoría.
 

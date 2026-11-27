@@ -58,7 +58,7 @@ const inicioDia = (f) => new Date(f.getFullYear(), f.getMonth(), f.getDate());
 const textoFecha = (f) =>
   [f.getFullYear(), String(f.getMonth() + 1).padStart(2, "0"), String(f.getDate()).padStart(2, "0")].join("-");
 
-const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia", CREDITO: "A crédito" };
+const METODOS = { EFECTIVO: "Efectivo", QR: "QR", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia" };
 const DIAS = ["D", "L", "M", "M", "J", "V", "S"];
 const EN_LINEA_MS = 150000;
 
@@ -781,7 +781,7 @@ function Inicio({ marca, resumen, alertas, conectados, totalEquipo, equipo, ir, 
                 <span className="gx-fila__texto">
                   <b>{v.clienteNombre || "Consumidor final"}</b>
                   <small>
-                    {v.fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })} · {METODOS[v.metodoPago] || v.metodoPago}
+                    {v.fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })} · {METODOS[v.metodoPago] || "Otro"}
                   </small>
                 </span>
                 <strong>{dinero(v.total)}</strong>
@@ -868,7 +868,7 @@ function Ventas({ ventas, sucursales, ahora }) {
               <span className="gx-fila__texto">
                 <b>{v.clienteNombre || "Consumidor final"}</b>
                 <small>
-                  {v.fecha.toLocaleDateString("es-BO", { day: "2-digit", month: "short" })} {v.fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })} · {METODOS[v.metodoPago] || v.metodoPago}
+                  {v.fecha.toLocaleDateString("es-BO", { day: "2-digit", month: "short" })} {v.fecha.toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" })} · {METODOS[v.metodoPago] || "Otro"}
                   {nombreSucursal(v.sucursalId) ? ` · ${nombreSucursal(v.sucursalId)}` : ""}
                 </small>
               </span>

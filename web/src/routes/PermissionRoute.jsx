@@ -39,7 +39,7 @@ const INICIO = [
   ["categorias.gestionar", "/inventario/categorias"],
   ["marcas.gestionar", "/inventario/marcas"],
   ["promociones.gestionar", "/ventas/promociones"],
-  ["finanzas.gestionar", "/finanzas/cuentas-cobrar"],
+  ["finanzas.gestionar", "/finanzas/cuentas-pagar"],
   ["reportes.ver", "/reportes/ventas"],
   ["notificaciones.ver", "/sistema/notificaciones"],
   ["auditoria.ver", "/sistema/auditoria"]

@@ -23,7 +23,7 @@ const CATEGORIAS = {
   GASTO: "Gasto",
   ANULACION_GASTO: "Gasto anulado",
   ANULACION_VENTA: "Venta anulada",
-  COBRO_CREDITO: "Cobro de crédito",
+  COBRO_CREDITO: "Otro ingreso",
   PAGO_PROVEEDOR: "Pago a proveedor",
   APERTURA: "Apertura"
 };

@@ -10,7 +10,7 @@ Proyecto de Sistemas I. Varias empresas usan la misma aplicación y cada una ve 
 
 | Usuario | Qué hace |
 | --- | --- |
-| Super Admin | Administra la plataforma: empresas, administradores, planes, licencias, módulos, personalización visual, auditoría, notificaciones y respaldos. |
+| Super Admin | Administra la plataforma: empresas, administradores, módulos, personalización visual, auditoría, notificaciones y respaldos. |
 | Admin | Administra su empresa: configuración, sucursales, roles, trabajadores y la operación diaria. |
 | Trabajador | Usa solo las funciones que su rol le permite. |
 
@@ -23,7 +23,7 @@ Los clientes de una empresa no inician sesión.
 - **Inventario:** existencias por sucursal, lotes con vencimiento, movimientos y alertas de stock.
 - **Compras:** proveedores, compras al contado o a crédito e historial.
 - **Ventas:** punto de venta con pago en efectivo, QR o tarjeta (simulado, sin pasarela bancaria), comprobante imprimible, anulación y promociones.
-- **Caja y finanzas:** apertura y cierre de caja, movimientos, gastos y cuentas por cobrar y por pagar.
+- **Caja y finanzas:** apertura y cierre de caja, movimientos, gastos y cuentas por pagar a proveedores.
 - **Reportes:** ventas, compras, inventario y finanzas, exportables a Excel o a PDF (impresión).
 - **App en el celular:** la web se puede instalar como aplicación (PWA), con el logo de cada empresa.
 
@@ -32,7 +32,6 @@ Los clientes de una empresa no inician sesión.
 - Vitrina pública (catálogo sin iniciar sesión).
 - Aplicación Android nativa o en React Native. En el celular se usa la PWA.
 - Pantalla para registrar clientes: en el punto de venta se anotan los datos del cliente en la venta.
-- Venta a crédito desde el punto de venta.
 - Pantallas para administrar métodos de pago o registrar devoluciones parciales.
 - Pagos reales con bancos ni facturación electrónica.
 

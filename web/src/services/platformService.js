@@ -99,9 +99,7 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
     "cajas",
     "movimientosCaja",
     "gastos",
-    "cuentasCobrar",
     "cuentasPagar",
-    "pagosCredito",
     "pagosProveedor",
     "promociones",
     "devoluciones"
@@ -164,8 +162,6 @@ const BACKUP_COLLECTIONS = [
   "cajas",
   "movimientosCaja",
   "gastos",
-  "cuentasCobrar",
-  "pagosCredito",
   "cuentasPagar",
   "pagosProveedor",
   "promociones",

@@ -34,7 +34,6 @@
 | 30 | Búsqueda productos | nombre/SKU/código barras |
 | 31 | Código barras | campo + búsqueda POS/productos |
 | 32 | Precios | costo/precio producto |
-| 33 | Cuentas por cobrar | crédito + pagos |
 | 34 | Cuentas por pagar | compras crédito + pagos |
 | 35 | Caja | apertura/cierre/movimientos |
 | 36 | Gastos | CRUD + filtros |

@@ -43,7 +43,6 @@ const PosPage = pagina(() => import("../pages/ventas/PosPage.jsx"));
 const VentasPage = pagina(() => import("../pages/ventas/VentasPage.jsx"));
 const PromocionesPage = pagina(() => import("../pages/ventas/PromocionesPage.jsx"));
 const GastosPage = pagina(() => import("../pages/finanzas/GastosPage.jsx"));
-const CuentasCobrarPage = pagina(() => import("../pages/finanzas/CuentasCobrarPage.jsx"));
 const CuentasPagarPage = pagina(() => import("../pages/finanzas/CuentasPagarPage.jsx"));
 const ReportesVentasPage = pagina(() => import("../pages/reportes/ReportesVentasPage.jsx"));
 const ReportesComprasPage = pagina(() => import("../pages/reportes/ReportesComprasPage.jsx"));
@@ -73,7 +72,7 @@ export default function AppRoutes(){return <Routes>
       <Route element={<PermissionRoute permiso="ventas.registrar"/>}><Route path="/ventas/pos" element={<PosPage/>}/></Route>
       <Route element={<PermissionRoute permiso="ventas.ver"/>}><Route path="/ventas" element={<VentasPage/>}/></Route>
       <Route element={<PermissionRoute permiso="promociones.gestionar"/>}><Route path="/ventas/promociones" element={<PromocionesPage/>}/></Route>
-      <Route element={<PermissionRoute permiso="finanzas.gestionar"/>}><Route path="/finanzas/cuentas-cobrar" element={<CuentasCobrarPage/>}/><Route path="/finanzas/cuentas-pagar" element={<CuentasPagarPage/>}/></Route>
+      <Route element={<PermissionRoute permiso="finanzas.gestionar"/>}><Route path="/finanzas/cuentas-pagar" element={<CuentasPagarPage/>}/></Route>
       <Route element={<PermissionRoute permiso="reportes.ver"/>}><Route path="/reportes/ventas" element={<ReportesVentasPage/>}/><Route path="/reportes/compras" element={<ReportesComprasPage/>}/><Route path="/reportes/inventario" element={<ReportesInventarioPage/>}/><Route path="/reportes/finanzas" element={<ReportesFinanzasPage/>}/></Route>
       <Route element={<PermissionRoute permiso="notificaciones.ver"/>}><Route path="/sistema/notificaciones" element={<NotificacionesPage/>}/></Route>
       <Route element={<PermissionRoute permiso="auditoria.ver"/>}><Route path="/sistema/auditoria" element={<AuditoriaPage/>}/></Route>

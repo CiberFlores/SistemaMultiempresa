@@ -62,15 +62,14 @@ const leer = (nombre, empresaId) =>
     r.docs.map((d) => ({ id: d.id, ...d.data() }))
   );
 
-export default function CuentaFinancieraPage({ tipo }) {
+export default function CuentaFinancieraPage() {
   const { usuario } = useAuth();
   const empresaId = usuario?.empresaId;
-  const esCobrar = tipo === "COBRAR";
 
   const [cuentas, setCuentas] = useState([]);
   const [cajas, setCajas] = useState([]);
   const [sucursales, setSucursales] = useState([]);
-  const [nombres, setNombres] = useState({ clientes: new Map(), ventas: new Map(), proveedores: new Map() });
+  const [nombres, setNombres] = useState({ proveedores: new Map() });
   const [cargando, setCargando] = useState(true);
 
   const [busqueda, setBusqueda] = useState("");
@@ -93,7 +92,6 @@ export default function CuentaFinancieraPage({ tipo }) {
     setCargando(true);
 
     const cancelarCuentas = suscribirCuentas(
-      tipo,
       empresaId,
       (datos) => {
         setCuentas(datos);
@@ -108,43 +106,22 @@ export default function CuentaFinancieraPage({ tipo }) {
     const cancelarCajas = suscribirCajas(empresaId, setCajas, console.error);
     const cancelarSucursales = suscribirSucursales(empresaId, setSucursales, console.error);
 
-    // Los nombres de clientes y proveedores se leen aparte; si algo falla, se muestran sin nombre
-    const nombreDe = (promesa) => promesa.catch(() => []);
-
-    Promise.all(
-      esCobrar
-        ? [nombreDe(leer("clientes", empresaId)), nombreDe(leer("ventas", empresaId)), Promise.resolve([])]
-        : [Promise.resolve([]), Promise.resolve([]), nombreDe(leer("proveedores", empresaId))]
-    ).then(([clientes, ventas, proveedores]) =>
-      setNombres({
-        clientes: new Map(clientes.map((c) => [c.id, c])),
-        ventas: new Map(ventas.map((v) => [v.id, v])),
-        proveedores: new Map(proveedores.map((p) => [p.id, p]))
-      })
-    );
+    // Los nombres de proveedores se leen aparte; si algo falla, se muestran sin nombre
+    leer("proveedores", empresaId)
+      .catch(() => [])
+      .then((proveedores) => setNombres({ proveedores: new Map(proveedores.map((p) => [p.id, p])) }));
 
     return () => {
       cancelarCuentas?.();
       cancelarCajas?.();
       cancelarSucursales?.();
     };
-  }, [tipo, empresaId, esCobrar]);
+  }, [empresaId]);
 
-  const quien = (cuenta) => {
-    if (esCobrar) {
-      return (
-        cuenta.clienteNombre ||
-        nombres.clientes.get(cuenta.clienteId)?.nombre ||
-        nombres.ventas.get(cuenta.ventaId)?.clienteNombre ||
-        "Cliente sin nombre"
-      );
-    }
-    return cuenta.proveedorNombre || nombres.proveedores.get(cuenta.proveedorId)?.nombre || "Proveedor";
-  };
+  const quien = (cuenta) => cuenta.proveedorNombre || nombres.proveedores.get(cuenta.proveedorId)?.nombre || "Proveedor";
 
   const referencia = (cuenta) => {
     if (cuenta.referencia && String(cuenta.referencia).length < 20) return cuenta.referencia;
-    if (cuenta.ventaId) return `Venta ${corto(cuenta.ventaId)}`;
     if (cuenta.compraId) return `Compra ${corto(cuenta.compraId)}`;
     return "—";
   };
@@ -180,7 +157,7 @@ export default function CuentaFinancieraPage({ tipo }) {
   useEffect(() => {
     let activo = true;
 
-    if (!elegida || esCobrar || !esEfectivo || !cajaElegida) {
+    if (!elegida || !esEfectivo || !cajaElegida) {
       return undefined;
     }
 
@@ -191,9 +168,9 @@ export default function CuentaFinancieraPage({ tipo }) {
     return () => {
       activo = false;
     };
-  }, [elegida, esCobrar, esEfectivo, cajaElegida]);
+  }, [elegida, esEfectivo, cajaElegida]);
 
-  const superaCaja = !esCobrar && esEfectivo && cajaElegida && saldoCaja !== null && montoNumero > saldoCaja;
+  const superaCaja = esEfectivo && cajaElegida && saldoCaja !== null && montoNumero > saldoCaja;
 
   function abrirPago(cuenta) {
     setElegida(cuenta);
@@ -223,7 +200,7 @@ export default function CuentaFinancieraPage({ tipo }) {
 
     if (esEfectivo) {
       if (!sucursalEfectiva) return fallar("Elige la sucursal.");
-      if (!cajaEfectiva) return fallar("Elige la caja abierta donde entra o sale el dinero.");
+      if (!cajaEfectiva) return fallar("Elige la caja abierta de donde sale el dinero.");
       if (superaCaja) return fallar(`En la caja solo hay ${dinero(saldoCaja)}. Paga con otro método o abre más dinero en caja.`);
     }
 
@@ -232,7 +209,6 @@ export default function CuentaFinancieraPage({ tipo }) {
 
     try {
       await registrarPagoCuenta({
-        tipo,
         cuentaId: elegida.id,
         empresaId,
         monto: montoNumero,
@@ -246,7 +222,7 @@ export default function CuentaFinancieraPage({ tipo }) {
       setAviso(
         montoNumero === saldoPendiente
           ? `Listo: la cuenta de ${quien(elegida)} quedó saldada.`
-          : `${esCobrar ? "Cobro" : "Pago"} registrado. Aún faltan ${dinero(saldoPendiente - montoNumero)}.`
+          : `Pago registrado. Aún faltan ${dinero(saldoPendiente - montoNumero)}.`
       );
       setElegida(null);
     } catch (e) {
@@ -257,18 +233,12 @@ export default function CuentaFinancieraPage({ tipo }) {
     }
   }
 
-  const verbo = esCobrar ? "cobro" : "pago";
-
   return (
     <div className="re inv">
       <header className="re-cabecera">
         <div>
-          <h1>{esCobrar ? "Cuentas por cobrar" : "Cuentas por pagar"}</h1>
-          <p>
-            {esCobrar
-              ? "Lo que tus clientes te deben por ventas a crédito. Registra cada cobro cuando te paguen."
-              : "Lo que debes a tus proveedores por compras a crédito. Registra cada pago cuando lo hagas."}
-          </p>
+          <h1>Cuentas por pagar</h1>
+          <p>Lo que debes a tus proveedores por compras a crédito. Registra cada pago cuando lo hagas.</p>
         </div>
       </header>
 
@@ -278,7 +248,7 @@ export default function CuentaFinancieraPage({ tipo }) {
             <Wallet size={22} />
           </span>
           <div>
-            <small>{esCobrar ? "Te deben" : "Debes"}</small>
+            <small>Debes</small>
             <strong>{dinero(totalSaldo)}</strong>
             <em>en total</em>
           </div>
@@ -290,7 +260,7 @@ export default function CuentaFinancieraPage({ tipo }) {
           <div>
             <small>Cuentas abiertas</small>
             <strong>{pendientes.length}</strong>
-            <em>{esCobrar ? "clientes por cobrar" : "proveedores por pagar"}</em>
+            <em>proveedores por pagar</em>
           </div>
         </article>
         <article className="inv-metrica">
@@ -298,7 +268,7 @@ export default function CuentaFinancieraPage({ tipo }) {
             <CircleCheck size={22} />
           </span>
           <div>
-            <small>{esCobrar ? "Ya cobradas" : "Ya pagadas"}</small>
+            <small>Ya pagadas</small>
             <strong>{saldadas}</strong>
             <em>saldadas</em>
           </div>
@@ -310,7 +280,7 @@ export default function CuentaFinancieraPage({ tipo }) {
           <Search size={19} aria-hidden="true" />
           <input
             type="search"
-            placeholder={esCobrar ? "Buscar cliente…" : "Buscar proveedor…"}
+            placeholder="Buscar proveedor…"
             aria-label="Buscar cuentas"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -349,9 +319,7 @@ export default function CuentaFinancieraPage({ tipo }) {
           <strong>{cuentas.length === 0 ? "No hay cuentas por el momento" : "No encontramos cuentas"}</strong>
           <span>
             {cuentas.length === 0
-              ? esCobrar
-                ? "Aquí aparecerán las ventas que dejes a crédito."
-                : "Aquí aparecerán las compras que hagas a crédito. Elige «A crédito» al registrar una compra."
+              ? "Aquí aparecerán las compras que hagas a crédito. Elige «A crédito» al registrar una compra."
               : "Prueba con otra búsqueda o cambia el filtro."}
           </span>
         </div>
@@ -361,7 +329,7 @@ export default function CuentaFinancieraPage({ tipo }) {
             <table className="inv-tabla">
               <thead>
                 <tr>
-                  <th>{esCobrar ? "Cliente" : "Proveedor"}</th>
+                  <th>Proveedor</th>
                   <th>De qué</th>
                   <th>Fecha</th>
                   <th className="inv-der">Total</th>
@@ -377,7 +345,7 @@ export default function CuentaFinancieraPage({ tipo }) {
 
                   return (
                     <tr key={cuenta.id}>
-                      <td data-label={esCobrar ? "Cliente" : "Proveedor"}>
+                      <td data-label="Proveedor">
                         <strong>{quien(cuenta)}</strong>
                       </td>
                       <td data-label="De qué">{referencia(cuenta)}</td>
@@ -397,7 +365,7 @@ export default function CuentaFinancieraPage({ tipo }) {
                         {estado !== "PAGADA" ? (
                           <button type="button" className="re-boton re-boton--chico" onClick={() => abrirPago(cuenta)}>
                             <HandCoins size={15} />
-                            {esCobrar ? "Registrar cobro" : "Registrar pago"}
+                            Registrar pago
                           </button>
                         ) : (
                           <span className="inv-sin">Saldada</span>
@@ -430,9 +398,9 @@ export default function CuentaFinancieraPage({ tipo }) {
             >
               <header className="re-modal__cabecera">
                 <div>
-                  <h2 id="cf-titulo">{esCobrar ? "Registrar cobro" : "Registrar pago"}</h2>
+                  <h2 id="cf-titulo">Registrar pago</h2>
                   <p>
-                    {esCobrar ? "Dinero recibido de" : "Dinero entregado a"} <b>{quien(elegida)}</b>
+                    Dinero entregado a <b>{quien(elegida)}</b>
                   </p>
                 </div>
                 <button type="button" className="re-cerrar" onClick={() => setElegida(null)} aria-label="Cerrar" disabled={guardando}>
@@ -443,7 +411,7 @@ export default function CuentaFinancieraPage({ tipo }) {
               <div className="re-modal__cuerpo">
                 <div className="co-detalle-resumen">
                   <div>
-                    <small>Falta {esCobrar ? "cobrar" : "pagar"}</small>
+                    <small>Falta pagar</small>
                     <strong>{dinero(saldoPendiente)}</strong>
                   </div>
                   <div>
@@ -454,7 +422,7 @@ export default function CuentaFinancieraPage({ tipo }) {
 
                 <label className="re-campo">
                   <span className="re-etiqueta-campo">
-                    ¿Cuánto {esCobrar ? "te pagan" : "pagas"}? (Bs) <b>*</b>
+                    ¿Cuánto pagas? (Bs) <b>*</b>
                   </span>
                   <input
                     type="number"
@@ -485,7 +453,7 @@ export default function CuentaFinancieraPage({ tipo }) {
                 </label>
 
                 <div className="re-campo">
-                  <span className="re-etiqueta-campo">¿Cómo {esCobrar ? "te pagaron" : "pagas"}?</span>
+                  <span className="re-etiqueta-campo">¿Cómo pagas?</span>
                   <div className="co-pagos" role="radiogroup" aria-label="Forma de pago">
                     {Object.entries(METODOS).map(([valor, texto]) => (
                       <button
@@ -574,8 +542,8 @@ export default function CuentaFinancieraPage({ tipo }) {
                         <p className="co-nota">
                           <Check size={16} />
                           <span>
-                            {esCobrar ? "Entrará en" : "Saldrá de"} <b>{cajaElegida.nombre}</b>
-                            {!esCobrar && saldoCaja !== null ? (
+                            Saldrá de <b>{cajaElegida.nombre}</b>
+                            {saldoCaja !== null ? (
                               <>
                                 , donde hay <b>{dinero(saldoCaja)}</b>.
                               </>
@@ -602,12 +570,12 @@ export default function CuentaFinancieraPage({ tipo }) {
                     maxLength={200}
                     value={nota}
                     onChange={(e) => setNota(e.target.value)}
-                    placeholder={`Ej. ${verbo} de la primera cuota`}
+                    placeholder="Ej. pago de la primera cuota"
                   />
                 </label>
 
                 {error && (
-                  <div className="re-aviso re-aviso--error" role="alert">
+                  <div className="re-aviso re-aviso--error" role="alert" ref={(el) => el?.scrollIntoView({ block: "nearest" })}>
                     {error}
                   </div>
                 )}
@@ -618,7 +586,7 @@ export default function CuentaFinancieraPage({ tipo }) {
                   Cancelar
                 </button>
                 <button type="submit" className="re-boton" disabled={guardando}>
-                  {guardando ? "Guardando…" : esCobrar ? "Registrar cobro" : "Registrar pago"}
+                  {guardando ? "Guardando…" : "Registrar pago"}
                 </button>
               </footer>
             </motion.form>

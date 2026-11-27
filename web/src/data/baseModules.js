@@ -12,7 +12,7 @@ export const BASE_MODULES = [
   {codigo:"VENTAS",nombre:"Ventas y POS",descripcion:"Punto de venta, ventas, comprobantes y anulaciones.",icono:"ShoppingCart"},
   {codigo:"PROMOCIONES",nombre:"Promociones",descripcion:"Descuentos y promociones.",icono:"Percent"},
   {codigo:"CAJA",nombre:"Caja y gastos",descripcion:"Apertura, cierre, movimientos y gastos.",icono:"WalletCards"},
-  {codigo:"FINANZAS",nombre:"Finanzas",descripcion:"Cuentas por cobrar, pagar y pagos.",icono:"Landmark"},
+  {codigo:"FINANZAS",nombre:"Finanzas",descripcion:"Cuentas por pagar a proveedores y sus pagos.",icono:"Landmark"},
   {codigo:"REPORTES",nombre:"Reportes",descripcion:"Ventas, compras, inventario y finanzas.",icono:"BarChart3"},
   {codigo:"NOTIFICACIONES",nombre:"Notificaciones",descripcion:"Alertas y notificaciones operativas.",icono:"Bell"},
   {codigo:"AUDITORIA",nombre:"Auditoría",descripcion:"Trazabilidad de operaciones relevantes.",icono:"ScrollText"},

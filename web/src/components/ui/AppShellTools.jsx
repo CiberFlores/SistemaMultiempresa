@@ -6,7 +6,7 @@ const COMMANDS = [
   ["Dashboard", "/dashboard"], ["Productos", "/inventario/productos"], ["Inventario", "/inventario"],
   ["Proveedores", "/compras/proveedores"], ["Compras", "/compras"],
   ["Punto de venta", "/ventas/pos"], ["Ventas", "/ventas"], ["Gastos", "/finanzas/gastos"],
-  ["Cuentas por cobrar", "/finanzas/cuentas-cobrar"], ["Cuentas por pagar", "/finanzas/cuentas-pagar"],
+  ["Cuentas por pagar", "/finanzas/cuentas-pagar"],
   ["Reportes", "/reportes/ventas"], ["Super Admin", "/superadmin/dashboard"], ["Empresas", "/superadmin/empresas"]
 ];
 
