@@ -27,14 +27,6 @@ Los clientes de una empresa no inician sesión.
 - **Reportes:** ventas, compras, inventario y finanzas, exportables a Excel o a PDF (impresión).
 - **App en el celular:** la web se puede instalar como aplicación (PWA), con el logo de cada empresa.
 
-### Lo que no incluye esta versión
-
-- Vitrina pública (catálogo sin iniciar sesión).
-- Aplicación Android nativa o en React Native. En el celular se usa la PWA.
-- Pantalla para registrar clientes: en el punto de venta se anotan los datos del cliente en la venta.
-- Pantallas para administrar métodos de pago o registrar devoluciones parciales.
-- Pagos reales con bancos ni facturación electrónica.
-
 ## Tecnologías
 
 | Parte | Herramienta |
@@ -146,5 +138,3 @@ web/
 ├── firebase.json      configuración de publicación
 └── .env.example       variables que hay que completar
 ```
-
-Los archivos `README_IMPLEMENTACION*.md`, `CONTROL_WEB_FINAL.md` y `LEEME_INSTALACION.txt` son notas de trabajo anteriores y no describen la versión actual. La guía vigente es este README.
