@@ -377,23 +377,6 @@ service cloud.firestore {
       allow write: if superAdmin();
     }
 
-    match /planes/{id} {
-      allow read: if active();
-      allow write: if superAdmin();
-    }
-
-    match /licencias/{id} {
-
-      allow read: if
-        superAdmin() ||
-        (
-          active() &&
-          resource.data.empresaId == myCompany()
-        );
-
-      allow write: if superAdmin();
-    }
-
     match /modulosEmpresa/{empresaId} {
 
       allow read: if
@@ -1219,29 +1202,6 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // R. CLIENTES
-    // ==========================================
-
-    match /clientes/{id} {
-
-      allow read: if
-        superAdmin() ||
-        sameExistingCompany();
-
-      allow create: if
-        hasPermission('clientes.gestionar') &&
-        sameNewCompany();
-
-      allow update: if
-        hasPermission('clientes.gestionar') &&
-        sameOnUpdate();
-
-      allow delete: if
-        hasPermission('clientes.gestionar') &&
-        sameExistingCompany();
-    }
-
-    // ==========================================
     // S. PROVEEDORES
     // ==========================================
 
@@ -1365,23 +1325,6 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // V. DEVOLUCIONES
-    // ==========================================
-
-    match /devoluciones/{id} {
-
-      allow read: if
-        superAdmin() ||
-        (
-          hasPermission('ventas.ver') &&
-          sameExistingCompany()
-        );
-
-      // El sistema todavía no registra devoluciones
-      allow write: if false;
-    }
-
-    // ==========================================
     // W. PROMOCIONES
     // ==========================================
 
@@ -1401,29 +1344,6 @@ service cloud.firestore {
 
       allow delete: if
         hasPermission('promociones.gestionar') &&
-        sameExistingCompany();
-    }
-
-    // ==========================================
-    // X. METODOS DE PAGO
-    // ==========================================
-
-    match /metodosPago/{id} {
-
-      allow read: if
-        superAdmin() ||
-        sameExistingCompany();
-
-      allow create: if
-        hasPermission('configuracion.gestionar') &&
-        sameNewCompany();
-
-      allow update: if
-        hasPermission('configuracion.gestionar') &&
-        sameOnUpdate();
-
-      allow delete: if
-        hasPermission('configuracion.gestionar') &&
         sameExistingCompany();
     }
 

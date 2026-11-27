@@ -37,23 +37,16 @@ export async function obtenerDashboardEmpresa(empresaId) {
     where("empresaId", "==", empresaId)
   );
 
-  const licenciasQuery = query(
-    collection(db, "licencias"),
-    where("empresaId", "==", empresaId)
-  );
-
   const [
     empresaSnapshot,
     configuracionSnapshot,
     personalizacionSnapshot,
-    sucursalesSnapshot,
-    licenciasSnapshot
+    sucursalesSnapshot
   ] = await Promise.all([
     getDoc(empresaRef),
     getDoc(configuracionRef),
     getDoc(personalizacionRef),
-    getDocs(sucursalesQuery),
-    getDocs(licenciasQuery)
+    getDocs(sucursalesQuery)
   ]);
 
   if (!empresaSnapshot.exists()) {
@@ -81,50 +74,16 @@ export async function obtenerDashboardEmpresa(empresaId) {
       ...documento.data()
     }));
 
-  const licencias =
-    licenciasSnapshot.docs.map((documento) => ({
-      id: documento.id,
-      ...documento.data()
-    }));
-
   const sucursalesActivas = sucursales.filter(
     (sucursal) =>
       sucursal.estado === "ACTIVA"
   ).length;
-
-  const licenciaActiva =
-    licencias.find(
-      (licencia) =>
-        licencia.estado === "ACTIVA"
-    ) || null;
-
-  let plan = null;
-
-  if (licenciaActiva?.planId) {
-    const planSnapshot = await getDoc(
-      doc(
-        db,
-        "planes",
-        licenciaActiva.planId
-      )
-    );
-
-    if (planSnapshot.exists()) {
-      plan = {
-        id: planSnapshot.id,
-        ...planSnapshot.data()
-      };
-    }
-  }
 
   return {
     empresa,
     configuracion,
     personalizacion,
     sucursales,
-    licencias,
-    licenciaActiva,
-    plan,
 
     totalSucursales: sucursales.length,
     sucursalesActivas,

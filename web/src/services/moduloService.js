@@ -110,12 +110,5 @@ export async function inicializarModulosBase() {
 }
 
 export async function eliminarModulo(moduloId) {
-  const planesSnapshot = await getDocs(collection(db, "planes"));
-  const usado = planesSnapshot.docs.some(
-    (d) => Array.isArray(d.data().modulos) && d.data().modulos.includes(moduloId)
-  );
-  if (usado) {
-    throw new Error("No se puede eliminar: el módulo está asignado a un plan. Desactívalo o quítalo de los planes primero.");
-  }
   await deleteDoc(doc(db, "modulos", moduloId));
 }

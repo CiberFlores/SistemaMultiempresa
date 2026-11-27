@@ -543,25 +543,6 @@ export async function registrarVenta({
     }
 
 
-    // VALIDAR CLIENTE
-
-    if (clienteId) {
-      const clienteSnap = await tx.get(
-        doc(db, "clientes", clienteId)
-      );
-
-      if (
-        !clienteSnap.exists() ||
-        clienteSnap.data().empresaId !== empresaId ||
-        clienteSnap.data().estado !== "ACTIVO"
-      ) {
-        throw new Error(
-          "El cliente no pertenece a la empresa o está inactivo."
-        );
-      }
-    }
-
-
     // ======================================
     // LEER PRODUCTOS E INVENTARIOS
     // ======================================
@@ -1204,29 +1185,15 @@ export async function anularVenta({
 
 
   // ========================================
-  // BUSCAR DETALLES Y DEVOLUCIONES
+  // BUSCAR DETALLES
   // ========================================
 
-  const [
-    detallesSnap,
-    devolucionesSnap
-  ] = await Promise.all([
-
-    getDocs(
-      query(
-        collection(db, "detalleVentas"),
-        where("empresaId", "==", empresaId)
-      )
-    ),
-
-    getDocs(
-      query(
-        collection(db, "devoluciones"),
-        where("empresaId", "==", empresaId)
-      )
+  const detallesSnap = await getDocs(
+    query(
+      collection(db, "detalleVentas"),
+      where("empresaId", "==", empresaId)
     )
-
-  ]);
+  );
 
 
   // OBTENER DETALLES DE ESTA VENTA
@@ -1241,26 +1208,6 @@ export async function anularVenta({
   if (!detalleRefs.length) {
     throw new Error(
       "La venta no tiene detalles registrados."
-    );
-  }
-
-
-  // ========================================
-  // EVITAR ANULACION CON DEVOLUCIONES
-  // ========================================
-
-  if (
-    devolucionesSnap.docs.some(
-      (d) =>
-        d.data().ventaId === ventaId &&
-        d.data().estado !== "ANULADA"
-    )
-  ) {
-    throw new Error(
-      "Esta venta tiene devoluciones registradas. " +
-      "No se puede anular automáticamente porque " +
-      "se duplicarían existencias. " +
-      "Revisa el historial de devoluciones."
     );
   }
 
@@ -1311,27 +1258,6 @@ export async function anularVenta({
     ) {
       throw new Error(
         "Cambió el método de pago. Actualiza el historial."
-      );
-    }
-
-
-    // ======================================
-    // VALIDAR DEVOLUCIONES REGISTRADAS
-    // ======================================
-
-    const devueltos = Object.values(
-      venta.devolucionesPorDetalle || {}
-    );
-
-
-    if (
-      devueltos.some(
-        (cantidad) => Number(cantidad) > 0
-      )
-    ) {
-      throw new Error(
-        "Esta venta tiene devoluciones. " +
-        "No puede anularse automáticamente."
       );
     }
 

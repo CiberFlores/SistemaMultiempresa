@@ -27,14 +27,12 @@ export function suscribirAdministradores(callback, errorCallback) {
 }
 
 export async function cargarControlEmpresa(empresaId) {
-  const [empresa, config, personalizacion, modulosEmpresa, modulos, planes, licencias] = await Promise.all([
+  const [empresa, config, personalizacion, modulosEmpresa, modulos] = await Promise.all([
     getDoc(doc(db, "empresas", empresaId)),
     getDoc(doc(db, "configuracionesEmpresas", empresaId)),
     getDoc(doc(db, "personalizacionesEmpresas", empresaId)),
     getDoc(doc(db, "modulosEmpresa", empresaId)),
-    getDocs(collection(db, "modulos")),
-    getDocs(collection(db, "planes")),
-    getDocs(collection(db, "licencias"))
+    getDocs(collection(db, "modulos"))
   ]);
 
   if (!empresa.exists()) throw new Error("La empresa no existe.");
@@ -44,9 +42,7 @@ export async function cargarControlEmpresa(empresaId) {
     config: config.exists() ? config.data() : {},
     personalizacion: personalizacion.exists() ? personalizacion.data() : {},
     modulosEmpresa: modulosEmpresa.exists() ? modulosEmpresa.data() : {},
-    modulos: modulos.docs.map((d) => ({ id: d.id, ...d.data() })),
-    planes: planes.docs.map((d) => ({ id: d.id, ...d.data() })),
-    licencias: licencias.docs.map((d) => ({ id: d.id, ...d.data() })).filter((l) => l.empresaId === empresaId)
+    modulos: modulos.docs.map((d) => ({ id: d.id, ...d.data() }))
   };
 }
 
@@ -93,7 +89,6 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
     "proveedores",
     "compras",
     "detalleCompras",
-    "clientes",
     "ventas",
     "detalleVentas",
     "cajas",
@@ -101,8 +96,7 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
     "gastos",
     "cuentasPagar",
     "pagosProveedor",
-    "promociones",
-    "devoluciones"
+    "promociones"
   ];
 
   for (const nombre of coleccionesRelacionadas) {
@@ -117,9 +111,7 @@ export async function eliminarEmpresaDefinitivamente(empresaId) {
   }
 
   // La configuración de la empresa se va con ella para no dejar restos
-  const licencias = await getDocs(query(collection(db, "licencias"), where("empresaId", "==", empresaId)));
   const lote = writeBatch(db);
-  licencias.docs.forEach((item) => lote.delete(item.ref));
   ["configuracionesEmpresas", "personalizacionesEmpresas", "modulosEmpresa", "empresas"].forEach((nombre) =>
     lote.delete(doc(db, nombre, empresaId))
   );
@@ -140,8 +132,6 @@ const BACKUP_COLLECTIONS = [
   "usuarios",
   "rolesEmpresa",
   "modulos",
-  "planes",
-  "licencias",
   "modulosEmpresa",
   "configuracionesEmpresas",
   "personalizacionesEmpresas",
@@ -155,17 +145,14 @@ const BACKUP_COLLECTIONS = [
   "proveedores",
   "compras",
   "detalleCompras",
-  "clientes",
   "ventas",
   "detalleVentas",
-  "metodosPago",
   "cajas",
   "movimientosCaja",
   "gastos",
   "cuentasPagar",
   "pagosProveedor",
   "promociones",
-  "devoluciones",
   "auditorias",
   "notificaciones",
   "notificacionesGlobales"

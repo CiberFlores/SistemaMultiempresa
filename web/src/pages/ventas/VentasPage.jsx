@@ -53,7 +53,6 @@ export default function VentasPage() {
   const empresaId = usuario?.empresaId;
 
   const [ventas, setVentas] = useState([]);
-  const [clientes, setClientes] = useState(new Map());
   const [detalles, setDetalles] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -71,15 +70,13 @@ export default function VentasPage() {
     if (!empresaId) return;
 
     try {
-      const [lista, ds, cs] = await Promise.all([
+      const [lista, ds] = await Promise.all([
         listarVentas(empresaId),
-        leer("detalleVentas", empresaId),
-        leer("clientes", empresaId).catch(() => [])
+        leer("detalleVentas", empresaId)
       ]);
 
       setVentas(lista);
       setDetalles(ds);
-      setClientes(new Map(cs.map((c) => [c.id, c])));
     } catch (e) {
       console.error(e);
       setError("No pudimos cargar tus ventas. Revisa tu conexión e inténtalo otra vez.");
@@ -92,8 +89,8 @@ export default function VentasPage() {
     cargar();
   }, [cargar]);
 
-  const nombreDe = (v) => clientes.get(v.clienteId)?.nombre || v.clienteNombre || "Consumidor final";
-  const documentoDe = (v) => clientes.get(v.clienteId)?.documento || v.clienteDocumento || "";
+  const nombreDe = (v) => v.clienteNombre || "Consumidor final";
+  const documentoDe = (v) => v.clienteDocumento || "";
   const lineasDe = (id) => detalles.filter((d) => d.ventaId === id);
 
   const filtradas = useMemo(() => {
@@ -115,8 +112,7 @@ export default function VentasPage() {
         normalizar(valor).includes(texto)
       );
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ventas, clientes, busqueda, estado, metodo, desde, hasta]);
+  }, [ventas, busqueda, estado, metodo, desde, hasta]);
 
   const activas = filtradas.filter((v) => v.estado !== "ANULADA");
   const totalVendido = activas.reduce((suma, v) => suma + Number(v.total || 0), 0);
@@ -197,7 +193,6 @@ export default function VentasPage() {
         empresa: dato(0),
         personalizacion: dato(1),
         sucursal: dato(2),
-        cliente: clientes.get(venta.clienteId) || null,
         vendedor: venta.usuarioNombre || venta.vendedorNombre || "",
         fecha: fechaDe(venta.fechaRegistro)
       });
