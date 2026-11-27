@@ -18,7 +18,7 @@ const MODULOS = {
   categorias: "Categorías",
   marcas: "Marcas",
   proveedores: "Proveedores",
-  clientes: "Clientes",
+  otros: "Otros",
   promociones: "Promociones",
   inventario: "Inventario",
   sucursales: "Sucursales",
@@ -59,7 +59,8 @@ const ENTIDADES = {
   sucursales: "una sucursal"
 };
 
-const etiquetaModulo = (m) => MODULOS[m] || String(m || "Sistema").replace(/^./, (c) => c.toUpperCase());
+const areaDe = (m) => (m === "clientes" || m === "metodosPago" ? "otros" : m);
+const etiquetaModulo = (m) => MODULOS[areaDe(m)] || String(m || "Sistema").replace(/^./, (c) => c.toUpperCase());
 
 function descripcion(registro) {
   const base = ACCIONES[registro.accion] || String(registro.accion || "Acción").toLowerCase().replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
@@ -99,7 +100,7 @@ export default function AuditoriaPage() {
     return datos.auditorias
       .filter((r) => {
         if (!enRango(fechaDe(r), rango)) return false;
-        if (modulo && r.modulo !== modulo) return false;
+        if (modulo && areaDe(r.modulo) !== modulo) return false;
         if (persona && r.usuarioId !== persona) return false;
         if (!texto) return true;
         return [descripcion(r), etiquetaModulo(r.modulo), nombreDe(r), r.detalle].some((x) => normalizar(x).includes(texto));
@@ -111,7 +112,7 @@ export default function AuditoriaPage() {
   const personas = new Set(registros.map((r) => r.usuarioId).filter(Boolean)).size;
   const ultimo = registros[0] ? fechaDe(registros[0]) : null;
 
-  const modulosPresentes = [...new Set(datos.auditorias.map((r) => r.modulo).filter(Boolean))];
+  const modulosPresentes = [...new Set(datos.auditorias.map((r) => areaDe(r.modulo)).filter(Boolean))];
   const personasPresentes = [...new Set(datos.auditorias.map((r) => r.usuarioId).filter(Boolean))];
 
   const armarReporte = () => ({

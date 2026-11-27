@@ -9,7 +9,6 @@ import useAuth from "../../hooks/useAuth";
 import useConfirmar from "../../hooks/useConfirmar";
 import { db } from "../../services/firebase/firebaseConfig";
 import { anularVenta, listarVentas } from "../../services/ventaService";
-import { registrarAuditoria } from "../../services/auditService";
 import { construirComprobante } from "../../utils/comprobanteVenta";
 import { sonidoClick, sonidoError, sonidoExito } from "../../utils/sonidos";
 
@@ -154,16 +153,6 @@ export default function VentasPage() {
 
     try {
       await anularVenta({ ventaId: venta.id, empresaId, usuarioId: usuario.uid });
-      await registrarAuditoria({
-        empresaId,
-        usuarioId: usuario.uid,
-        usuarioNombre: usuario.nombreCompleto || usuario.correo || "",
-        accion: "ANULAR_VENTA",
-        modulo: "ventas",
-        entidad: "venta",
-        entidadId: venta.id,
-        detalle: `Anuló venta por ${Number(venta.total || 0).toFixed(2)}`
-      }).catch(() => {});
 
       sonidoExito();
       setAviso("La venta quedó anulada y el stock volvió a Existencias.");

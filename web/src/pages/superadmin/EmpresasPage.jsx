@@ -745,7 +745,7 @@ export default function EmpresasPage() {
                     </div>
                     <p>
                       Tipo de letra <b>{identidadDetalle.tipografia}</b>
-                      {temaDetalle?.claro ? " · panel claro" : " · panel oscuro"} · dirección <b>/{detail.slugPublico || "-"}</b>
+                      {temaDetalle?.claro ? " · panel claro" : " · panel oscuro"}
                     </p>
                   </div>
                 </section>
@@ -836,11 +836,6 @@ export default function EmpresasPage() {
                         <label className="field-block">
                           <span>Teléfono</span>
                           <input value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-                        </label>
-
-                        <label className="field-block field-span-2">
-                          <span>Dirección web de la empresa</span>
-                          <input value={form.slugPublico} onChange={(e) => setForm({ ...form, slugPublico: generarSlug(e.target.value) })} />
                         </label>
                       </div>
                     </section>

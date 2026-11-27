@@ -709,7 +709,7 @@ export default function GastosPage() {
                 </label>
 
                 {error && (
-                  <div className="re-aviso re-aviso--error" role="alert">
+                  <div className="re-aviso re-aviso--error" role="alert" ref={(el) => el?.scrollIntoView({ block: "nearest" })}>
                     {error}
                   </div>
                 )}

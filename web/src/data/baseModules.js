@@ -8,7 +8,6 @@ export const BASE_MODULES = [
   {codigo:"PRODUCTOS",nombre:"Productos",descripcion:"CRUD de productos, precios, imágenes y códigos.",icono:"Package"},
   {codigo:"INVENTARIO",nombre:"Inventario",descripcion:"Stock, movimientos, ajustes y alertas.",icono:"Boxes"},
   {codigo:"COMPRAS",nombre:"Compras y proveedores",descripcion:"Proveedores, compras y detalle de compras.",icono:"Truck"},
-  {codigo:"CLIENTES",nombre:"Clientes",descripcion:"Gestión comercial de clientes.",icono:"ContactRound"},
   {codigo:"VENTAS",nombre:"Ventas y POS",descripcion:"Punto de venta, ventas, comprobantes y anulaciones.",icono:"ShoppingCart"},
   {codigo:"PROMOCIONES",nombre:"Promociones",descripcion:"Descuentos y promociones.",icono:"Percent"},
   {codigo:"CAJA",nombre:"Caja y gastos",descripcion:"Apertura, cierre, movimientos y gastos.",icono:"WalletCards"},

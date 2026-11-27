@@ -14,7 +14,6 @@ const MODULE_BY_PERMISSION = {
   "productos.gestionar": "PRODUCTOS",
   "inventario.ver": "INVENTARIO",
   "inventario.ajustar": "INVENTARIO",
-  "clientes.gestionar": "CLIENTES",
   "proveedores.gestionar": "COMPRAS",
   "compras.gestionar": "COMPRAS",
   "caja.gestionar": "CAJA",

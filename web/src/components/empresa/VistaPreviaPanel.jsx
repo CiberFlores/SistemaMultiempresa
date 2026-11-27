@@ -21,7 +21,7 @@ const MENU = [
   { texto: "Panel", icono: LayoutDashboard },
   { texto: "Ventas", icono: ShoppingCart },
   { texto: "Inventario", icono: Boxes },
-  { texto: "Clientes", icono: Users }
+  { texto: "Equipo", icono: Users }
 ];
 
 const BARRAS = [38, 56, 44, 72, 60, 88, 68];
@@ -139,7 +139,7 @@ function VistaPreviaPanel({ identidad, nombre, rubro }) {
                       <strong>348</strong>
                     </div>
                     <div>
-                      <small>Clientes</small>
+                      <small>Productos</small>
                       <strong>96</strong>
                     </div>
                   </div>
@@ -194,7 +194,7 @@ function VistaPreviaPanel({ identidad, nombre, rubro }) {
                     <strong>1.250</strong>
                   </div>
                   <div>
-                    <small>Clientes</small>
+                    <small>Productos</small>
                     <strong>96</strong>
                   </div>
                 </div>

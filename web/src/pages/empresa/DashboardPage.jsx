@@ -26,7 +26,6 @@ import {
   Store,
   TrendingUp,
   Wallet,
-  Zap
 } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
@@ -1604,7 +1603,7 @@ function DashboardPage() {
                       estadisticas.ventasHoy
                     ),
 
-                    nota: "Incluye ventas a crédito"
+                    nota: "Todas las formas de pago"
 
                   },
 
@@ -2108,7 +2107,6 @@ function DashboardPage() {
                 * Este último valor es un indicador simple.
                 No representa utilidad neta porque no descuenta
                 el costo de los productos vendidos.
-                Las ventas a crédito se contabilizan como ventas.
 
               </p>
 
@@ -2192,52 +2190,6 @@ function DashboardPage() {
                 <small>
 
                   {datos.sucursalesActivas ?? 0} activas
-
-                </small>
-
-              </div>
-
-            </article>
-
-
-            {/* ESTADO DE VITRINA EXISTENTE */}
-
-            <article className="admin-metric-card">
-
-              <div className="admin-metric-icon">
-
-                <Zap size={22} />
-
-              </div>
-
-
-              <div>
-
-                <span>
-
-                  Vitrina
-
-                </span>
-
-
-                <strong>
-
-                  {empresa.publicada
-
-                    ? "PUBLICADA"
-
-                    : "PRIVADA"}
-
-                </strong>
-
-
-                <small>
-
-                  {empresa.slugPublico
-
-                    ? `/tienda/${empresa.slugPublico}`
-
-                    : "Sin dirección pública"}
 
                 </small>
 

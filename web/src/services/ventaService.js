@@ -1821,6 +1821,6 @@ export async function anularVenta({
       ventaId,
 
     detalle:
-      `Anulación de venta ${ventaId}`
+      `Anuló venta por ${Number(ventaPrevia.data().total || 0).toFixed(2)}`
   });
 }

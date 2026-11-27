@@ -17,15 +17,16 @@ const ACCIONES = {
   REGISTRAR_COMPRA: { etiqueta: "Registró una compra", tono: "ok" }
 };
 
+const areaDe = (m) => (m === "clientes" || m === "metodosPago" ? "otros" : m);
+
 const MODULOS = {
   empresas: "Empresas",
   usuarios: "Usuarios",
   ventas: "Ventas",
   compras: "Compras",
-  metodosPago: "Métodos de pago",
+  otros: "Otros",
   modulos: "Módulos",
   productos: "Productos",
-  clientes: "Clientes",
   proveedores: "Proveedores",
   inventario: "Inventario",
   sucursales: "Sucursales",
@@ -66,7 +67,7 @@ function infoAccion(codigo) {
 }
 
 function nombreModulo(valor) {
-  return MODULOS[valor] || humanizar(valor) || "-";
+  return MODULOS[areaDe(valor)] || humanizar(valor) || "-";
 }
 
 const formatoFecha = new Intl.DateTimeFormat("es-BO", {
@@ -141,7 +142,7 @@ export default function AuditoriaGlobalPage() {
   );
   const modulos = useMemo(
     () =>
-      Array.from(new Set(rows.map((row) => row.modulo).filter(Boolean)))
+      Array.from(new Set(rows.map((row) => areaDe(row.modulo)).filter(Boolean)))
         .sort()
         .map((value) => ({ value, label: nombreModulo(value) })),
     [rows]
@@ -186,7 +187,7 @@ export default function AuditoriaGlobalPage() {
         [row.accion, infoAccion(row.accion).etiqueta, row.modulo, row.detalle, userName, companyName, row.entidad, row.entidadId]
           .some((value) => String(value || "").toLowerCase().includes(queryText));
       const accionOk = accion === "TODOS" || row.accion === accion;
-      const moduloOk = modulo === "TODOS" || row.modulo === modulo;
+      const moduloOk = modulo === "TODOS" || areaDe(row.modulo) === modulo;
       const empresaOk = empresa === "TODOS" || row.empresaId === empresa;
       const date = getTimestamp(row.fecha);
       const desdeOk = !desde || !date || date >= new Date(`${desde}T00:00:00`);
